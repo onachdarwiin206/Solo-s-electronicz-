@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
+import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
 import { Hero } from './components/home/Hero';
 import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
@@ -8,15 +9,16 @@ import { Footer } from './components/layout/Footer';
 import { OrderTracking } from './components/tracking/OrderTracking';
 import { MarketingPortal } from './components/marketing/MarketingPortal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AccountDashboard } from './components/profile/AccountDashboard';
 import { SoloBot } from './components/home/SoloBot';
 import { INITIAL_PRODUCTS } from './constants';
 import { Product, CartItem, Order, UserProfile } from './types';
 import { auth, db, googleProvider } from './lib/firebase';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ShieldCheck, ChevronRight, X, UserCog } from 'lucide-react';
 
-type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin';
+type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile';
 
 export default function App() {
   const [view, setView] = useState<View>('shop');
@@ -104,7 +106,33 @@ export default function App() {
     if (!user) {
       signInWithPopup(auth, googleProvider);
     } else {
-      signOut(auth);
+      setView('profile');
+    }
+  };
+
+  const handleToggleWishlist = async (productId: string) => {
+    if (!user) {
+      signInWithPopup(auth, googleProvider);
+      return;
+    }
+
+    const isWishlisted = user.wishlist?.includes(productId);
+    const userRef = doc(db, 'users', user.id);
+
+    try {
+      if (isWishlisted) {
+        await updateDoc(userRef, {
+          wishlist: arrayRemove(productId)
+        });
+        setUser(prev => prev ? { ...prev, wishlist: prev.wishlist?.filter(id => id !== productId) } : null);
+      } else {
+        await updateDoc(userRef, {
+          wishlist: arrayUnion(productId)
+        });
+        setUser(prev => prev ? { ...prev, wishlist: [...(prev.wishlist || []), productId] } : null);
+      }
+    } catch (e) {
+      console.error("Error updating wishlist:", e);
     }
   };
 
@@ -147,6 +175,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      <BackgroundSlideshow />
       <Navbar 
         onCategorySelect={(cat) => {
           setCategory(cat);
@@ -186,7 +215,9 @@ export default function App() {
                   <ProductCard 
                     key={product.id} 
                     product={product} 
-                    onAddToCart={addToCart} 
+                    onAddToCart={addToCart}
+                    isWishlisted={user?.wishlist?.includes(product.id)}
+                    onToggleWishlist={handleToggleWishlist}
                   />
                 ))}
               </div>
@@ -200,6 +231,22 @@ export default function App() {
           <AdminDashboard 
             products={products} 
             onProductAdded={(p) => setProducts(prev => [p, ...prev])} 
+          />
+        )}
+        {view === 'profile' && user && (
+          <AccountDashboard 
+            user={user} 
+            products={products}
+            onTrackOrder={(id) => {
+               // In a real app, we'd set tracking ID state, here we just switch view
+               setView('tracking');
+            }}
+            onViewProduct={(id) => {
+               setCategory(null);
+               setSearchQuery('');
+               setView('shop');
+               // Smooth scroll to product or filter
+            }}
           />
         )}
 

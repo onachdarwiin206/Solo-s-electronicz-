@@ -9,9 +9,6 @@ interface HeroProps {
 export function Hero({ user, onLogin }: HeroProps) {
   return (
     <div className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
-      {/* Background Motion handled in CSS .motion-bg */}
-      <div className="motion-bg animate-slide" />
-
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

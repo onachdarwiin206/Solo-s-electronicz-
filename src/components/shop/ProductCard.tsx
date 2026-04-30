@@ -1,15 +1,23 @@
 import { motion } from 'motion/react';
-import { ShoppingCart, Plus, Loader2 } from 'lucide-react';
+import { ShoppingCart, Plus, Loader2, Heart, Star } from 'lucide-react';
 import { Product } from '../../types';
 import { useState } from 'react';
+import { cn } from '../../lib/utils';
 
 interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
+  isWishlisted?: boolean;
+  onToggleWishlist?: (id: string) => void;
   key?: string | number;
 }
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export function ProductCard({ 
+  product, 
+  onAddToCart, 
+  isWishlisted = false,
+  onToggleWishlist 
+}: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = () => {
@@ -44,6 +52,23 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+        
+        {/* Wishlist Button */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleWishlist?.(product.id);
+          }}
+          className={cn(
+            "absolute top-4 right-4 p-3 rounded-2xl backdrop-blur-md transition-all z-20 border",
+            isWishlisted 
+              ? "bg-pink-600 border-pink-400 text-white shadow-xl shadow-pink-900/40" 
+              : "bg-black/40 border-white/10 text-white hover:bg-black/60"
+          )}
+        >
+          <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
+        </button>
+
         <div className="absolute top-4 left-4 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase text-white shadow-lg">
           {product.category}
         </div>
@@ -58,6 +83,19 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             UGX {product.price.toLocaleString()}
           </p>
         </div>
+
+        {/* Rating Display */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex text-amber-500">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} size={10} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
+            ))}
+          </div>
+          <span className="text-[10px] font-mono text-gray-500 font-bold uppercase tracking-widest">
+            {product.rating || 5}.0
+          </span>
+        </div>
+
         <p className="text-sm text-gray-400 line-clamp-2 mb-6 font-light">
           {product.description}
         </p>
@@ -65,17 +103,17 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         <button
           onClick={handleAdd}
           disabled={isAdding}
-          className="w-full py-3 bg-white hover:bg-gray-200 text-black font-extrabold rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+          className="w-full py-4 bg-white hover:bg-blue-600 text-black hover:text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all group/btn shadow-xl hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50"
         >
           {isAdding ? (
             <>
               <Loader2 className="animate-spin" size={20} />
-              Adding...
+              Securing...
             </>
           ) : (
             <>
-              <Plus size={20} />
-              Add to Cart
+              <ShoppingCart size={20} className="group-hover/btn:scale-110 transition-transform" />
+              Secure Ownership
             </>
           )}
         </button>

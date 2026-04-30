@@ -1,5 +1,14 @@
 export type Category = 'Phones' | 'Computers' | 'Electronics';
 
+export interface Review {
+  id: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: any;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -10,6 +19,8 @@ export interface Product {
   videoUrl?: string; // Support for product videos
   stock: number;
   featured?: boolean;
+  rating?: number;
+  reviews?: Review[];
 }
 
 export interface CartItem extends Product {
@@ -47,5 +58,6 @@ export interface UserProfile {
   name: string;
   email: string;
   role: 'customer' | 'staff' | 'admin';
+  wishlist?: string[];
   createdAt: any;
 }

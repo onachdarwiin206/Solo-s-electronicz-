@@ -47,13 +47,18 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Legal</h3>
-            <ul className="space-y-4 text-sm text-gray-400">
-              <li className="hover:text-white transition-colors cursor-pointer">Privacy Policy</li>
-              <li className="hover:text-white transition-colors cursor-pointer">Terms of Service</li>
-              <li className="hover:text-white transition-colors cursor-pointer">Digital Receipt Policy</li>
-              <li className="hover:text-white transition-colors cursor-pointer">Delivery Guarantee</li>
-            </ul>
+            <h3 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Newsletter</h3>
+            <p className="text-gray-500 text-xs mb-4 font-mono leading-relaxed">Join the digital elite for exclusive hardware alerts.</p>
+            <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 overflow-hidden">
+               <input 
+                type="email" 
+                placeholder="email@tech.com"
+                className="bg-transparent border-none outline-none text-white text-xs px-4 flex-1 font-mono min-w-0"
+               />
+               <button className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black px-4 py-2 rounded-xl transition-all">
+                 JOIN
+               </button>
+            </div>
           </div>
         </div>
 
