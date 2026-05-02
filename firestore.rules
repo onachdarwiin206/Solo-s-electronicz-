@@ -51,5 +51,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isStaff();
     }
+
+    // Connection test document
+    match /test/connection {
+      allow read: if true;
+    }
   }
 }

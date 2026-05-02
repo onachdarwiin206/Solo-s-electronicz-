@@ -10,17 +10,19 @@ import { OrderTracking } from './components/tracking/OrderTracking';
 import { MarketingPortal } from './components/marketing/MarketingPortal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AccountDashboard } from './components/profile/AccountDashboard';
-import { SoloBot } from './components/home/SoloBot';
 import { INITIAL_PRODUCTS } from './constants';
 import { Product, CartItem, Order, UserProfile } from './types';
 import { auth, db, googleProvider } from './lib/firebase';
+import { handleFirestoreError, OperationType } from './lib/error-handler';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { ShieldCheck, ChevronRight, X, UserCog } from 'lucide-react';
+import { Language, translations } from './translations';
+import { ShieldCheck, ChevronRight, X, UserCog, Globe } from 'lucide-react';
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile';
 
 export default function App() {
+  const [language, setLanguage] = useState<Language>('en');
   const [view, setView] = useState<View>('shop');
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,8 +36,9 @@ export default function App() {
   useEffect(() => {
     // Attempt to load products from Firestore on mount
     const fetchProducts = async () => {
+      const path = 'products';
       try {
-        const snap = await getDocs(collection(db, 'products'));
+        const snap = await getDocs(collection(db, path));
         const dbProducts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
         if (dbProducts.length > 0) {
           setProducts(prev => {
@@ -48,6 +51,7 @@ export default function App() {
         }
       } catch (e) {
         console.log("Could not load Firestore products (expected if empty or network issues)");
+        // Don't throw for initial products load as we have defaults
       }
     };
     fetchProducts();
@@ -56,23 +60,41 @@ export default function App() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
-        const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as UserProfile);
-        } else {
-          const newUser: UserProfile = {
-            id: fbUser.uid,
-            name: fbUser.displayName || 'Guest User',
-            email: fbUser.email || '',
-            role: 'customer',
-            createdAt: serverTimestamp(),
-          };
-          await setDoc(doc(db, 'users', fbUser.uid), newUser);
-          setUser(newUser);
+        const path = `users/${fbUser.uid}`;
+        try {
+          const userRef = doc(db, 'users', fbUser.uid);
+          const userDoc = await getDoc(userRef);
+          
+          let userData: UserProfile;
+          if (userDoc.exists()) {
+            userData = userDoc.data() as UserProfile;
+            // Ensure admin role for specific email
+            if (fbUser.email === 'onachdarwiin@gmail.com' && userData.role !== 'admin') {
+              userData.role = 'admin';
+              await updateDoc(userRef, { role: 'admin' });
+            }
+            if (fbUser.email === 'onachdarwiin@gmail.com') {
+               setView('admin');
+            }
+          } else {
+            userData = {
+              id: fbUser.uid,
+              name: fbUser.displayName || 'Guest User',
+              email: fbUser.email || '',
+              role: fbUser.email === 'onachdarwiin@gmail.com' ? 'admin' : 'customer',
+              createdAt: serverTimestamp(),
+            };
+            await setDoc(userRef, userData);
+          }
+          setUser(userData);
+        } catch (e) {
+          handleFirestoreError(e, OperationType.GET, path);
         }
       } else {
         setUser(null);
       }
+    }, (error) => {
+      console.error("Auth State Error:", error);
     });
     return unsub;
   }, []);
@@ -102,9 +124,18 @@ export default function App() {
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  const handleProfileClick = () => {
+  const handleProfileClick = async () => {
     if (!user) {
-      signInWithPopup(auth, googleProvider);
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (error: any) {
+        console.error("Auth Error:", error);
+        if (error.code === 'auth/network-request-failed') {
+          alert("Network error detected during Authentication. \n\nIMPORTANT: Please ensure that your current App URL is added to the 'Authorized Domains' in your Firebase Authentication Console settings.");
+        } else if (error.code !== 'auth/popup-closed-by-user') {
+          alert("Auth Error: " + error.message);
+        }
+      }
     } else {
       setView('profile');
     }
@@ -112,12 +143,13 @@ export default function App() {
 
   const handleToggleWishlist = async (productId: string) => {
     if (!user) {
-      signInWithPopup(auth, googleProvider);
+      handleProfileClick();
       return;
     }
 
     const isWishlisted = user.wishlist?.includes(productId);
     const userRef = doc(db, 'users', user.id);
+    const path = `users/${user.id}`;
 
     try {
       if (isWishlisted) {
@@ -132,21 +164,26 @@ export default function App() {
         setUser(prev => prev ? { ...prev, wishlist: [...(prev.wishlist || []), productId] } : null);
       }
     } catch (e) {
-      console.error("Error updating wishlist:", e);
+      handleFirestoreError(e, OperationType.UPDATE, path);
     }
   };
 
-  const handleCheckout = (method: any) => {
+  const handleCheckout = async (method: any) => {
     if (!user) {
-      signInWithPopup(auth, googleProvider);
+      handleProfileClick();
       return;
     }
     
     // Auto-promote first user to admin for testing purposes in this environment
     if (user.role === 'customer' && user.email === 'onachdarwiin@gmail.com') {
       const updatedUser = { ...user, role: 'admin' as const };
-      setDoc(doc(db, 'users', user.id), updatedUser);
-      setUser(updatedUser);
+      const path = `users/${user.id}`;
+      try {
+        await setDoc(doc(db, 'users', user.id), updatedUser);
+        setUser(updatedUser);
+      } catch (e) {
+        handleFirestoreError(e, OperationType.WRITE, path);
+      }
     }
     
     const newOrder: Order = {
@@ -162,9 +199,22 @@ export default function App() {
       createdAt: new Date(),
     };
     
+    // Attempt to save order to Firestore
+    const orderPath = `orders/${newOrder.id}`;
+    try {
+      await setDoc(doc(db, 'orders', newOrder.id), {
+        ...newOrder,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) {
+       console.error("Could not save order to Firestore, showing local preview only", e);
+    }
+    
     setOrderResult(newOrder);
     setCart([]);
   };
+
+  const t = translations[language];
 
   const filteredProducts = products.filter(p => {
     const matchesCategory = category ? p.category === category : true;
@@ -189,13 +239,27 @@ export default function App() {
         onTrackingClick={() => setView('tracking')}
         onMarketingClick={() => setView('marketing')}
         user={user}
+        currentLanguage={language}
+        onLanguageChange={setLanguage}
+        t={t}
       />
 
       <main>
         {view === 'shop' && (
           <>
-            {!category && <Hero user={user} onLogin={() => handleProfileClick()} />}
-            <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {!category && (
+              <Hero 
+                user={user} 
+                onLogin={() => handleProfileClick()} 
+                onShopNow={() => {
+                  const shopSection = document.getElementById('tech-inventory');
+                  shopSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                onMarketingClick={() => setView('marketing')}
+                t={t} 
+              />
+            )}
+            <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-end mb-12">
                 <div>
                   <h2 className="text-4xl font-black tracking-tighter mb-2">
@@ -283,14 +347,19 @@ export default function App() {
         </div>
       </main>
 
-      <Footer />
-      <SoloBot 
-        user={user} 
-        onLogin={() => handleProfileClick()} 
-        onViewTerms={() => setShowTerms(true)}
-        onTrackOrder={() => setView('tracking')}
+      <Footer 
+        t={t} 
+        onCategorySelect={(cat) => {
+          setCategory(cat);
+          setSearchQuery('');
+          setView('shop');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onAdminPanelClick={() => {
+          if (user?.role === 'admin') setView('admin');
+          else handleProfileClick();
+        }}
       />
-
       <Cart 
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
@@ -299,6 +368,7 @@ export default function App() {
         onRemove={removeFromCart}
         onCheckout={handleCheckout}
         orderResult={orderResult}
+        t={t}
       />
 
       {/* Terms Modal */}

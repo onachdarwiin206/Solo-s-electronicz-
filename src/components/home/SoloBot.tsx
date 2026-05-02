@@ -8,9 +8,10 @@ interface SoloBotProps {
   onLogin: () => void;
   onViewTerms: () => void;
   onTrackOrder: () => void;
+  t: any;
 }
 
-export function SoloBot({ user, onLogin, onViewTerms, onTrackOrder }: SoloBotProps) {
+export function SoloBot({ user, onLogin, onViewTerms, onTrackOrder, t }: SoloBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [animationData, setAnimationData] = useState<any>(null);
 
@@ -50,20 +51,20 @@ export function SoloBot({ user, onLogin, onViewTerms, onTrackOrder }: SoloBotPro
                   onClick={onLogin}
                   className="text-[10px] bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded-full text-white border border-blue-400/30 transition-colors font-bold uppercase"
                 >
-                  Login / Sign Up
+                  {t.login} / Sign Up
                 </button>
               )}
               <button 
                 onClick={onTrackOrder}
                 className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded-full text-white border border-white/10 transition-colors"
               >
-                Track Order
+                {t.track_order}
               </button>
               <button 
                 onClick={onViewTerms}
                 className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded-full text-white border border-white/10 transition-colors"
               >
-                Terms & Policy
+                {t.terms_policy}
               </button>
             </div>
           </motion.div>

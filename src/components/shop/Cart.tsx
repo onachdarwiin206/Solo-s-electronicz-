@@ -4,6 +4,7 @@ import { CartItem, Order, PaymentMethod } from '../../types';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
+import Lottie from 'lottie-react';
 
 interface CartProps {
   isOpen: boolean;
@@ -13,12 +14,39 @@ interface CartProps {
   onRemove: (id: string) => void;
   onCheckout: (method: PaymentMethod) => void;
   orderResult: Order | null;
+  t: any;
 }
 
-export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, orderResult }: CartProps) {
+export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, orderResult, t }: CartProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Card');
   const [checkingOut, setCheckingOut] = useState(false);
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  // Simple fun animation for empty cart
+  const emptyCartAnimation = {
+    animationData: {
+      "v": "5.7.4",
+      "fr": 30,
+      "ip": 0,
+      "op": 60,
+      "w": 100,
+      "h": 100,
+      "nm": "Empty Cart",
+      "layers": [
+        {
+          "ddd": 0,
+          "ind": 1,
+          "ty": 4,
+          "nm": "Cart",
+          "ks": {
+            "o": { "k": 100 },
+            "r": { "k": [{ "t": 0, "s": [0] }, { "t": 30, "s": [10] }, { "t": 60, "s": [0] }] },
+            "p": { "k": [{ "t": 0, "s": [50, 50] }, { "t": 30, "s": [50, 40] }, { "t": 60, "s": [50, 50] }] }
+          }
+        }
+      ]
+    }
+  };
 
   const handleProcessCheckout = () => {
     setCheckingOut(true);
@@ -175,22 +203,39 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center px-6">
-                  <motion.div 
-                    animate={{ 
-                      y: [0, -15, 0],
-                      rotate: [0, 5, -5, 0]
-                    }}
-                    transition={{ 
-                      duration: 4, 
-                      repeat: Infinity, 
-                      ease: "easeInOut" 
-                    }}
-                    className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10 shadow-2xl shadow-blue-500/5"
-                  >
-                    <ShoppingCart size={40} className="text-gray-600" />
-                  </motion.div>
-                  <h3 className="text-xl font-bold text-white mb-2">Basket is empty</h3>
-                  <p className="text-gray-500 text-sm">Your tech collection starts here. Go grab something powerful.</p>
+                  <div className="w-48 h-48 mb-6">
+                    <Lottie 
+                      animationData={{
+                        v: "5.5.7",
+                        fr: 60,
+                        ip: 0,
+                        op: 180,
+                        w: 500,
+                        h: 500,
+                        nm: "Cart",
+                        layers: [{
+                          ddd: 0, ind: 1, ty: 4, nm: "Circle",
+                          ks: {
+                            o: { k: 100 },
+                            r: { k: 0 },
+                            p: { k: [250, 250, 0] },
+                            a: { k: [0, 0, 0] },
+                            s: { k: [{t:0, s:[80,80], e:[100,100]}, {t:90, s:[100,100], e:[80,80]}, {t:180, s:[80,80]}] }
+                          },
+                          shapes: [{
+                            ty: "gr", it: [{
+                              d: 1, ty: "el", s: { k: [300, 300] }, p: { k: [0, 0] }, nm: "Ellipse"
+                            }, {
+                              ty: "st", c: { k: [0.23, 0.5, 0.96, 1] }, w: { k: 10 }
+                            }]
+                          }]
+                        }]
+                      }}
+                      loop={true}
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{t.basket_empty}</h3>
+                  <p className="text-gray-500 text-sm">{t.tech_collection_starts}</p>
                 </div>
               )}
             </div>
@@ -198,7 +243,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
             {!orderResult && items.length > 0 && (
               <div className="p-6 border-t border-white/10 bg-black/50 backdrop-blur-md">
                 <div className="flex justify-between mb-6">
-                  <span className="text-gray-400 font-medium">Subtotal</span>
+                  <span className="text-gray-400 font-medium">{t.subtotal}</span>
                   <span className="text-2xl font-black text-white">UGX {total.toLocaleString()}</span>
                 </div>
                 <button 

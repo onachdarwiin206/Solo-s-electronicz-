@@ -2,30 +2,37 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Truck, Search, Package, MapPin, Calendar, CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { db } from '../../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 import { Order } from '../../types';
 
 export function OrderTracking() {
   const [orderId, setOrderId] = useState('');
   const [trackingData, setTrackingData] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleTrack = () => {
+  const handleTrack = async () => {
+    if (!orderId) return;
     setLoading(true);
-    // Mocking tracking fetch
-    setTimeout(() => {
-      setTrackingData({
-        id: orderId,
-        status: 'processing',
-        deliveryAddress: '123 Tech Lane, Innovation City, 94043',
-        customerName: 'Sam User',
-        items: [],
-        total: 1299,
-        userId: 'some-user',
-        receiptId: 'SOLO-RC-12345',
-        createdAt: new Date(),
-      });
+    setError(null);
+    const path = `orders/${orderId.trim()}`;
+    try {
+      const docRef = doc(db, 'orders', orderId.trim());
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setTrackingData({ id: docSnap.id, ...docSnap.data() } as Order);
+      } else {
+        setError("Order not found. Please verify the ID.");
+        setTrackingData(null);
+      }
+    } catch (e) {
+      handleFirestoreError(e, OperationType.GET, path);
+      setError("An error occurred while tracking your order.");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const steps = [
@@ -48,7 +55,7 @@ export function OrderTracking() {
           <p className="text-gray-400">Enter your order ID to see exactly where your tech is in the system.</p>
         </div>
 
-        <div className="flex gap-4 mb-12">
+        <div className="flex gap-4 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
             <input
@@ -67,6 +74,12 @@ export function OrderTracking() {
             {loading ? 'Scanning...' : 'Track'}
           </button>
         </div>
+
+        {error && (
+          <p className="text-red-500 text-xs font-bold uppercase tracking-widest text-center mb-8 bg-red-500/10 p-4 rounded-xl border border-red-500/20">
+            {error}
+          </p>
+        )}
 
         {trackingData && (
           <motion.div

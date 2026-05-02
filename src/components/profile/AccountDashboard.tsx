@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Clock } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { db } from '../../lib/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 import { format } from 'date-fns';
 
 interface AccountDashboardProps {
@@ -20,16 +21,17 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
 
   useEffect(() => {
     const fetchOrders = async () => {
+      const path = 'orders';
       try {
         const q = query(
-          collection(db, 'orders'),
+          collection(db, path),
           where('userId', '==', user.id),
           orderBy('createdAt', 'desc')
         );
         const snap = await getDocs(q);
         setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
       } catch (e) {
-        console.error("Error fetching orders:", e);
+        handleFirestoreError(e, OperationType.LIST, path);
       } finally {
         setLoading(false);
       }
