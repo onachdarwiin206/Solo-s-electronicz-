@@ -58,40 +58,55 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 3;
+
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
-        const path = `users/${fbUser.uid}`;
-        try {
-          const userRef = doc(db, 'users', fbUser.uid);
-          const userDoc = await getDoc(userRef);
-          
-          let userData: UserProfile;
-          if (userDoc.exists()) {
-            userData = userDoc.data() as UserProfile;
-            // Ensure admin role for specific email
-            if (fbUser.email === 'onachdarwiin@gmail.com' && userData.role !== 'admin') {
-              userData.role = 'admin';
-              await updateDoc(userRef, { role: 'admin' });
+        const fetchUserWithRetry = async () => {
+          const path = `users/${fbUser.uid}`;
+          try {
+            const userRef = doc(db, 'users', fbUser.uid);
+            const userDoc = await getDoc(userRef);
+            
+            let userData: UserProfile;
+            if (userDoc.exists()) {
+              userData = userDoc.data() as UserProfile;
+              // Ensure admin role for specific email
+              if (fbUser.email === 'onachdarwiin@gmail.com' && userData.role !== 'admin') {
+                userData.role = 'admin';
+                await updateDoc(userRef, { role: 'admin' });
+              }
+              if (fbUser.email === 'onachdarwiin@gmail.com') {
+                 setView('admin');
+              }
+            } else {
+              userData = {
+                id: fbUser.uid,
+                name: fbUser.displayName || 'Guest User',
+                email: fbUser.email || '',
+                role: fbUser.email === 'onachdarwiin@gmail.com' ? 'admin' : 'customer',
+                createdAt: serverTimestamp(),
+              };
+              await setDoc(userRef, userData);
             }
-            if (fbUser.email === 'onachdarwiin@gmail.com') {
-               setView('admin');
+            setUser(userData);
+            retryCount = 0; // Reset on success
+          } catch (e: any) {
+            console.warn(`Firestore auth fetch attempt ${retryCount + 1} failed:`, e.message);
+            if ((e.message?.includes('offline') || e.code === 'unavailable') && retryCount < maxRetries) {
+              retryCount++;
+              setTimeout(fetchUserWithRetry, 2000 * retryCount);
+            } else {
+              handleFirestoreError(e, OperationType.GET, path);
             }
-          } else {
-            userData = {
-              id: fbUser.uid,
-              name: fbUser.displayName || 'Guest User',
-              email: fbUser.email || '',
-              role: fbUser.email === 'onachdarwiin@gmail.com' ? 'admin' : 'customer',
-              createdAt: serverTimestamp(),
-            };
-            await setDoc(userRef, userData);
           }
-          setUser(userData);
-        } catch (e) {
-          handleFirestoreError(e, OperationType.GET, path);
-        }
+        };
+
+        fetchUserWithRetry();
       } else {
         setUser(null);
+        retryCount = 0;
       }
     }, (error) => {
       console.error("Auth State Error:", error);

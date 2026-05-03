@@ -7,7 +7,6 @@ import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '../../lib/utils';
-import imageCompression from 'browser-image-compression';
 
 interface AdminDashboardProps {
   products: Product[];
@@ -30,35 +29,72 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
     featured: false
   });
 
+  // Native Fast Compression: Uses hardware-accelerated canvas for near-instant processing
+  const fastCompress = async (file: File): Promise<Blob | File> => {
+    return new Promise((resolve) => {
+      // Direct pass for optimized small files
+      if (file.size < 200000) return resolve(file); 
+
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 1080;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height *= MAX_DIM / width;
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width *= MAX_DIM / height;
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            resolve(blob || file);
+          }, 'image/jpeg', 0.85); // High quality, fast encoding
+        } else {
+          resolve(file);
+        }
+      };
+      img.onerror = () => resolve(file);
+    });
+  };
+
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Direct local preview for perceived speed
+    // Zero-Latency Optimistic Preview
     const previewUrl = URL.createObjectURL(file);
     setLocalPreview(previewUrl);
     setUploading(true);
 
     try {
-      // Turbo-Speed Optimization: Aggressive targets for near-instant upload
-      const options = {
-        maxSizeMB: 0.1, // 100KB - Absolute maximum speed for data transmission
-        maxWidthOrHeight: 720, // 720p is perfect for web listings
-        useWebWorker: true,
-        initialQuality: 0.6,
-        alwaysKeepResolution: false
-      };
-
-      const compressedFile = await imageCompression(file, options);
+      // Speed-First Processing
+      const processedFile = await fastCompress(file);
       
-      const storageRef = ref(storage, `products/${Date.now()}-${file.name}`);
-      const snapshot = await uploadBytes(storageRef, compressedFile);
+      const storageRef = ref(storage, `products/${Date.now()}-${file.name.replace(/\s+/g, '_')}`);
+      const snapshot = await uploadBytes(storageRef, processedFile);
       const downloadURL = await getDownloadURL(snapshot.ref);
       
       setNewProduct(prev => ({ ...prev, image: downloadURL }));
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Failed to upload image. Please try again.");
+      alert("System connection interrupted. Please try again.");
       setLocalPreview(null);
     } finally {
       setUploading(false);

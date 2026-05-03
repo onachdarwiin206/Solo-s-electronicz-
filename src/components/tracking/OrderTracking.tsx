@@ -27,9 +27,13 @@ export function OrderTracking() {
         setError("Order not found. Please verify the ID.");
         setTrackingData(null);
       }
-    } catch (e) {
-      handleFirestoreError(e, OperationType.GET, path);
-      setError("An error occurred while tracking your order.");
+    } catch (e: any) {
+      if (e.message?.includes('offline') || e.code === 'unavailable') {
+        setError("System is synchronizing connection... Please wait 5 seconds and try again.");
+      } else {
+        handleFirestoreError(e, OperationType.GET, path);
+        setError("An error occurred while tracking your order.");
+      }
     } finally {
       setLoading(false);
     }
