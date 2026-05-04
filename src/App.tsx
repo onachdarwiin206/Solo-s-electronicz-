@@ -80,7 +80,7 @@ export default function App() {
             if (userDoc.exists()) {
               userData = userDoc.data() as UserProfile;
               // Sync name from FB if missing or different
-              const fbName = fbUser.displayName || fbUser.email?.split('@')[0] || 'Guest User';
+              const fbName = fbUser.displayName || (fbUser.phoneNumber ? `Client ${fbUser.phoneNumber.slice(-4)}` : fbUser.email?.split('@')[0]) || 'Solo Client';
               if (!userData.name || (fbUser.displayName && userData.name !== fbUser.displayName)) {
                 await updateDoc(userRef, { name: fbName });
                 userData.name = fbName;
@@ -90,18 +90,19 @@ export default function App() {
                 userData.role = 'admin';
                 await updateDoc(userRef, { role: 'admin' });
               }
-              // Sync phone from Google if missing in profile but present in Google provider
-              if (!userData.phone && fbUser.phoneNumber) {
-                await updateDoc(userRef, { phone: fbUser.phoneNumber });
-                userData.phone = fbUser.phoneNumber;
+              // Sync phone from Google/FB if missing in profile
+              const fbPhone = fbUser.phoneNumber || '';
+              if (!userData.phone && fbPhone) {
+                await updateDoc(userRef, { phone: fbPhone });
+                userData.phone = fbPhone;
               }
-              if (fbUser.email === 'onachdarwiin@gmail.com' && view !== 'admin') {
+              if (fbUser.email === 'onachdarwiin@gmail.com' && view !== 'admin' && view !== 'profile') {
                  setView('admin');
               }
             } else {
               userData = {
                 id: fbUser.uid,
-                name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Guest User',
+                name: fbUser.displayName || (fbUser.phoneNumber ? `Client ${fbUser.phoneNumber.slice(-4)}` : fbUser.email?.split('@')[0]) || 'Solo Client',
                 email: fbUser.email || '',
                 phone: fbUser.phoneNumber || '',
                 role: fbUser.email === 'onachdarwiin@gmail.com' ? 'admin' : 'customer',
@@ -331,109 +332,117 @@ export default function App() {
         cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
       />
 
-      <main>
-        {view === 'shop' && (
-          <>
-            {!category && (
-              <Hero 
-                user={user} 
-                onLogin={() => handleProfileClick()} 
-                onShopNow={() => {
-                  const shopSection = document.getElementById('tech-inventory');
-                  shopSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                onMarketingClick={() => setView('marketing')}
-                t={t} 
+      <main className="pb-24 md:pb-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={view}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            {view === 'shop' && (
+              <>
+                {!category && (
+                  <Hero 
+                    user={user} 
+                    onLogin={() => handleProfileClick()} 
+                    onShopNow={() => {
+                      const shopSection = document.getElementById('tech-inventory');
+                      shopSection?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    onMarketingClick={() => setView('marketing')}
+                    t={t} 
+                  />
+                )}
+                <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        {category && (
+                          <button 
+                            onClick={() => setCategory(null)}
+                            className="p-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all group"
+                            title="Return to Featured"
+                          >
+                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                          </button>
+                        )}
+                        <h2 className="text-4xl font-black tracking-tighter">
+                          {category ? category.toUpperCase() : 'FEATURED TECH'}
+                        </h2>
+                      </div>
+                      <p className="text-gray-400 font-medium">Discover our collection of premium engineering assets.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      {category && (
+                        <button 
+                          onClick={() => setCategory(null)}
+                          className="px-4 py-2 bg-blue-600/10 border border-blue-500/30 rounded-full text-[10px] font-black text-blue-500 uppercase tracking-widest hover:bg-blue-600/20 transition-all flex items-center gap-2"
+                        >
+                          <LayoutGrid size={14} />
+                          Return to All Devices
+                        </button>
+                      )}
+                      <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center">
+                        {filteredProducts.length} Results
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredProducts.map(product => (
+                      <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        onAddToCart={addToCart}
+                        isWishlisted={user?.wishlist?.includes(product.id)}
+                        onToggleWishlist={handleToggleWishlist}
+                        isLiked={user?.likes?.includes(product.id)}
+                        onToggleLike={handleToggleLike}
+                      />
+                    ))}
+                  </div>
+
+                  {filteredProducts.length > 6 && (
+                    <div className="mt-16 flex justify-center">
+                      <button 
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all flex items-center gap-3"
+                      >
+                        <ArrowLeft className="rotate-90" size={16} />
+                        Return to Top / Refresh Feed
+                      </button>
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
+
+            {view === 'tracking' && <OrderTracking />}
+            {view === 'marketing' && <MarketingPortal />}
+            {view === 'admin' && (
+              <AdminDashboard 
+                products={products} 
+                onProductAdded={(p) => setProducts(prev => [p, ...prev])} 
               />
             )}
-            <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    {category && (
-                      <button 
-                        onClick={() => setCategory(null)}
-                        className="p-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all group"
-                        title="Return to Featured"
-                      >
-                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                      </button>
-                    )}
-                    <h2 className="text-4xl font-black tracking-tighter">
-                      {category ? category.toUpperCase() : 'FEATURED TECH'}
-                    </h2>
-                  </div>
-                  <p className="text-gray-400 font-medium">Discover our collection of premium engineering assets.</p>
-                </div>
-                <div className="flex gap-3">
-                  {category && (
-                    <button 
-                      onClick={() => setCategory(null)}
-                      className="px-4 py-2 bg-blue-600/10 border border-blue-500/30 rounded-full text-[10px] font-black text-blue-500 uppercase tracking-widest hover:bg-blue-600/20 transition-all flex items-center gap-2"
-                    >
-                      <LayoutGrid size={14} />
-                      Return to All Devices
-                    </button>
-                  )}
-                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center">
-                    {filteredProducts.length} Results
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onAddToCart={addToCart}
-                    isWishlisted={user?.wishlist?.includes(product.id)}
-                    onToggleWishlist={handleToggleWishlist}
-                    isLiked={user?.likes?.includes(product.id)}
-                    onToggleLike={handleToggleLike}
-                  />
-                ))}
-              </div>
-
-              {filteredProducts.length > 6 && (
-                <div className="mt-16 flex justify-center">
-                  <button 
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all flex items-center gap-3"
-                  >
-                    <ArrowLeft className="rotate-90" size={16} />
-                    Return to Top / Refresh Feed
-                  </button>
-                </div>
-              )}
-            </section>
-          </>
-        )}
-
-        {view === 'tracking' && <OrderTracking />}
-        {view === 'marketing' && <MarketingPortal />}
-        {view === 'admin' && (
-          <AdminDashboard 
-            products={products} 
-            onProductAdded={(p) => setProducts(prev => [p, ...prev])} 
-          />
-        )}
-        {view === 'profile' && user && (
-          <AccountDashboard 
-            user={user} 
-            products={products}
-            onTrackOrder={(id) => {
-               // In a real app, we'd set tracking ID state, here we just switch view
-               setView('tracking');
-            }}
-            onViewProduct={(id) => {
-               setCategory(null);
-               setSearchQuery('');
-               setView('shop');
-               // Smooth scroll to product or filter
-            }}
-          />
-        )}
+            {view === 'profile' && user && (
+              <AccountDashboard 
+                user={user} 
+                products={products}
+                onTrackOrder={(id) => {
+                   setView('tracking');
+                }}
+                onViewProduct={(id) => {
+                   setCategory(null);
+                   setSearchQuery('');
+                   setView('shop');
+                }}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
 
         {/* Admin Access Panel */}
         {user?.role === 'admin' && view !== 'admin' && (

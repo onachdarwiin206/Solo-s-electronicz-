@@ -312,9 +312,32 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
                     </div>
                  </div>
                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center bg-black/40 rounded-xl border border-white/10 px-3 overflow-hidden">
+                       <button 
+                         onClick={async () => {
+                           const newStock = Math.max(0, (product.stock || 0) - 1);
+                           await updateDoc(doc(db, 'products', product.id), { stock: newStock });
+                           window.location.reload();
+                         }}
+                         className="p-2 text-gray-500 hover:text-white transition-colors"
+                       >
+                         -
+                       </button>
+                       <span className="flex-1 text-center font-mono text-[10px] text-white font-bold">{product.stock || 0}</span>
+                       <button 
+                         onClick={async () => {
+                           const newStock = (product.stock || 0) + 1;
+                           await updateDoc(doc(db, 'products', product.id), { stock: newStock });
+                           window.location.reload();
+                         }}
+                         className="p-2 text-gray-500 hover:text-white transition-colors"
+                       >
+                         +
+                       </button>
+                    </div>
                     <button onClick={() => handleEdit(product)} className="py-3 bg-white/5 hover:bg-white text-gray-400 hover:text-black font-black text-[10px] uppercase rounded-xl border border-white/10">Edit</button>
-                    <button onClick={() => handleDelete(product.id)} className="py-3 bg-white/5 hover:bg-red-500/20 text-gray-700 hover:text-red-500 font-bold text-[10px] uppercase rounded-xl border border-white/10">Delete</button>
                  </div>
+                 <button onClick={() => handleDelete(product.id)} className="w-full py-2 bg-red-500/5 hover:bg-red-500/10 text-red-900/40 hover:text-red-500/40 font-bold text-[8px] uppercase rounded-lg border border-red-500/5 transition-all">Decommission Asset</button>
               </div>
             ))}
           </div>

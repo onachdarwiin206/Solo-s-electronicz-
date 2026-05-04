@@ -79,6 +79,28 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                 <span className="font-bold text-sm">Liked Items</span>
               </button>
             </div>
+
+            <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
+              {user.role === 'admin' && (
+                <button 
+                  onClick={() => window.location.reload()} // Hacky but ensures we see the admin view if state is handled in App
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-600 text-white font-black text-xs uppercase tracking-widest"
+                >
+                  <Star size={20} />
+                  Management Console
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  import('../../lib/firebase').then(({ auth }) => auth.signOut());
+                  window.location.reload();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 text-red-400 hover:bg-red-500/10 transition-all font-bold text-sm"
+              >
+                <Package size={20} />
+                Sign Out
+              </button>
+            </div>
           </div>
 
           <div className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem]">
