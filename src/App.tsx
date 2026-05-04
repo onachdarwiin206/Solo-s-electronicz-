@@ -219,21 +219,26 @@ export default function App() {
     }
   };
 
-  const handleCheckout = async (method: any) => {
+  const handleCheckout = async (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string) => {
     if (!user) {
       handleProfileClick();
       return;
     }
     
+    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const newOrder: Order = {
       id: `SOLO-ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       userId: user.id,
       customerName: user.name,
+      customerPhone: phone,
       items: [...cart],
-      total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
-      status: 'processing',
+      subtotal: subtotal,
+      deliveryFee: deliveryFee,
+      total: subtotal + deliveryFee,
+      status: 'Pending',
       paymentMethod: method,
-      deliveryAddress: 'Main Delivery Hub - Lira City Center',
+      district: district,
+      deliveryAddress: address,
       receiptId: `SOLO-RC-${Date.now()}`,
       createdAt: new Date(),
     };
@@ -256,6 +261,17 @@ export default function App() {
         } catch (err) {
           console.warn(`Could not update stock for product ${item.id}`);
         }
+      }
+
+      // Sync user profile with phone and address if they don't have it
+      if (!user.phone || !user.address) {
+        const userRef = doc(db, 'users', user.id);
+        await updateDoc(userRef, {
+           phone: phone,
+           address: address,
+           district: district
+        });
+        setUser(prev => prev ? { ...prev, phone, address, district } : null);
       }
       
       setOrderResult(newOrder);
@@ -358,6 +374,18 @@ export default function App() {
                   />
                 ))}
               </div>
+
+              {filteredProducts.length > 6 && (
+                <div className="mt-16 flex justify-center">
+                  <button 
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all flex items-center gap-3"
+                  >
+                    <ArrowLeft className="rotate-90" size={16} />
+                    Return to Top / Refresh Feed
+                  </button>
+                </div>
+              )}
             </section>
           </>
         )}

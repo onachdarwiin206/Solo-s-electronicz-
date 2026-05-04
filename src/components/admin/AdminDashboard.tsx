@@ -1,12 +1,13 @@
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Upload, Loader2, Zap } from 'lucide-react';
-import { Product, Category } from '../../types';
+import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Upload, Loader2, Zap, BadgeCheck, ShoppingBag, Clock, CheckCircle, Truck, Ban, CreditCard } from 'lucide-react';
+import { Product, Category, Order, OrderStatus } from '../../types';
 import { db, storage } from '../../lib/firebase';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDocs, orderBy, query } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '../../lib/utils';
+import { format } from 'date-fns';
 
 interface AdminDashboardProps {
   products: Product[];
@@ -14,6 +15,9 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps) {
+  const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -26,15 +30,41 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
     image: '',
     videoUrl: '',
     stock: 0,
-    featured: false
+    featured: false,
+    isVerified: true
   });
 
-  // Native Fast Compression: Uses hardware-accelerated canvas for near-instant processing
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      fetchOrders();
+    }
+  }, [activeTab]);
+
+  const fetchOrders = async () => {
+    setLoadingOrders(true);
+    try {
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() }) as Order));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.GET, 'orders');
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      await updateDoc(doc(db, 'orders', orderId), { status });
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
+    }
+  };
+
   const fastCompress = async (file: File): Promise<Blob | File> => {
     return new Promise((resolve) => {
-      // Direct pass for optimized small files
       if (file.size < 200000) return resolve(file); 
-
       const img = new Image();
       img.src = URL.createObjectURL(file);
       img.onload = () => {
@@ -43,7 +73,6 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
         const MAX_DIM = 1080;
         let width = img.width;
         let height = img.height;
-
         if (width > height) {
           if (width > MAX_DIM) {
             height *= MAX_DIM / width;
@@ -55,7 +84,6 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
             height = MAX_DIM;
           }
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
@@ -65,7 +93,7 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
           ctx.drawImage(img, 0, 0, width, height);
           canvas.toBlob((blob) => {
             resolve(blob || file);
-          }, 'image/jpeg', 0.85); // High quality, fast encoding
+          }, 'image/jpeg', 0.85);
         } else {
           resolve(file);
         }
@@ -77,20 +105,14 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Zero-Latency Optimistic Preview
     const previewUrl = URL.createObjectURL(file);
     setLocalPreview(previewUrl);
     setUploading(true);
-
     try {
-      // Speed-First Processing
       const processedFile = await fastCompress(file);
-      
       const storageRef = ref(storage, `products/${Date.now()}-${file.name.replace(/\s+/g, '_')}`);
       const snapshot = await uploadBytes(storageRef, processedFile);
       const downloadURL = await getDownloadURL(snapshot.ref);
-      
       setNewProduct(prev => ({ ...prev, image: downloadURL }));
     } catch (error) {
       console.error("Upload error:", error);
@@ -104,19 +126,15 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
   const handleSave = async () => {
     if (!newProduct.name || !newProduct.price || !newProduct.image) return;
     const path = editingId ? `products/${editingId}` : 'products';
-
     try {
       const productData = {
         ...newProduct,
         updatedAt: serverTimestamp(),
       };
-      
       if (editingId) {
         const productRef = doc(db, 'products', editingId);
         await updateDoc(productRef, productData);
-        // Refresh products in parent state would be better, but assuming onProductAdded handles updates if ID matches or is a general "refresh" trigger. 
-        // For simplicity in this structure, I'll assume we need to reload or update manually.
-        window.location.reload(); // Simple way to sync for now if parent state isn't reactive enough
+        window.location.reload();
       } else {
         const productDataWithCreated = {
           ...productData,
@@ -128,7 +146,6 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
           id: docRef.id,
         } as Product);
       }
-
       resetForm();
     } catch (error) {
        handleFirestoreError(error, editingId ? OperationType.UPDATE : OperationType.CREATE, path);
@@ -137,12 +154,11 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to decommission this hardware asset?')) return;
-    const path = `products/${id}`;
     try {
       await deleteDoc(doc(db, 'products', id));
       window.location.reload();
     } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, path);
+      handleFirestoreError(e, OperationType.DELETE, `products/${id}`);
     }
   };
 
@@ -164,307 +180,233 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
       image: '',
       videoUrl: '',
       stock: 0,
-      featured: false
+      featured: false,
+      isVerified: true
     });
   };
+
+  const orderStatuses: { status: OrderStatus, icon: any, color: string }[] = [
+    { status: 'Pending', icon: Clock, color: 'text-amber-500' },
+    { status: 'Confirmed', icon: CheckCircle, color: 'text-blue-500' },
+    { status: 'Paid', icon: CreditCard, color: 'text-green-500' },
+    { status: 'Packing', icon: Package, color: 'text-purple-500' },
+    { status: 'Out for Delivery', icon: Truck, color: 'text-orange-500' },
+    { status: 'Delivered', icon: ShoppingBag, color: 'text-emerald-500' },
+    { status: 'Cancelled', icon: Ban, color: 'text-red-500' },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto py-20 px-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div>
-          <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Inventory Command</h2>
-          <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest mt-2 font-bold bg-white/5 px-3 py-1 rounded-full border border-white/5 inline-block">Authorized Personnel Only</p>
-        </div>
-        <button 
-          onClick={() => {
-            resetForm();
-            setIsAdding(true);
-          }}
-          className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center gap-3 transition-all shadow-xl shadow-blue-900/40"
-        >
-          <Plus size={20} />
-          NEW ASSET IMPORT
-        </button>
-      </div>
-
-      {isAdding && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] p-8 md:p-12 mb-12 relative overflow-hidden"
-        >
-           <button 
-            onClick={resetForm}
-            className="absolute top-8 right-8 text-gray-500 hover:text-white transition-colors"
-           >
-             <X size={24} />
-           </button>
-
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-             <div className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Model Designation</label>
-                  <input 
-                    type="text" 
-                    value={newProduct.name}
-                    onChange={e => setNewProduct({...newProduct, name: e.target.value})}
-                    placeholder="e.g. Solo X Gen 4"
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold placeholder:text-gray-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Technical Description</label>
-                  <textarea 
-                    value={newProduct.description}
-                    onChange={e => setNewProduct({...newProduct, description: e.target.value})}
-                    placeholder="Full specifications..."
-                    rows={4}
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-light resize-none placeholder:text-gray-700"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Retail Valuation (UGX)</label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                      <input 
-                        type="number" 
-                        value={newProduct.price}
-                        onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})}
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 pl-12 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Units in Storage</label>
-                    <div className="relative">
-                      <Package className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                      <input 
-                        type="number" 
-                        value={newProduct.stock}
-                        onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})}
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 pl-12 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Category Assignment</label>
-                  <div className="relative">
-                    <Tag className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <select 
-                      value={newProduct.category}
-                      onChange={e => setNewProduct({...newProduct, category: e.target.value as Category})}
-                      className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 pl-12 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none font-bold"
-                    >
-                      <option value="Phones">Mobile Devices (Phones)</option>
-                      <option value="Computers">Computing Systems</option>
-                      <option value="Electronics">General Electronics</option>
-                    </select>
-                  </div>
-                </div>
-             </div>
-
-             <div className="space-y-6">
-                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Visual Media (URL or Local File)</label>
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <ImageIcon className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                      <input 
-                        type="text" 
-                        value={newProduct.image}
-                        onChange={e => setNewProduct({...newProduct, image: e.target.value})}
-                        placeholder="https://cdn.example.com/image.jpg"
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 pl-12 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-xs placeholder:text-gray-700"
-                      />
-                    </div>
-                    
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id="asset-upload"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        disabled={uploading}
-                      />
-                      <label 
-                        htmlFor="asset-upload"
-                        className={cn(
-                          "flex items-center justify-center gap-3 w-full p-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer",
-                          uploading 
-                            ? "bg-white/5 border-white/10 cursor-not-allowed" 
-                            : "bg-blue-600/10 border-blue-600/30 hover:bg-blue-600/20 hover:border-blue-600/50"
-                        )}
-                      >
-                        {uploading ? (
-                          <>
-                            <Loader2 size={20} className="animate-spin text-blue-500" />
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Optimizing & Uploading...</span>
-                              <div className="flex items-center gap-1 mt-1">
-                                <Zap size={10} className="text-amber-500 fill-amber-500" />
-                                <span className="text-[8px] font-mono text-amber-500/80 uppercase">Turbo Mode Active</span>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <Upload size={20} className="text-blue-500" />
-                            <span className="text-xs font-black text-blue-500 uppercase tracking-widest">Select From Local Hub</span>
-                          </>
-                        )}
-                      </label>
-                    </div>
-
-                    {(localPreview || newProduct.image) && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/10 group bg-black/40"
-                      >
-                        <img 
-                          src={localPreview || newProduct.image} 
-                          alt="Preview" 
-                          className={cn(
-                            "w-full h-full object-cover transition-opacity duration-500",
-                            uploading ? "opacity-50 blur-[2px]" : "opacity-100"
-                          )} 
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-4">
-                          <div className="w-full flex items-center justify-between">
-                            <div>
-                              <p className="text-[9px] font-mono text-blue-400 uppercase font-bold tracking-widest">
-                                {uploading ? "Analyzing Pixels..." : "Visual Link Verified"}
-                              </p>
-                              {uploading && (
-                                <motion.div 
-                                  className="h-1 bg-blue-500 mt-1 rounded-full"
-                                  initial={{ width: "0%" }}
-                                  animate={{ width: "100%" }}
-                                  transition={{ duration: 2, ease: "easeInOut" }}
-                                />
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">
-                              <Zap size={10} className="text-amber-500 fill-amber-500" />
-                              <span className="text-[8px] font-black text-amber-500 uppercase">Turbo-Sync</span>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Motion Asset URL (Optional)</label>
-                  <div className="relative">
-                    <Video className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input 
-                      type="text" 
-                      value={newProduct.videoUrl}
-                      onChange={e => setNewProduct({...newProduct, videoUrl: e.target.value})}
-                      placeholder="mp4 direct link"
-                      className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 pl-12 text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-xs placeholder:text-gray-700"
-                    />
-                  </div>
-                </div>
-                
-                <div className="bg-black/40 border border-white/10 rounded-3xl p-6">
-                   <div className="flex items-center justify-between">
-                     <div>
-                       <p className="text-white font-black text-xs uppercase tracking-tighter">Featured Status</p>
-                       <p className="text-gray-500 text-[10px] font-mono mt-1 uppercase">Prioritize in main display</p>
-                     </div>
-                     <button 
-                      onClick={() => setNewProduct({...newProduct, featured: !newProduct.featured})}
-                      className={cn(
-                        "w-14 h-8 rounded-full relative transition-all duration-300",
-                        newProduct.featured ? "bg-blue-600" : "bg-white/10"
-                      )}
-                     >
-                       <div className={cn(
-                         "absolute top-1 w-6 h-6 rounded-full bg-white transition-all shadow-lg",
-                         newProduct.featured ? "left-7" : "left-1"
-                       )} />
-                     </button>
-                   </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button 
-                    onClick={handleSave}
-                    className="flex-1 py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl transition-all shadow-xl shadow-blue-900/40 flex items-center justify-center gap-3 group"
-                  >
-                    <Save size={20} className="group-hover:scale-110 transition-transform" />
-                    {editingId ? 'COMMIT CHANGES' : 'AUTHORIZE DEPLOYMENT'}
-                  </button>
-                  {editingId && (
-                    <button 
-                      onClick={resetForm}
-                      className="px-6 py-5 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-2xl transition-all border border-white/10"
-                    >
-                      ABORT
-                    </button>
-                  )}
-                </div>
-             </div>
-           </div>
-        </motion.div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map(product => (
-          <div key={product.id} className="relative group bg-white/5 border border-white/10 rounded-[2rem] p-8 hover:border-white/20 transition-all flex flex-col gap-6 overflow-hidden">
-             {/* Visual Preview */}
-             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-             
-             <div className="flex items-center gap-6">
-                <div className="relative shrink-0">
-                  <img src={product.image} className="w-20 h-20 rounded-2xl object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
-                  {product.featured && (
-                    <div className="absolute -top-2 -right-2 bg-amber-500 p-1.5 rounded-lg text-white shadow-lg">
-                      <Star size={12} fill="currentColor" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                   <h4 className="font-black text-xl text-white mb-1 tracking-tighter truncate uppercase italic leading-tight">{product.name}</h4>
-                   <div className="flex flex-wrap items-center gap-3 text-[9px] uppercase font-black tracking-widest">
-                      <span className="text-blue-500 font-mono">UGX {product.price.toLocaleString()}</span>
-                      <span className="text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">{product.category}</span>
-                   </div>
-                   <div className="mt-2 flex items-center gap-2">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        product.stock > 0 ? "bg-green-500" : "bg-red-500"
-                      )} />
-                      <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">
-                        {product.stock} units
-                      </span>
-                   </div>
-                </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => handleEdit(product)}
-                  className="py-3 bg-white/5 hover:bg-white text-gray-400 hover:text-black font-black text-[10px] uppercase tracking-widest rounded-xl transition-all border border-white/10 hover:border-white flex items-center justify-center gap-2"
-                >
-                  Edit Specifications
-                </button>
-                <button 
-                  onClick={() => handleDelete(product.id)}
-                  className="py-3 bg-white/5 hover:bg-red-500/20 text-gray-700 hover:text-red-500 font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all border border-white/10 hover:border-red-500/30 flex items-center justify-center gap-2"
-                >
-                  <Trash2 size={14} />
-                  Decommission
-                </button>
-             </div>
+          <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Command Center</h2>
+          <div className="flex gap-4 mt-4">
+             <button 
+               onClick={() => setActiveTab('inventory')}
+               className={cn("text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-full border transition-all", activeTab === 'inventory' ? "bg-blue-600 text-white border-blue-500" : "bg-white/5 text-gray-500 border-white/10 hover:bg-white/10")}
+             >
+               Inventory
+             </button>
+             <button 
+               onClick={() => setActiveTab('orders')}
+               className={cn("text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-full border transition-all", activeTab === 'orders' ? "bg-blue-600 text-white border-blue-500" : "bg-white/5 text-gray-500 border-white/10 hover:bg-white/10")}
+             >
+               Orders ({orders.length})
+             </button>
           </div>
-        ))}
+        </div>
+        {activeTab === 'inventory' && (
+          <button 
+            onClick={() => {
+              resetForm();
+              setIsAdding(true);
+            }}
+            className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center gap-3 transition-all shadow-xl shadow-blue-900/40"
+          >
+            <Plus size={20} />
+            NEW ASSET IMPORT
+          </button>
+        )}
       </div>
+
+      {activeTab === 'inventory' ? (
+        <>
+          {isAdding && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/5 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] p-8 md:p-12 mb-12 relative overflow-hidden"
+            >
+               <button onClick={resetForm} className="absolute top-8 right-8 text-gray-500 hover:text-white"><X size={24} /></button>
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                 <div className="space-y-6">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Model Designation</label>
+                      <input type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Technical Description</label>
+                      <textarea value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} rows={4} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-light resize-none" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">UGX Price</label>
+                        <input type="number" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Stock Level</label>
+                        <input type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Category</label>
+                      <select value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value as Category})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 appearance-none font-bold">
+                        <option value="Phones">Phones</option>
+                        <option value="Computers">Computers</option>
+                        <option value="Electronics">Electronics</option>
+                      </select>
+                    </div>
+                 </div>
+                 <div className="space-y-6">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Media</label>
+                      <div className="space-y-4">
+                        <input type="text" value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs" />
+                        <input type="file" id="asset-upload" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
+                        <label htmlFor="asset-upload" className="flex items-center justify-center gap-3 w-full p-5 rounded-2xl border-2 border-dashed border-blue-600/30 hover:bg-blue-600/10 cursor-pointer">
+                          <Upload size={20} className="text-blue-500" />
+                          <span className="text-xs font-black text-blue-500 uppercase tracking-widest">{uploading ? 'Processing...' : 'Upload Asset'}</span>
+                        </label>
+                        {(localPreview || newProduct.image) && (
+                          <div className="aspect-video rounded-2xl overflow-hidden border border-white/10"><img src={localPreview || newProduct.image} className="w-full h-full object-cover" /></div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white/5 p-4 rounded-2xl flex items-center justify-between border border-white/5">
+                        <p className="text-[10px] font-bold uppercase text-gray-500">Featured</p>
+                        <button onClick={() => setNewProduct({...newProduct, featured: !newProduct.featured})} className={cn("w-10 h-6 rounded-full relative transition-all", newProduct.featured ? "bg-blue-600" : "bg-white/10")}><div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", newProduct.featured ? "left-5" : "left-1")} /></button>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-2xl flex items-center justify-between border border-white/5">
+                        <p className="text-[10px] font-bold uppercase text-gray-500">Verified</p>
+                        <button onClick={() => setNewProduct({...newProduct, isVerified: !newProduct.isVerified})} className={cn("w-10 h-6 rounded-full relative transition-all", newProduct.isVerified ? "bg-green-600" : "bg-white/10")}><div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", newProduct.isVerified ? "left-5" : "left-1")} /></button>
+                      </div>
+                    </div>
+                    <button onClick={handleSave} className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl flex items-center justify-center gap-3"><Save size={20} />{editingId ? 'COMMIT CHANGES' : 'DEPLOY ASSET'}</button>
+                 </div>
+               </div>
+            </motion.div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map(product => (
+              <div key={product.id} className="bg-white/5 border border-white/10 rounded-[2rem] p-8 hover:border-white/20 transition-all flex flex-col gap-6 relative">
+                 <div className="flex items-center gap-6">
+                    <img src={product.image} className="w-20 h-20 rounded-2xl object-cover" />
+                    <div className="flex-1 min-w-0">
+                       <h4 className="font-black text-xl text-white mb-1 tracking-tighter truncate uppercase italic leading-tight">{product.name}</h4>
+                       <span className="text-blue-500 font-mono text-[9px] uppercase font-black tracking-widest">UGX {product.price.toLocaleString()}</span>
+                       <div className="mt-2 flex items-center gap-2">
+                          <BadgeCheck size={12} className={product.isVerified ? "text-green-500" : "text-gray-500"} />
+                          <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{product.isVerified ? 'Verified' : 'Unverified'}</span>
+                       </div>
+                    </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => handleEdit(product)} className="py-3 bg-white/5 hover:bg-white text-gray-400 hover:text-black font-black text-[10px] uppercase rounded-xl border border-white/10">Edit</button>
+                    <button onClick={() => handleDelete(product.id)} className="py-3 bg-white/5 hover:bg-red-500/20 text-gray-700 hover:text-red-500 font-bold text-[10px] uppercase rounded-xl border border-white/10">Delete</button>
+                 </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="space-y-6">
+           {loadingOrders ? (
+             <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={40} /></div>
+           ) : orders.length > 0 ? (
+             <div className="grid grid-cols-1 gap-6">
+                {orders.map(order => (
+                  <div key={order.id} className="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-white/20 transition-all shadow-xl">
+                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+                        <div>
+                           <div className="flex items-center gap-3 mb-1">
+                             <span className="text-sm font-black text-blue-500 font-mono">{order.id}</span>
+                             <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", 
+                               orderStatuses.find(s => s.status === order.status)?.color.replace('text-', 'bg-').replace('500', '500/20')
+                             )}>
+                               {order.status}
+                             </span>
+                           </div>
+                           <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">{order.customerName}</h4>
+                           <p className="text-gray-500 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                             <Clock size={12} /> {format(order.createdAt, 'MMM dd, HH:mm')} | <MapPin size={12} /> {order.district}
+                           </p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-3xl font-black text-white tracking-tighter">UGX {order.total.toLocaleString()}</p>
+                           <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{order.paymentMethod}</p>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        {orderStatuses.map(os => (
+                          <button 
+                            key={os.status}
+                            onClick={() => updateOrderStatus(order.id, os.status)}
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest",
+                              order.status === os.status 
+                                ? "bg-white text-black border-white" 
+                                : "bg-white/5 border-white/5 text-gray-500 hover:bg-white/10 hover:border-white/10"
+                            )}
+                          >
+                            <os.icon size={16} className={order.status === os.status ? "text-black" : os.color} />
+                            {os.status}
+                          </button>
+                        ))}
+                     </div>
+
+                     <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
+                        <div className="flex flex-col md:flex-row justify-between gap-8">
+                           <div className="flex-1">
+                              <h5 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-4">Ordered Items</h5>
+                              <div className="space-y-4">
+                                 {order.items.map(item => (
+                                   <div key={item.id} className="flex items-center gap-4">
+                                      <img src={item.image} className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+                                      <div className="flex-1">
+                                         <p className="text-white font-bold text-sm uppercase leading-tight">{item.name}</p>
+                                         <p className="text-gray-500 text-[10px] font-mono">{item.quantity} x UGX {item.price.toLocaleString()}</p>
+                                      </div>
+                                   </div>
+                                 ))}
+                              </div>
+                           </div>
+                           <div className="flex-1">
+                              <h5 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-4">Delivery & Contact</h5>
+                              <div className="space-y-3 text-sm">
+                                 <p className="text-gray-300 font-medium">Phone: <span className="text-blue-500">{order.customerPhone}</span></p>
+                                 <p className="text-gray-300 font-medium">Address: <span className="text-white">{order.deliveryAddress}</span></p>
+                                 <p className="text-gray-300 font-medium italic">"{order.notes || 'No customer notes provided'}"</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                ))}
+             </div>
+           ) : (
+             <div className="py-20 text-center bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+               <ShoppingBag size={40} className="mx-auto text-gray-700 mb-4" />
+               <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">No incoming orders detected</p>
+             </div>
+           )}
+        </div>
+      )}
     </div>
   );
 }
+
+const MapPin = ({ size, className }: { size: number, className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+);

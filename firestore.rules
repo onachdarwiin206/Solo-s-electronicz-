@@ -1,12 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny
+    
+    // 0. Global Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // --- Helper Functions ---
+    
     function isSignedIn() {
       return request.auth != null;
     }
@@ -15,46 +17,84 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function isStaff() {
-      return isSignedIn() && (getUserData().role == 'staff' || getUserData().role == 'admin');
+    function isAdmin() {
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // User profiles
-    match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isOwner(userId);
+    function incoming() {
+      return request.resource.data;
     }
 
-    // Products
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'role']) &&
+             data.id == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role in ['customer', 'staff', 'admin'];
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'category', 'image']) &&
+             data.name is string && data.name.size() <= 200 &&
+             data.price is number && data.price >= 0 &&
+             data.category in ['Phones', 'Computers', 'Electronics'] &&
+             data.image is string && data.image.size() <= 1000;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['userId', 'items', 'total', 'status', 'deliveryAddress', 'receiptId']) &&
+             data.userId == request.auth.uid &&
+             data.items is list && data.items.size() > 0 &&
+             data.total is number && data.total >= 0 &&
+             data.status in ['Pending', 'Confirmed', 'Paid', 'Packing', 'Out for Delivery', 'Delivered', 'Cancelled'] &&
+             data.deliveryAddress is string && data.deliveryAddress.size() <= 500 &&
+             data.receiptId is string && data.receiptId.size() <= 100;
+    }
+
+    // --- Collection Matches ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && isValidUser(incoming()) && incoming().role == 'customer';
+      allow update: if (isOwner(userId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'district', 'address', 'wishlist', 'likes'])
+      )) || isAdmin();
+    }
+
     match /products/{productId} {
       allow read: if true;
-      allow write: if isStaff();
+      allow create, update, delete: if isAdmin() && isValidProduct(incoming());
+      
+      // Allow customers to like/view stock updates implicitly via read
+      // But formal likes count updates would ideally happen via a batch or higher security
+      allow update: if (isSignedIn() && !isAdmin() && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['likesCount']) &&
+        incoming().likesCount == (existing().get('likesCount', 0) + 1 || existing().get('likesCount', 0) - 1)
+      );
     }
 
-    // Orders
     match /orders/{orderId} {
-      allow create: if isSignedIn();
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isStaff());
-      allow update: if isStaff() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow get: if isSignedIn() && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidOrder(incoming());
+      allow update: if isAdmin(); // Only admins can update order status
     }
 
-    // Marketing Posts
     match /marketing_posts/{postId} {
       allow read: if true;
-      allow write: if isStaff();
-    }
-
-    // Connection test document
-    match /test/connection {
-      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

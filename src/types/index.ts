@@ -19,6 +19,7 @@ export interface Product {
   videoUrl?: string; // Support for product videos
   stock: number;
   featured?: boolean;
+  isVerified?: boolean; // Trust Badge
   rating?: number;
   likesCount?: number;
   reviews?: Review[];
@@ -28,20 +29,25 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered';
-export type PaymentMethod = 'Card' | 'Airtel Money' | 'MTN Mobile Money';
+export type OrderStatus = 'Pending' | 'Confirmed' | 'Paid' | 'Packing' | 'Out for Delivery' | 'Delivered' | 'Cancelled';
+export type PaymentMethod = 'Card' | 'Airtel Money' | 'MTN Mobile Money' | 'Cash on Delivery';
 
 export interface Order {
   id: string;
   userId: string;
   customerName: string;
+  customerPhone?: string;
   items: CartItem[];
+  subtotal: number;
+  deliveryFee: number;
   total: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
+  district: string;
   deliveryAddress: string;
   receiptId: string;
   createdAt: any;
+  notes?: string;
 }
 
 export interface MarketingPost {
@@ -58,6 +64,9 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  district?: string;
+  address?: string;
   role: 'customer' | 'staff' | 'admin';
   wishlist?: string[];
   likes?: string[];

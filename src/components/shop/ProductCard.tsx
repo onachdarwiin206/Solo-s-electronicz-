@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ShoppingCart, Plus, Loader2, Heart, Star, Bookmark } from 'lucide-react';
+import { ShoppingCart, Plus, Loader2, Heart, Star, Bookmark, MessageCircle, BadgeCheck } from 'lucide-react';
 import { Product } from '../../types';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
@@ -14,6 +14,8 @@ interface ProductCardProps {
   key?: string | number;
 }
 
+const WHATSAPP_NUMBER = "256793405517";
+
 export function ProductCard({ 
   product, 
   onAddToCart, 
@@ -23,6 +25,12 @@ export function ProductCard({
   onToggleLike
 }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
+
+  const handleWhatsAppBuy = () => {
+    const message = `Hello Solos Engineering, I want to buy ${product.name} at UGX ${product.price.toLocaleString()}. Is it available?`;
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
 
   const handleAdd = () => {
     setIsAdding(true);
@@ -95,6 +103,13 @@ export function ProductCard({
           </button>
         </div>
 
+        {product.isVerified && (
+          <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1 bg-green-500/80 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-xl z-20 border border-green-400/30">
+            <BadgeCheck size={12} />
+            Verified Authentic
+          </div>
+        )}
+
         <div className="absolute top-4 left-4 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase text-white shadow-lg">
           {product.category}
         </div>
@@ -126,23 +141,28 @@ export function ProductCard({
           {product.description}
         </p>
         
-        <button
-          onClick={handleAdd}
-          disabled={isAdding}
-          className="w-full py-4 bg-white hover:bg-blue-600 text-black hover:text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all group/btn shadow-xl hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50"
-        >
-          {isAdding ? (
-            <>
-              <Loader2 className="animate-spin" size={20} />
-              Securing...
-            </>
-          ) : (
-            <>
-              <ShoppingCart size={20} className="group-hover/btn:scale-110 transition-transform" />
-              Secure Ownership
-            </>
-          )}
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={handleAdd}
+            disabled={isAdding}
+            className="py-4 bg-white/5 hover:bg-white/10 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all group/btn border border-white/10 shadow-xl active:scale-95 disabled:opacity-50 text-[10px] uppercase tracking-widest"
+          >
+            {isAdding ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <ShoppingCart size={16} className="group-hover/btn:scale-110 transition-transform" />
+            )}
+            Add to Cart
+          </button>
+          
+          <button
+            onClick={handleWhatsAppBuy}
+            className="py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all border border-green-400/30 shadow-xl shadow-green-900/20 active:scale-95 text-[10px] uppercase tracking-widest"
+          >
+            <MessageCircle size={16} fill="currentColor" className="text-white" />
+            WhatsApp Buy
+          </button>
+        </div>
       </div>
     </motion.div>
   );

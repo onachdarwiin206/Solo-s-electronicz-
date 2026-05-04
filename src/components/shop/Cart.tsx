@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, Plus, Minus, CreditCard, Receipt, CheckCircle, Download, ShoppingCart, Smartphone, ArrowRight } from 'lucide-react';
+import { X, Trash2, Plus, Minus, CreditCard, Receipt, CheckCircle, Download, ShoppingCart, Smartphone, ArrowRight, MapPin, Phone } from 'lucide-react';
 import { CartItem, Order, PaymentMethod } from '../../types';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '../../lib/utils';
 import Lottie from 'lottie-react';
 
@@ -12,54 +12,52 @@ interface CartProps {
   items: CartItem[];
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
-  onCheckout: (method: PaymentMethod) => void;
+  onCheckout: (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string) => void;
   orderResult: Order | null;
   t: any;
 }
 
-export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, orderResult, t }: CartProps) {
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Card');
-  const [checkingOut, setCheckingOut] = useState(false);
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+const DISTRICTS = [
+  { name: 'Lira', fee: 5000 },
+  { name: 'Kampala', fee: 20000 },
+  { name: 'Gulu', fee: 10000 },
+  { name: 'Arua', fee: 15000 },
+  { name: 'Mbarara', fee: 25000 },
+  { name: 'Other', fee: 30000 },
+];
 
-  // Simple fun animation for empty cart
-  const emptyCartAnimation = {
-    animationData: {
-      "v": "5.7.4",
-      "fr": 30,
-      "ip": 0,
-      "op": 60,
-      "w": 100,
-      "h": 100,
-      "nm": "Empty Cart",
-      "layers": [
-        {
-          "ddd": 0,
-          "ind": 1,
-          "ty": 4,
-          "nm": "Cart",
-          "ks": {
-            "o": { "k": 100 },
-            "r": { "k": [{ "t": 0, "s": [0] }, { "t": 30, "s": [10] }, { "t": 60, "s": [0] }] },
-            "p": { "k": [{ "t": 0, "s": [50, 50] }, { "t": 30, "s": [50, 40] }, { "t": 60, "s": [50, 50] }] }
-          }
-        }
-      ]
-    }
-  };
+export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, orderResult, t }: CartProps) {
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('MTN Mobile Money');
+  const [district, setDistrict] = useState(DISTRICTS[0].name);
+  const [deliveryFee, setDeliveryFee] = useState(DISTRICTS[0].fee);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [checkingOut, setCheckingOut] = useState(false);
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const grandTotal = subtotal + deliveryFee;
+
+  useEffect(() => {
+    const d = DISTRICTS.find(d => d.name === district);
+    if (d) setDeliveryFee(d.fee);
+  }, [district]);
 
   const handleProcessCheckout = () => {
+    if (!customerPhone || !customerAddress) {
+      alert("Please provide phone number and delivery address.");
+      return;
+    }
     setCheckingOut(true);
     setTimeout(() => {
-      onCheckout(paymentMethod);
+      onCheckout(paymentMethod, district, deliveryFee, customerPhone, customerAddress);
       setCheckingOut(false);
     }, 2000);
   };
 
   const paymentOptions: { id: PaymentMethod, name: string, icon: any, color: string }[] = [
-    { id: 'Card', name: 'Visa/Mastercard', icon: CreditCard, color: 'text-white' },
-    { id: 'Airtel Money', name: 'Airtel Money', icon: Smartphone, color: 'text-red-500' },
     { id: 'MTN Mobile Money', name: 'MTN MoMo', icon: Smartphone, color: 'text-yellow-400' },
+    { id: 'Airtel Money', name: 'Airtel Money', icon: Smartphone, color: 'text-red-500' },
+    { id: 'Card', name: 'Visa/Mastercard', icon: CreditCard, color: 'text-white' },
+    { id: 'Cash on Delivery', name: 'Cash on Delivery', icon: Smartphone, color: 'text-green-500' },
   ];
 
   return (
@@ -99,7 +97,10 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     <p className="text-gray-400 text-sm">Thank you for shopping at Solo's. Your digital receipt is ready.</p>
                   </div>
 
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm shadow-2xl">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                       <h1 className="text-4xl font-black italic tracking-tighter">SOLO'S</h1>
+                    </div>
                     <div className="flex justify-between mb-4 border-b border-white/10 pb-4">
                       <span className="text-gray-500">Transaction ID</span>
                       <span className="text-blue-500 text-xs">{orderResult.receiptId}</span>
@@ -114,10 +115,10 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     </div>
                     <div className="flex justify-between mb-4 border-b border-white/10 pb-4">
                       <span className="text-gray-500">Status</span>
-                      <span className="text-green-500 font-bold uppercase tracking-widest text-[10px]">Paid | Processing</span>
+                      <span className="text-green-500 font-bold uppercase tracking-widest text-[10px]">{orderResult.status}</span>
                     </div>
                     
-                    <div className="space-y-3 mb-6">
+                    <div className="space-y-3 mb-6 border-b border-white/10 pb-4">
                       {orderResult.items.map(item => (
                         <div key={item.id} className="flex justify-between">
                           <span className="text-gray-300">{item.quantity}x {item.name}</span>
@@ -126,26 +127,45 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                       ))}
                     </div>
 
-                    <div className="flex justify-between pt-4 border-t border-white/10 text-lg font-bold">
-                      <span className="text-white uppercase tracking-tighter">Total</span>
+                    <div className="space-y-2 mb-6 text-xs border-b border-white/10 pb-4">
+                       <div className="flex justify-between">
+                          <span className="text-gray-500">Subtotal</span>
+                          <span className="text-white">UGX {orderResult.subtotal.toLocaleString()}</span>
+                       </div>
+                       <div className="flex justify-between">
+                          <span className="text-gray-500">Delivery Fee ({orderResult.district})</span>
+                          <span className="text-white">UGX {orderResult.deliveryFee.toLocaleString()}</span>
+                       </div>
+                    </div>
+
+                    <div className="flex justify-between pt-2 text-lg font-bold">
+                      <span className="text-white uppercase tracking-tighter">Total Amount</span>
                       <span className="text-blue-500">UGX {orderResult.total.toLocaleString()}</span>
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-white/10 text-[9px] text-gray-600 font-bold uppercase tracking-widest text-center">
+                       Solos Engineering | TIN: 1014-XXXX-XX | Lira, Uganda
                     </div>
                   </div>
 
                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Delivery To</h4>
-                    <p className="text-gray-200 text-sm">{orderResult.deliveryAddress}</p>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Delivery Details</h4>
+                    <p className="text-gray-200 text-sm font-bold flex items-center gap-2"><MapPin size={14} className="text-blue-500" /> {orderResult.district}: {orderResult.deliveryAddress}</p>
+                    <p className="text-gray-400 text-xs mt-1 flex items-center gap-2"><Phone size={14} /> {orderResult.customerPhone}</p>
                   </div>
 
-                  <button className="w-full py-4 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-all shadow-xl">
+                  <button 
+                    onClick={() => window.print()}
+                    className="w-full py-4 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-all shadow-xl"
+                  >
                     <Download size={20} />
-                    Download PDF Receipt
+                    Print Receipt
                   </button>
                 </div>
               ) : items.length > 0 ? (
                 <div className="space-y-8">
                   <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Inventory</h3>
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Inventory List</h3>
                     {items.map((item) => (
                       <motion.div
                         layout
@@ -177,8 +197,46 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     ))}
                   </div>
 
+                  {/* Delivery Location Selection */}
                   <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Payment Method</h3>
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Delivery Location</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {DISTRICTS.map((d) => (
+                        <button
+                          key={d.name}
+                          onClick={() => setDistrict(d.name)}
+                          className={cn(
+                            "p-4 rounded-2xl border transition-all text-left",
+                            district === d.name 
+                              ? "bg-blue-600/20 border-blue-600" 
+                              : "bg-white/5 border-white/10"
+                          )}
+                        >
+                          <p className="text-xs font-bold text-white mb-1">{d.name}</p>
+                          <p className="text-[10px] text-blue-500 font-black tracking-widest">UGX {d.fee.toLocaleString()}</p>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="space-y-3">
+                       <input 
+                         type="tel"
+                         placeholder="Active Phone (e.g. 077... / 070...)"
+                         value={customerPhone}
+                         onChange={(e) => setCustomerPhone(e.target.value)}
+                         className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                       />
+                       <textarea 
+                         placeholder="Specific Delivery Address / Landmarks"
+                         value={customerAddress}
+                         onChange={(e) => setCustomerAddress(e.target.value)}
+                         className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:ring-2 focus:ring-blue-500 h-24 no-scrollbar"
+                       />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Payment Strategy</h3>
                     <div className="grid grid-cols-1 gap-3">
                       {paymentOptions.map((option) => (
                         <button
@@ -203,48 +261,29 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center px-6">
-                  <div className="w-48 h-48 mb-6">
-                    <Lottie 
-                      animationData={{
-                        v: "5.5.7",
-                        fr: 60,
-                        ip: 0,
-                        op: 180,
-                        w: 500,
-                        h: 500,
-                        nm: "Cart",
-                        layers: [{
-                          ddd: 0, ind: 1, ty: 4, nm: "Circle",
-                          ks: {
-                            o: { k: 100 },
-                            r: { k: 0 },
-                            p: { k: [250, 250, 0] },
-                            a: { k: [0, 0, 0] },
-                            s: { k: [{t:0, s:[80,80], e:[100,100]}, {t:90, s:[100,100], e:[80,80]}, {t:180, s:[80,80]}] }
-                          },
-                          shapes: [{
-                            ty: "gr", it: [{
-                              d: 1, ty: "el", s: { k: [300, 300] }, p: { k: [0, 0] }, nm: "Ellipse"
-                            }, {
-                              ty: "st", c: { k: [0.23, 0.5, 0.96, 1] }, w: { k: 10 }
-                            }]
-                          }]
-                        }]
-                      }}
-                      loop={true}
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">{t.basket_empty}</h3>
-                  <p className="text-gray-500 text-sm">{t.tech_collection_starts}</p>
+                   {/* Empty cart UI remains similar but visually updated */}
+                   <ShoppingCart size={64} className="text-gray-700 mb-6" />
+                   <h3 className="text-xl font-bold text-white mb-2">{t.basket_empty}</h3>
+                   <p className="text-gray-500 text-sm">{t.tech_collection_starts}</p>
                 </div>
               )}
             </div>
 
             {!orderResult && items.length > 0 && (
               <div className="p-6 border-t border-white/10 bg-black/50 backdrop-blur-md">
-                <div className="flex justify-between mb-6">
-                  <span className="text-gray-400 font-medium">{t.subtotal}</span>
-                  <span className="text-2xl font-black text-white">UGX {total.toLocaleString()}</span>
+                <div className="space-y-2 mb-6">
+                  <div className="flex justify-between items-center text-xs text-gray-500 font-bold uppercase tracking-widest">
+                    <span>Subtotal</span>
+                    <span>UGX {subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-gray-500 font-bold uppercase tracking-widest">
+                    <span>Delivery ({district})</span>
+                    <span className="text-blue-500">UGX {deliveryFee.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                    <span className="text-white font-black uppercase text-sm tracking-widest">Grand Total</span>
+                    <span className="text-2xl font-black text-white">UGX {grandTotal.toLocaleString()}</span>
+                  </div>
                 </div>
                 <button 
                   onClick={handleProcessCheckout}
@@ -258,18 +297,18 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                       className="flex items-center gap-2"
                     >
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Encrypting Transaction...
+                      Initiating Gateway...
                     </motion.div>
                   ) : (
                     <motion.div key="text" initial={{ y: 20 }} animate={{ y: 0 }} className="flex items-center gap-3">
                       <CreditCard size={20} />
-                      Complete Checkout
+                      Verify & Pay
                       <ArrowRight size={18} className="ml-1" />
                     </motion.div>
                   )}
                 </button>
                 <p className="text-[10px] text-center text-gray-500 mt-4 font-bold tracking-widest uppercase">
-                  Secure {paymentMethod} Transaction via Solo's Gateway
+                  Secure {paymentMethod} Integration via Solos.io
                 </p>
               </div>
             )}

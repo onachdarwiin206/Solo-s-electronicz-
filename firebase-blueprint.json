@@ -8,7 +8,12 @@
         "id": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "district": { "type": "string" },
+        "address": { "type": "string" },
         "role": { "type": "string", "enum": ["customer", "staff", "admin"] },
+        "wishlist": { "type": "array" },
+        "likes": { "type": "array" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "email", "role"]
@@ -23,8 +28,11 @@
         "price": { "type": "number" },
         "category": { "type": "string", "enum": ["Phones", "Computers", "Electronics"] },
         "image": { "type": "string" },
+        "videoUrl": { "type": "string" },
         "stock": { "type": "integer" },
-        "featured": { "type": "boolean" }
+        "featured": { "type": "boolean" },
+        "isVerified": { "type": "boolean" },
+        "likesCount": { "type": "integer" }
       },
       "required": ["name", "price", "category", "image"]
     },
@@ -35,11 +43,17 @@
       "properties": {
         "userId": { "type": "string" },
         "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
         "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "deliveryFee": { "type": "number" },
         "total": { "type": "number" },
-        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered"] },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Paid", "Packing", "Out for Delivery", "Delivered", "Cancelled"] },
+        "paymentMethod": { "type": "string" },
+        "district": { "type": "string" },
         "deliveryAddress": { "type": "string" },
         "receiptId": { "type": "string" },
+        "notes": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "items", "total", "status", "deliveryAddress", "receiptId"]
