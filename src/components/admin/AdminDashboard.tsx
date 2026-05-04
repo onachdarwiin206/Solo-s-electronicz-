@@ -1,6 +1,6 @@
 import { useState, ChangeEvent, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Upload, Loader2, Zap, BadgeCheck, ShoppingBag, Clock, CheckCircle, Truck, Ban, CreditCard } from 'lucide-react';
+import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Upload, Loader2, Zap, BadgeCheck, ShoppingBag, Clock, CheckCircle, Truck, Ban, CreditCard, ArrowLeft } from 'lucide-react';
 import { Product, Category, Order, OrderStatus } from '../../types';
 import { db, storage } from '../../lib/firebase';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
@@ -22,6 +22,7 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     description: '',
@@ -29,6 +30,7 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
     category: 'Phones',
     image: '',
     videoUrl: '',
+    videoDuration: 0,
     stock: 0,
     featured: false,
     isVerified: true
@@ -105,6 +107,37 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    const isVideo = file.type.startsWith('video/');
+    if (isVideo) {
+      setVideoUploading(true);
+      try {
+        // Check duration
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = async () => {
+          window.URL.revokeObjectURL(video.src);
+          const duration = video.duration;
+          if (duration > 31) { // 1s buffer
+            alert("Video rejected. Max duration is 30 seconds for local optimization.");
+            setVideoUploading(false);
+            return;
+          }
+
+          const storageRef = ref(storage, `videos/${Date.now()}-${file.name.replace(/\s+/g, '_')}`);
+          const snapshot = await uploadBytes(storageRef, file);
+          const downloadURL = await getDownloadURL(snapshot.ref);
+          setNewProduct(prev => ({ ...prev, videoUrl: downloadURL, videoDuration: Math.round(duration) }));
+          setVideoUploading(false);
+        };
+        video.src = URL.createObjectURL(file);
+      } catch (error) {
+        console.error("Video upload error:", error);
+        setVideoUploading(false);
+      }
+      return;
+    }
+
     const previewUrl = URL.createObjectURL(file);
     setLocalPreview(previewUrl);
     setUploading(true);
@@ -197,6 +230,14 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
 
   return (
     <div className="max-w-7xl mx-auto py-20 px-4">
+      <button 
+        onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))}
+        className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-bold uppercase tracking-widest group"
+      >
+        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+        Return to Engineering Hub
+      </button>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div>
           <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Command Center</h2>
@@ -269,16 +310,42 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
                  </div>
                  <div className="space-y-6">
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Media</label>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Media Assets</label>
                       <div className="space-y-4">
-                        <input type="text" value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs" />
-                        <input type="file" id="asset-upload" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
-                        <label htmlFor="asset-upload" className="flex items-center justify-center gap-3 w-full p-5 rounded-2xl border-2 border-dashed border-blue-600/30 hover:bg-blue-600/10 cursor-pointer">
-                          <Upload size={20} className="text-blue-500" />
-                          <span className="text-xs font-black text-blue-500 uppercase tracking-widest">{uploading ? 'Processing...' : 'Upload Asset'}</span>
-                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                             <input type="file" id="asset-upload" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
+                             <label htmlFor="asset-upload" className="flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed border-blue-600/30 hover:bg-blue-600/10 cursor-pointer transition-all">
+                               <ImageIcon size={24} className="text-blue-500" />
+                               <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest leading-tight text-center">
+                                 {uploading ? 'Processing' : 'Featured Image'}
+                               </span>
+                             </label>
+                          </div>
+                          <div className="space-y-2">
+                             <input type="file" id="video-upload" className="hidden" accept="video/*" onChange={handleFileUpload} disabled={videoUploading} />
+                             <label htmlFor="video-upload" className={cn(
+                               "flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed transition-all cursor-pointer",
+                               newProduct.videoUrl ? "border-green-600/30 bg-green-600/5 hover:bg-green-600/10" : "border-white/10 hover:bg-white/5"
+                             )}>
+                               <Video size={24} className={newProduct.videoUrl ? "text-green-500" : "text-gray-500"} />
+                               <span className={cn("text-[8px] font-black uppercase tracking-widest text-center", newProduct.videoUrl ? "text-green-500" : "text-gray-500")}>
+                                 {videoUploading ? 'Analyzing...' : newProduct.videoUrl ? `Video Captured (${newProduct.videoDuration}s)` : '30s Demo Clip'}
+                               </span>
+                             </label>
+                          </div>
+                        </div>
+
                         {(localPreview || newProduct.image) && (
-                          <div className="aspect-video rounded-2xl overflow-hidden border border-white/10"><img src={localPreview || newProduct.image} className="w-full h-full object-cover" /></div>
+                          <div className="aspect-video rounded-2xl overflow-hidden border border-white/10 relative group">
+                            <img src={localPreview || newProduct.image} className="w-full h-full object-cover" />
+                            {newProduct.videoUrl && (
+                               <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Video size={32} className="text-white" />
+                                  <span className="ml-2 text-white font-bold text-xs uppercase">Preview Linked</span>
+                               </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

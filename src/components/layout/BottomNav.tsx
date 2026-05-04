@@ -20,7 +20,7 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
       <div className="flex items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeView === tab.id;
+          const isActive = activeView === tab.id || (tab.id === 'shop' && activeView === 'product-detail');
           
           return (
             <button

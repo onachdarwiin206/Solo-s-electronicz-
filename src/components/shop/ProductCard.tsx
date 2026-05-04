@@ -11,6 +11,7 @@ interface ProductCardProps {
   onToggleWishlist?: (id: string) => void;
   isLiked?: boolean;
   onToggleLike?: (id: string) => void;
+  onClick?: () => void;
   key?: string | number;
 }
 
@@ -22,7 +23,8 @@ export function ProductCard({
   isWishlisted = false,
   onToggleWishlist,
   isLiked = false,
-  onToggleLike
+  onToggleLike,
+  onClick
 }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
@@ -44,7 +46,8 @@ export function ProductCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -8 }}
-      className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 shadow-2xl"
+      onClick={onClick}
+      className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 shadow-2xl cursor-pointer"
     >
       <div className="aspect-square overflow-hidden relative">
         {product.videoUrl ? (

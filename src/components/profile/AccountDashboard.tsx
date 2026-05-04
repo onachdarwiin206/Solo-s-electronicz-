@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Clock, Bookmark } from 'lucide-react';
+import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Clock, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { db } from '../../lib/firebase';
 import { doc, updateDoc, deleteDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -44,6 +44,14 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
 
   return (
     <div className="max-w-7xl mx-auto py-24 px-4 sm:px-6 lg:px-8">
+      <button 
+        onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))}
+        className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-bold uppercase tracking-widest group"
+      >
+        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+        Return to Shop
+      </button>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-8">

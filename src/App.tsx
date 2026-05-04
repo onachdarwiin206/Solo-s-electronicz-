@@ -11,6 +11,7 @@ import { OrderTracking } from './components/tracking/OrderTracking';
 import { MarketingPortal } from './components/marketing/MarketingPortal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AccountDashboard } from './components/profile/AccountDashboard';
+import { ProductDetail } from './components/shop/ProductDetail';
 import { LoginModal } from './components/auth/LoginModal';
 import { INITIAL_PRODUCTS } from './constants';
 import { Product, CartItem, Order, UserProfile, PaymentMethod } from './types';
@@ -21,7 +22,7 @@ import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, updateDoc, a
 import { Language, translations } from './translations';
 import { ShieldCheck, ChevronRight, X, UserCog, Globe, ArrowLeft, LayoutGrid } from 'lucide-react';
 
-type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile';
+type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
 
 export default function App() {
   const [language, setLanguage] = useState<Language>('en');
@@ -33,7 +34,9 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderResult, setOrderResult] = useState<Order | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showTerms, setShowTerms] = useState(false);
+  const [authResolving, setAuthResolving] = useState(true);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
 
   useEffect(() => {
@@ -121,6 +124,7 @@ export default function App() {
             }
             setUser(userData);
             retryCount = 0; // Reset on success
+            setAuthResolving(false);
           } catch (e: any) {
             console.warn(`Firestore auth fetch attempt ${retryCount + 1} failed:`, e.message);
             if ((e.message?.includes('offline') || e.code === 'unavailable') && retryCount < maxRetries) {
@@ -128,6 +132,7 @@ export default function App() {
               setTimeout(fetchUserWithRetry, 2000 * retryCount);
             } else {
               handleFirestoreError(e, OperationType.GET, path);
+              setAuthResolving(false);
             }
           }
         };
@@ -136,6 +141,7 @@ export default function App() {
       } else {
         setUser(null);
         retryCount = 0;
+        setAuthResolving(false);
       }
     }, (error) => {
       console.error("Auth State Error:", error);
@@ -310,6 +316,25 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
+  if (authResolving) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+        <BackgroundSlideshow />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-6 z-10"
+        >
+          <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin" />
+          <div className="text-center">
+            <h1 className="text-2xl font-black text-white tracking-widest uppercase italic">SOLO'S ENGINEERING</h1>
+            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-2">{t.loading}</p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <BackgroundSlideshow />
@@ -408,6 +433,10 @@ export default function App() {
                         onToggleWishlist={handleToggleWishlist}
                         isLiked={user?.likes?.includes(product.id)}
                         onToggleLike={handleToggleLike}
+                        onClick={() => {
+                           setSelectedProduct(product);
+                           setView('product-detail');
+                        }}
                       />
                     ))}
                   </div>
@@ -425,6 +454,14 @@ export default function App() {
                   )}
                 </section>
               </>
+            )}
+
+            {view === 'product-detail' && selectedProduct && (
+              <ProductDetail 
+                product={selectedProduct} 
+                onBack={() => setView('shop')}
+                onAddToCart={addToCart}
+              />
             )}
 
             {view === 'tracking' && <OrderTracking />}

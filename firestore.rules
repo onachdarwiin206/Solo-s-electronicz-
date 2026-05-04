@@ -79,20 +79,18 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if true;
       allow create, update, delete: if isAdmin() && isValidProduct(incoming());
-      
-      // Allow customers to like/view stock updates implicitly via read
-      // But formal likes count updates would ideally happen via a batch or higher security
+      // Allow minor updates for interactions (likes) from users
       allow update: if (isSignedIn() && !isAdmin() && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['likesCount']) &&
-        incoming().likesCount == (existing().get('likesCount', 0) + 1 || existing().get('likesCount', 0) - 1)
-      );
+        incoming().diff(existing()).affectedKeys().hasOnly(['likesCount'])
+      ) || isAdmin();
     }
 
     match /orders/{orderId} {
-      allow get: if isSignedIn() && (isOwner(existing().userId) || isAdmin());
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn() && isValidOrder(incoming());
-      allow update: if isAdmin(); // Only admins can update order status
+      allow update: if isAdmin();
+      allow delete: if false;
     }
 
     match /marketing_posts/{postId} {
