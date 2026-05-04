@@ -10,14 +10,15 @@ import { OrderTracking } from './components/tracking/OrderTracking';
 import { MarketingPortal } from './components/marketing/MarketingPortal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AccountDashboard } from './components/profile/AccountDashboard';
+import { LoginModal } from './components/auth/LoginModal';
 import { INITIAL_PRODUCTS } from './constants';
 import { Product, CartItem, Order, UserProfile } from './types';
-import { auth, db, googleProvider } from './lib/firebase';
+import { auth, db } from './lib/firebase';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Language, translations } from './translations';
-import { ShieldCheck, ChevronRight, X, UserCog, Globe } from 'lucide-react';
+import { ShieldCheck, ChevronRight, X, UserCog, Globe, ArrowLeft, LayoutGrid } from 'lucide-react';
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile';
 
@@ -27,6 +28,7 @@ export default function App() {
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderResult, setOrderResult] = useState<Order | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -83,7 +85,7 @@ export default function App() {
             } else {
               userData = {
                 id: fbUser.uid,
-                name: fbUser.displayName || 'Guest User',
+                name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Guest User',
                 email: fbUser.email || '',
                 role: fbUser.email === 'onachdarwiin@gmail.com' ? 'admin' : 'customer',
                 createdAt: serverTimestamp(),
@@ -139,18 +141,9 @@ export default function App() {
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  const handleProfileClick = async () => {
+  const handleProfileClick = () => {
     if (!user) {
-      try {
-        await signInWithPopup(auth, googleProvider);
-      } catch (error: any) {
-        console.error("Auth Error:", error);
-        if (error.code === 'auth/network-request-failed') {
-          alert("Network error detected during Authentication. \n\nIMPORTANT: Please ensure that your current App URL is added to the 'Authorized Domains' in your Firebase Authentication Console settings.");
-        } else if (error.code !== 'auth/popup-closed-by-user') {
-          alert("Auth Error: " + error.message);
-        }
-      }
+      setLoginModalOpen(true);
     } else {
       setView('profile');
     }
@@ -275,15 +268,35 @@ export default function App() {
               />
             )}
             <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-end mb-12">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
                 <div>
-                  <h2 className="text-4xl font-black tracking-tighter mb-2">
-                    {category ? category.toUpperCase() : 'FEATURED TECH'}
-                  </h2>
+                  <div className="flex items-center gap-3 mb-2">
+                    {category && (
+                      <button 
+                        onClick={() => setCategory(null)}
+                        className="p-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all group"
+                        title="Return to Featured"
+                      >
+                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                      </button>
+                    )}
+                    <h2 className="text-4xl font-black tracking-tighter">
+                      {category ? category.toUpperCase() : 'FEATURED TECH'}
+                    </h2>
+                  </div>
                   <p className="text-gray-400 font-medium">Discover our collection of premium engineering assets.</p>
                 </div>
-                <div className="flex gap-2">
-                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                <div className="flex gap-3">
+                  {category && (
+                    <button 
+                      onClick={() => setCategory(null)}
+                      className="px-4 py-2 bg-blue-600/10 border border-blue-500/30 rounded-full text-[10px] font-black text-blue-500 uppercase tracking-widest hover:bg-blue-600/20 transition-all flex items-center gap-2"
+                    >
+                      <LayoutGrid size={14} />
+                      Return to All Devices
+                    </button>
+                  )}
+                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center">
                     {filteredProducts.length} Results
                   </span>
                 </div>
@@ -384,6 +397,13 @@ export default function App() {
         onCheckout={handleCheckout}
         orderResult={orderResult}
         t={t}
+      />
+
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        onSuccess={() => {}}
       />
 
       {/* Terms Modal */}
