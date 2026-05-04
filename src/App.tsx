@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
 import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
+import { BottomNav } from './components/layout/BottomNav';
 import { Hero } from './components/home/Hero';
 import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
@@ -12,7 +13,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AccountDashboard } from './components/profile/AccountDashboard';
 import { LoginModal } from './components/auth/LoginModal';
 import { INITIAL_PRODUCTS } from './constants';
-import { Product, CartItem, Order, UserProfile } from './types';
+import { Product, CartItem, Order, UserProfile, PaymentMethod } from './types';
 import { auth, db } from './lib/firebase';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -34,6 +35,10 @@ export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [view, category]);
 
   useEffect(() => {
     // Attempt to load products from Firestore on mount
@@ -85,7 +90,12 @@ export default function App() {
                 userData.role = 'admin';
                 await updateDoc(userRef, { role: 'admin' });
               }
-              if (fbUser.email === 'onachdarwiin@gmail.com') {
+              // Sync phone from Google if missing in profile but present in Google provider
+              if (!userData.phone && fbUser.phoneNumber) {
+                await updateDoc(userRef, { phone: fbUser.phoneNumber });
+                userData.phone = fbUser.phoneNumber;
+              }
+              if (fbUser.email === 'onachdarwiin@gmail.com' && view !== 'admin') {
                  setView('admin');
               }
             } else {
@@ -93,6 +103,7 @@ export default function App() {
                 id: fbUser.uid,
                 name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Guest User',
                 email: fbUser.email || '',
+                phone: fbUser.phoneNumber || '',
                 role: fbUser.email === 'onachdarwiin@gmail.com' ? 'admin' : 'customer',
                 wishlist: [],
                 createdAt: serverTimestamp(),
@@ -309,6 +320,15 @@ export default function App() {
         currentLanguage={language}
         onLanguageChange={setLanguage}
         t={t}
+      />
+
+      <BottomNav 
+        activeView={view} 
+        onViewChange={(v) => {
+          setView(v);
+          setCategory(null);
+        }}
+        cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
       />
 
       <main>

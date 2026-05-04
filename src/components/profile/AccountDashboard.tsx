@@ -52,7 +52,10 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
               {user.name.charAt(0)}
             </div>
             <h2 className="text-2xl font-black text-white tracking-tighter mb-1">{user.name}</h2>
-            <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest">{user.email}</p>
+            <p className="text-gray-500 font-mono text-[10px] uppercase tracking-widest leading-relaxed break-all">{user.email}</p>
+            {user.phone && (
+              <p className="text-blue-500 font-mono text-[10px] uppercase tracking-widest mt-1">Verified: {user.phone}</p>
+            )}
             <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
               <button 
                 onClick={() => setActiveTab('orders')}
