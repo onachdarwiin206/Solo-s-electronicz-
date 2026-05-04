@@ -17,8 +17,19 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const [verificationCode, setVerificationCode] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
   const recaptchaRef = useRef<HTMLDivElement>(null);
   const recaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
+
+  useEffect(() => {
+    let interval: any;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   useEffect(() => {
     if (isOpen && !recaptchaVerifier.current && recaptchaRef.current) {
@@ -37,8 +48,9 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
   const handlePhoneSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!phoneNumber || phoneNumber.length < 10) {
-      setError("Please enter a valid phone number");
+    const ugandaPhoneRegex = /^\+256[0-9]{9}$/;
+    if (!phoneNumber || !ugandaPhoneRegex.test(phoneNumber.replace(/\s+/g, ''))) {
+      setError("Please enter a valid Ugandan phone number (+256...)");
       return;
     }
 
@@ -50,6 +62,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       const result = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier.current);
       setConfirmationResult(result);
       setStep('otp');
+      setResendTimer(60);
     } catch (err: any) {
       console.error("Phone Auth Error:", err);
       setError("Something went wrong. Please check your number and try again.");
@@ -203,13 +216,24 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                       {loading ? <Loader2 className="animate-spin" size={20} /> : 'Verify & Continue'}
                     </button>
 
-                    <button 
-                      type="button"
-                      onClick={() => setStep('phone')}
-                      className="w-full text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
-                    >
-                      Wrong number? Go back
-                    </button>
+                    <div className="flex flex-col gap-4">
+                      <button 
+                        type="button"
+                        disabled={resendTimer > 0 || loading}
+                        onClick={handlePhoneSubmit}
+                        className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-400 transition-colors disabled:text-gray-600"
+                      >
+                        {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : 'Resend Verification Code'}
+                      </button>
+
+                      <button 
+                        type="button"
+                        onClick={() => setStep('phone')}
+                        className="w-full text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
+                      >
+                        Wrong number? Go back
+                      </button>
+                    </div>
                   </form>
                 )}
 

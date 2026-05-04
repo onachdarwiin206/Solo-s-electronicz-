@@ -83,7 +83,10 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
             <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
               {user.role === 'admin' && (
                 <button 
-                  onClick={() => window.location.reload()} // Hacky but ensures we see the admin view if state is handled in App
+                  onClick={() => {
+                    const event = new CustomEvent('changeView', { detail: 'admin' });
+                    window.dispatchEvent(event);
+                  }}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-600 text-white font-black text-xs uppercase tracking-widest"
                 >
                   <Star size={20} />

@@ -37,6 +37,14 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
 
   useEffect(() => {
+    const handleNav = (e: any) => {
+      if (e.detail) setView(e.detail);
+    };
+    window.addEventListener('changeView', handleNav);
+    return () => window.removeEventListener('changeView', handleNav);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view, category]);
 
