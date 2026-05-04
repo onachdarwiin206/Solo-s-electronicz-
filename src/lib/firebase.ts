@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { initializeFirestore, doc, getDocFromServer, enableNetwork } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
@@ -17,6 +17,14 @@ enableNetwork(db).catch(err => console.warn("Firestore enableNetwork failed:", e
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Configure Google Provider
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+// Ensure local persistence for better UX
+setPersistence(auth, browserLocalPersistence).catch(err => console.error("Auth persistence failed:", err));
 
 async function testConnection() {
   try {

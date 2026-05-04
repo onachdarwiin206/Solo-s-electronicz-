@@ -1,10 +1,10 @@
 import { useState, ChangeEvent, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Upload, Loader2, Zap, BadgeCheck, ShoppingBag, Clock, CheckCircle, Truck, Ban, CreditCard, ArrowLeft } from 'lucide-react';
+import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { Product, Category, Order, OrderStatus } from '../../types';
 import { db, storage } from '../../lib/firebase';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDocs, orderBy, query, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
@@ -21,7 +21,6 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [videoUploading, setVideoUploading] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
@@ -29,17 +28,13 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
     price: 0,
     category: 'Phones',
     image: '',
-    videoUrl: '',
-    videoDuration: 0,
     stock: 0,
     featured: false,
     isVerified: true
   });
 
   useEffect(() => {
-    if (activeTab === 'orders') {
-      fetchOrders();
-    }
+    if (activeTab === 'orders') fetchOrders();
   }, [activeTab]);
 
   const fetchOrders = async () => {
@@ -64,46 +59,6 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
     }
   };
 
-  const fastCompress = async (file: File): Promise<Blob | File> => {
-    return new Promise((resolve) => {
-      if (file.size < 200000) return resolve(file); 
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(img.src);
-        const canvas = document.createElement('canvas');
-        const MAX_DIM = 1080;
-        let width = img.width;
-        let height = img.height;
-        if (width > height) {
-          if (width > MAX_DIM) {
-            height *= MAX_DIM / width;
-            width = MAX_DIM;
-          }
-        } else {
-          if (height > MAX_DIM) {
-            width *= MAX_DIM / height;
-            height = MAX_DIM;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob((blob) => {
-            resolve(blob || file);
-          }, 'image/jpeg', 0.85);
-        } else {
-          resolve(file);
-        }
-      };
-      img.onerror = () => resolve(file);
-    });
-  };
-
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -112,391 +67,170 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
     if (isVideo) {
       setVideoUploading(true);
       try {
-        // Check duration
         const video = document.createElement('video');
         video.preload = 'metadata';
         video.onloadedmetadata = async () => {
-          window.URL.revokeObjectURL(video.src);
           const duration = video.duration;
-          if (duration > 31) { // 1s buffer
-            alert("Video rejected. Max duration is 30 seconds for local optimization.");
+          if (duration > 31) {
+            alert("Video rejected. Max duration is 30 seconds.");
             setVideoUploading(false);
             return;
           }
-
-          const storageRef = ref(storage, `videos/${Date.now()}-${file.name.replace(/\s+/g, '_')}`);
-          const snapshot = await uploadBytes(storageRef, file);
-          const downloadURL = await getDownloadURL(snapshot.ref);
-          setNewProduct(prev => ({ ...prev, videoUrl: downloadURL, videoDuration: Math.round(duration) }));
+          const storageRef = ref(storage, `videos/${Date.now()}_${file.name}`);
+          const snap = await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(snap.ref);
+          setNewProduct(prev => ({ ...prev, videoUrl: url, videoDuration: Math.round(duration) }));
           setVideoUploading(false);
         };
         video.src = URL.createObjectURL(file);
-      } catch (error) {
-        console.error("Video upload error:", error);
-        setVideoUploading(false);
-      }
+      } catch (err) { setVideoUploading(false); }
       return;
     }
 
-    const previewUrl = URL.createObjectURL(file);
-    setLocalPreview(previewUrl);
     setUploading(true);
     try {
-      const processedFile = await fastCompress(file);
-      const storageRef = ref(storage, `products/${Date.now()}-${file.name.replace(/\s+/g, '_')}`);
-      const snapshot = await uploadBytes(storageRef, processedFile);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      setNewProduct(prev => ({ ...prev, image: downloadURL }));
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("System connection interrupted. Please try again.");
-      setLocalPreview(null);
-    } finally {
-      setUploading(false);
-    }
+      const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+      const snap = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snap.ref);
+      setNewProduct(prev => ({ ...prev, image: url }));
+    } catch (err) { alert("Upload failed."); }
+    finally { setUploading(false); }
   };
 
   const handleSave = async () => {
     if (!newProduct.name || !newProduct.price || !newProduct.image) return;
-    const path = editingId ? `products/${editingId}` : 'products';
     try {
-      const productData = {
-        ...newProduct,
-        updatedAt: serverTimestamp(),
-      };
+      const data = { ...newProduct, updatedAt: serverTimestamp() };
       if (editingId) {
-        const productRef = doc(db, 'products', editingId);
-        await updateDoc(productRef, productData);
+        await updateDoc(doc(db, 'products', editingId), data);
         window.location.reload();
       } else {
-        const productDataWithCreated = {
-          ...productData,
-          createdAt: serverTimestamp(),
-        };
-        const docRef = await addDoc(collection(db, 'products'), productDataWithCreated);
-        onProductAdded({
-          ...productDataWithCreated,
-          id: docRef.id,
-        } as Product);
+        const docRef = await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() });
+        onProductAdded({ ...data, id: docRef.id } as Product);
       }
       resetForm();
-    } catch (error) {
-       handleFirestoreError(error, editingId ? OperationType.UPDATE : OperationType.CREATE, path);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to decommission this hardware asset?')) return;
-    try {
-      await deleteDoc(doc(db, 'products', id));
-      window.location.reload();
-    } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `products/${id}`);
-    }
-  };
-
-  const handleEdit = (product: Product) => {
-    setNewProduct(product);
-    setEditingId(product.id);
-    setIsAdding(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) { handleFirestoreError(e, OperationType.WRITE, 'products'); }
   };
 
   const resetForm = () => {
-    setIsAdding(false);
-    setEditingId(null);
-    setNewProduct({
-      name: '',
-      description: '',
-      price: 0,
-      category: 'Phones',
-      image: '',
-      videoUrl: '',
-      stock: 0,
-      featured: false,
-      isVerified: true
-    });
+    setIsAdding(false); setEditingId(null);
+    setNewProduct({ name: '', description: '', price: 0, category: 'Phones', image: '', stock: 0, featured: false, isVerified: true });
   };
 
-  const orderStatuses: { status: OrderStatus, icon: any, color: string }[] = [
-    { status: 'Pending', icon: Clock, color: 'text-amber-500' },
-    { status: 'Confirmed', icon: CheckCircle, color: 'text-blue-500' },
-    { status: 'Paid', icon: CreditCard, color: 'text-green-500' },
-    { status: 'Packing', icon: Package, color: 'text-purple-500' },
-    { status: 'Out for Delivery', icon: Truck, color: 'text-orange-500' },
-    { status: 'Delivered', icon: ShoppingBag, color: 'text-emerald-500' },
-    { status: 'Cancelled', icon: Ban, color: 'text-red-500' },
-  ];
+  const statusMap: { [key in OrderStatus]: { icon: any, color: string } } = {
+    'pending': { icon: Clock, color: 'text-amber-500' },
+    'confirmed': { icon: CheckCircle, color: 'text-blue-500' },
+    'delivering': { icon: Truck, color: 'text-orange-500' },
+    'delivered': { icon: ShoppingBag, color: 'text-emerald-500' },
+  };
 
   return (
     <div className="max-w-7xl mx-auto py-20 px-4">
-      <button 
-        onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))}
-        className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-bold uppercase tracking-widest group"
-      >
-        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-        Return to Engineering Hub
-      </button>
-
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-        <div>
-          <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Command Center</h2>
-          <div className="flex gap-4 mt-4">
-             <button 
-               onClick={() => setActiveTab('inventory')}
-               className={cn("text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-full border transition-all", activeTab === 'inventory' ? "bg-blue-600 text-white border-blue-500" : "bg-white/5 text-gray-500 border-white/10 hover:bg-white/10")}
-             >
-               Inventory
-             </button>
-             <button 
-               onClick={() => setActiveTab('orders')}
-               className={cn("text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-full border transition-all", activeTab === 'orders' ? "bg-blue-600 text-white border-blue-500" : "bg-white/5 text-gray-500 border-white/10 hover:bg-white/10")}
-             >
-               Orders ({orders.length})
-             </button>
+        <div className="space-y-4">
+          <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">Command Center</h2>
+          <div className="flex gap-2">
+            {['inventory', 'orders'].map((tab) => (
+              <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all", activeTab === tab ? "bg-blue-600 text-white" : "bg-white/5 text-gray-500 border border-white/10 hover:bg-white/10")}>{tab}</button>
+            ))}
           </div>
         </div>
         {activeTab === 'inventory' && (
-          <button 
-            onClick={() => {
-              resetForm();
-              setIsAdding(true);
-            }}
-            className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center gap-3 transition-all shadow-xl shadow-blue-900/40"
-          >
-            <Plus size={20} />
-            NEW ASSET IMPORT
+          <button onClick={() => { resetForm(); setIsAdding(true); }} className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center gap-3">
+            <Plus size={20} /> IMPORT ASSET
           </button>
         )}
       </div>
 
-      {activeTab === 'inventory' ? (
-        <>
-          {isAdding && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] p-8 md:p-12 mb-12 relative overflow-hidden"
-            >
-               <button onClick={resetForm} className="absolute top-8 right-8 text-gray-500 hover:text-white"><X size={24} /></button>
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                 <div className="space-y-6">
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Model Designation</label>
-                      <input type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-bold" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Technical Description</label>
-                      <textarea value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} rows={4} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-light resize-none" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">UGX Price</label>
-                        <input type="number" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Stock Level</label>
-                        <input type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Category</label>
-                      <select value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value as Category})} className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-white outline-none focus:ring-2 focus:ring-blue-500 appearance-none font-bold">
-                        <option value="Phones">Phones</option>
-                        <option value="Computers">Computers</option>
-                        <option value="Electronics">Electronics</option>
-                      </select>
-                    </div>
-                 </div>
-                 <div className="space-y-6">
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Media Assets</label>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                             <input type="file" id="asset-upload" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
-                             <label htmlFor="asset-upload" className="flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed border-blue-600/30 hover:bg-blue-600/10 cursor-pointer transition-all">
-                               <ImageIcon size={24} className="text-blue-500" />
-                               <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest leading-tight text-center">
-                                 {uploading ? 'Processing' : 'Featured Image'}
-                               </span>
-                             </label>
-                          </div>
-                          <div className="space-y-2">
-                             <input type="file" id="video-upload" className="hidden" accept="video/*" onChange={handleFileUpload} disabled={videoUploading} />
-                             <label htmlFor="video-upload" className={cn(
-                               "flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed transition-all cursor-pointer",
-                               newProduct.videoUrl ? "border-green-600/30 bg-green-600/5 hover:bg-green-600/10" : "border-white/10 hover:bg-white/5"
-                             )}>
-                               <Video size={24} className={newProduct.videoUrl ? "text-green-500" : "text-gray-500"} />
-                               <span className={cn("text-[8px] font-black uppercase tracking-widest text-center", newProduct.videoUrl ? "text-green-500" : "text-gray-500")}>
-                                 {videoUploading ? 'Analyzing...' : newProduct.videoUrl ? `Video Captured (${newProduct.videoDuration}s)` : '30s Demo Clip'}
-                               </span>
-                             </label>
-                          </div>
-                        </div>
-
-                        {(localPreview || newProduct.image) && (
-                          <div className="aspect-video rounded-2xl overflow-hidden border border-white/10 relative group">
-                            <img src={localPreview || newProduct.image} className="w-full h-full object-cover" />
-                            {newProduct.videoUrl && (
-                               <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Video size={32} className="text-white" />
-                                  <span className="ml-2 text-white font-bold text-xs uppercase">Preview Linked</span>
-                               </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-white/5 p-4 rounded-2xl flex items-center justify-between border border-white/5">
-                        <p className="text-[10px] font-bold uppercase text-gray-500">Featured</p>
-                        <button onClick={() => setNewProduct({...newProduct, featured: !newProduct.featured})} className={cn("w-10 h-6 rounded-full relative transition-all", newProduct.featured ? "bg-blue-600" : "bg-white/10")}><div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", newProduct.featured ? "left-5" : "left-1")} /></button>
-                      </div>
-                      <div className="bg-white/5 p-4 rounded-2xl flex items-center justify-between border border-white/5">
-                        <p className="text-[10px] font-bold uppercase text-gray-500">Verified</p>
-                        <button onClick={() => setNewProduct({...newProduct, isVerified: !newProduct.isVerified})} className={cn("w-10 h-6 rounded-full relative transition-all", newProduct.isVerified ? "bg-green-600" : "bg-white/10")}><div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", newProduct.isVerified ? "left-5" : "left-1")} /></button>
-                      </div>
-                    </div>
-                    <button onClick={handleSave} className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl flex items-center justify-center gap-3"><Save size={20} />{editingId ? 'COMMIT CHANGES' : 'DEPLOY ASSET'}</button>
-                 </div>
-               </div>
-            </motion.div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map(product => (
-              <div key={product.id} className="bg-white/5 border border-white/10 rounded-[2rem] p-8 hover:border-white/20 transition-all flex flex-col gap-6 relative">
-                 <div className="flex items-center gap-6">
-                    <img src={product.image} className="w-20 h-20 rounded-2xl object-cover" />
-                    <div className="flex-1 min-w-0">
-                       <h4 className="font-black text-xl text-white mb-1 tracking-tighter truncate uppercase italic leading-tight">{product.name}</h4>
-                       <span className="text-blue-500 font-mono text-[9px] uppercase font-black tracking-widest">UGX {product.price.toLocaleString()}</span>
-                       <div className="mt-2 flex items-center gap-2">
-                          <BadgeCheck size={12} className={product.isVerified ? "text-green-500" : "text-gray-500"} />
-                          <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{product.isVerified ? 'Verified' : 'Unverified'}</span>
-                       </div>
-                    </div>
-                 </div>
-                 <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center bg-black/40 rounded-xl border border-white/10 px-3 overflow-hidden">
-                       <button 
-                         onClick={async () => {
-                           const newStock = Math.max(0, (product.stock || 0) - 1);
-                           await updateDoc(doc(db, 'products', product.id), { stock: newStock });
-                           window.location.reload();
-                         }}
-                         className="p-2 text-gray-500 hover:text-white transition-colors"
-                       >
-                         -
-                       </button>
-                       <span className="flex-1 text-center font-mono text-[10px] text-white font-bold">{product.stock || 0}</span>
-                       <button 
-                         onClick={async () => {
-                           const newStock = (product.stock || 0) + 1;
-                           await updateDoc(doc(db, 'products', product.id), { stock: newStock });
-                           window.location.reload();
-                         }}
-                         className="p-2 text-gray-500 hover:text-white transition-colors"
-                       >
-                         +
-                       </button>
-                    </div>
-                    <button onClick={() => handleEdit(product)} className="py-3 bg-white/5 hover:bg-white text-gray-400 hover:text-black font-black text-[10px] uppercase rounded-xl border border-white/10">Edit</button>
-                 </div>
-                 <button onClick={() => handleDelete(product.id)} className="w-full py-2 bg-red-500/5 hover:bg-red-500/10 text-red-900/40 hover:text-red-500/40 font-bold text-[8px] uppercase rounded-lg border border-red-500/5 transition-all">Decommission Asset</button>
+      {isAdding && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 mb-12 relative">
+          <button onClick={resetForm} className="absolute top-8 right-8 text-gray-500 hover:text-white"><X size={24} /></button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="space-y-6">
+              <input placeholder="Product Name" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-blue-500 font-bold" />
+              <textarea placeholder="Technical Specifications" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} rows={4} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-blue-500 text-sm no-scrollbar" />
+              <div className="grid grid-cols-2 gap-4">
+                <input type="number" placeholder="Price (UGX)" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })} className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" />
+                <input type="number" placeholder="Stock" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) })} className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" />
               </div>
-            ))}
+              <select value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value as Category })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white">
+                <option value="Phones">Phones</option>
+                <option value="Computers">Computers</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Accessories">Accessories</option>
+              </select>
+            </div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <label className="h-40 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
+                  <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
+                  <ImageIcon size={32} className="text-blue-500 mb-2" />
+                  <span className="text-[10px] font-black uppercase text-gray-400">{uploading ? 'Uploading...' : 'Featured Image'}</span>
+                </label>
+                <label className="h-40 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
+                  <input type="file" className="hidden" accept="video/*" onChange={handleFileUpload} disabled={videoUploading} />
+                  <Video size={32} className="text-green-500 mb-2" />
+                  <span className="text-[10px] font-black uppercase text-gray-400">{videoUploading ? 'Analysing...' : '30s Demo Clip'}</span>
+                </label>
+              </div>
+              <button onClick={handleSave} className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-xl italic uppercase">Commit to Inventory</button>
+            </div>
           </div>
-        </>
+        </motion.div>
+      )}
+
+      {activeTab === 'inventory' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map(p => (
+            <div key={p.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl flex items-center gap-6 relative group overflow-hidden">
+              <img src={p.image} className="w-20 h-20 rounded-2xl object-cover" />
+              <div className="flex-1 min-w-0">
+                <h4 className="text-white font-black uppercase italic tracking-tighter truncate">{p.name}</h4>
+                <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
+                <div className="flex items-center gap-4 mt-2">
+                   <div className="flex items-center bg-black/40 rounded-lg px-2 border border-white/10">
+                      <button onClick={async () => await updateDoc(doc(db, 'products', p.id), { stock: increment(-1) })} className="px-2 py-1 text-gray-500">-</button>
+                      <span className="px-2 font-mono text-xs text-white">{p.stock}</span>
+                      <button onClick={async () => await updateDoc(doc(db, 'products', p.id), { stock: increment(1) })} className="px-2 py-1 text-gray-500">+</button>
+                   </div>
+                   <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase">Modify</button>
+                </div>
+              </div>
+              <button onClick={async () => { if(confirm("Delist asset?")) await deleteDoc(doc(db, 'products', p.id)); }} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} className="text-red-500/50 hover:text-red-500" /></button>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="space-y-6">
-           {loadingOrders ? (
-             <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={40} /></div>
-           ) : orders.length > 0 ? (
-             <div className="grid grid-cols-1 gap-6">
-                {orders.map(order => (
-                  <div key={order.id} className="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-white/20 transition-all shadow-xl">
-                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-                        <div>
-                           <div className="flex items-center gap-3 mb-1">
-                             <span className="text-sm font-black text-blue-500 font-mono">{order.id}</span>
-                             <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", 
-                               orderStatuses.find(s => s.status === order.status)?.color.replace('text-', 'bg-').replace('500', '500/20')
-                             )}>
-                               {order.status}
-                             </span>
-                           </div>
-                           <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">{order.customerName}</h4>
-                           <p className="text-gray-500 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                             <Clock size={12} /> {format(order.createdAt, 'MMM dd, HH:mm')} | <MapPin size={12} /> {order.district}
-                           </p>
-                        </div>
-                        <div className="text-right">
-                           <p className="text-3xl font-black text-white tracking-tighter">UGX {order.total.toLocaleString()}</p>
-                           <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{order.paymentMethod}</p>
-                        </div>
-                     </div>
-
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        {orderStatuses.map(os => (
-                          <button 
-                            key={os.status}
-                            onClick={() => updateOrderStatus(order.id, os.status)}
-                            className={cn(
-                              "flex items-center gap-3 p-3 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest",
-                              order.status === os.status 
-                                ? "bg-white text-black border-white" 
-                                : "bg-white/5 border-white/5 text-gray-500 hover:bg-white/10 hover:border-white/10"
-                            )}
-                          >
-                            <os.icon size={16} className={order.status === os.status ? "text-black" : os.color} />
-                            {os.status}
-                          </button>
-                        ))}
-                     </div>
-
-                     <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
-                        <div className="flex flex-col md:flex-row justify-between gap-8">
-                           <div className="flex-1">
-                              <h5 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-4">Ordered Items</h5>
-                              <div className="space-y-4">
-                                 {order.items.map(item => (
-                                   <div key={item.id} className="flex items-center gap-4">
-                                      <img src={item.image} className="w-12 h-12 rounded-lg object-cover border border-white/10" />
-                                      <div className="flex-1">
-                                         <p className="text-white font-bold text-sm uppercase leading-tight">{item.name}</p>
-                                         <p className="text-gray-500 text-[10px] font-mono">{item.quantity} x UGX {item.price.toLocaleString()}</p>
-                                      </div>
-                                   </div>
-                                 ))}
-                              </div>
-                           </div>
-                           <div className="flex-1">
-                              <h5 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-4">Delivery & Contact</h5>
-                              <div className="space-y-3 text-sm">
-                                 <p className="text-gray-300 font-medium">Phone: <span className="text-blue-500">{order.customerPhone}</span></p>
-                                 <p className="text-gray-300 font-medium">Address: <span className="text-white">{order.deliveryAddress}</span></p>
-                                 <p className="text-gray-300 font-medium italic">"{order.notes || 'No customer notes provided'}"</p>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
+          {loadingOrders ? <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-500" /></div> : 
+            orders.map(o => (
+              <div key={o.id} className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem]">
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <span className="text-xs font-mono text-blue-500 font-bold">{o.id}</span>
+                    <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter mt-1">{o.customerName}</h4>
+                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Clock size={12} /> {format(o.createdAt, 'MMM dd, HH:mm')} | {o.customerPhone}</p>
                   </div>
-                ))}
-             </div>
-           ) : (
-             <div className="py-20 text-center bg-white/5 rounded-[2rem] border border-dashed border-white/10">
-               <ShoppingBag size={40} className="mx-auto text-gray-700 mb-4" />
-               <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">No incoming orders detected</p>
-             </div>
-           )}
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-white italic tracking-tighter">UGX {o.total.toLocaleString()}</p>
+                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{o.status}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap mb-6">
+                  {Object.keys(statusMap).map((s) => (
+                    <button key={s} onClick={() => updateOrderStatus(o.id, s as any)} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all", o.status === s ? "bg-white text-black border-white" : "bg-white/5 text-gray-500 border-white/10")}>{s}</button>
+                  ))}
+                  <a href={`https://wa.me/${o.customerPhone.replace(/\D/g, '')}`} target="_blank" className="ml-auto px-6 py-2 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">WhatsApp Client</a>
+                </div>
+                <div className="space-y-3 bg-black/20 p-4 rounded-2xl border border-white/5">
+                   {o.items.map(i => <div key={i.id} className="flex justify-between text-xs font-bold uppercase"><span className="text-gray-400">{i.quantity} x {i.name}</span><span className="text-white">UGX {(i.price * i.quantity).toLocaleString()}</span></div>)}
+                   <p className="text-[10px] text-gray-500 pt-3 border-t border-white/5 italic">Delivery: {o.deliveryAddress}</p>
+                </div>
+              </div>
+            ))
+          }
         </div>
       )}
     </div>
   );
 }
-
-const MapPin = ({ size, className }: { size: number, className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-);

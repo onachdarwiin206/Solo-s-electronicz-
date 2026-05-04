@@ -38,19 +38,36 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
           size: 'invisible',
           callback: () => {
             console.log('Recaptcha resolved');
+          },
+          'expired-callback': () => {
+             console.warn('Recaptcha expired');
+             if (recaptchaVerifier.current) recaptchaVerifier.current.clear();
+             recaptchaVerifier.current = null;
           }
         });
       } catch (err) {
         console.error("Recaptcha init error:", err);
       }
     }
+    
+    return () => {
+       if (recaptchaVerifier.current) {
+          recaptchaVerifier.current.clear();
+          recaptchaVerifier.current = null;
+       }
+    };
   }, [isOpen]);
 
   const handlePhoneSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
+    // Clean up phone number: remove spaces and ensure it starts with +256
+    let cleanPhone = phoneNumber.replace(/\s+/g, '');
+    if (!cleanPhone.startsWith('+')) cleanPhone = '+' + cleanPhone;
+    
     const ugandaPhoneRegex = /^\+256[0-9]{9}$/;
-    if (!phoneNumber || !ugandaPhoneRegex.test(phoneNumber.replace(/\s+/g, ''))) {
-      setError("Please enter a valid Ugandan phone number (+256...)");
+    if (!phoneNumber || !ugandaPhoneRegex.test(cleanPhone)) {
+      setError("Please use Ugandan format: +256 700 000 000");
       return;
     }
 
@@ -58,14 +75,30 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     setError(null);
 
     try {
-      if (!recaptchaVerifier.current) throw new Error("Recaptcha not initialized");
-      const result = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier.current);
+      if (!recaptchaVerifier.current) {
+        // Fallback re-init
+        if (recaptchaRef.current) {
+           recaptchaVerifier.current = new RecaptchaVerifier(auth, recaptchaRef.current, { size: 'invisible' });
+        } else {
+           throw new Error("Security verification failed initialization");
+        }
+      }
+      
+      const result = await signInWithPhoneNumber(auth, cleanPhone, recaptchaVerifier.current);
       setConfirmationResult(result);
       setStep('otp');
       setResendTimer(60);
     } catch (err: any) {
       console.error("Phone Auth Error:", err);
-      setError("Something went wrong. Please check your number and try again.");
+      let msg = "Could not send code. Please try again.";
+      if (err.code === 'auth/too-many-requests') msg = "Too many attempts. Please wait a while.";
+      if (err.code === 'auth/invalid-phone-number') msg = "Invalid phone number format.";
+      setError(msg);
+      // Reset reCAPTCHA on error
+      if (recaptchaVerifier.current) {
+         recaptchaVerifier.current.clear();
+         recaptchaVerifier.current = null;
+      }
     } finally {
       setLoading(false);
     }
@@ -82,13 +115,15 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     setError(null);
 
     try {
-      if (!confirmationResult) throw new Error("No verification session found");
+      if (!confirmationResult) throw new Error("No active verification session");
       await confirmationResult.confirm(verificationCode);
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error("OTP Error:", err);
-      setError("Incorrect code. Please check and try again.");
+      let msg = "Incorrect code. Please try again.";
+      if (err.code === 'auth/code-expired') msg = "Verification code expired. Request a new one.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -102,9 +137,12 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       onSuccess();
       onClose();
     } catch (err: any) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError("Google Login failed. Please try another method.");
-      }
+      console.error("Google Auth Error:", err);
+      let msg = "Google Sign-In failed.";
+      if (err.code === 'auth/popup-closed-by-user') return; // User closed popup, don't show error
+      if (err.code === 'auth/unauthorized-domain') msg = "This domain is not authorized for Google Sign-In.";
+      if (err.code === 'auth/popup-blocked') msg = "Sign-in popup blocked by browser.";
+      setError(msg);
     } finally {
       setLoading(false);
     }

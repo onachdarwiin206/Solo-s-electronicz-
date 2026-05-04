@@ -12,122 +12,81 @@ const WHATSAPP_NUMBER = "256793405517";
 
 export function ProductDetail({ product, onBack, onAddToCart }: ProductDetailProps) {
   const handleWhatsAppBuy = () => {
-    const message = `Hello Solos Engineering, I'm interested in the ${product.name} (UGX ${product.price.toLocaleString()}). Can I get more details?`;
+    const message = `*Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I'm interested in this unit. Is it available for delivery in Lira?`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="max-w-7xl mx-auto py-20 px-4 sm:px-6 lg:px-8"
-    >
-      <button 
-        onClick={onBack}
-        className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-bold uppercase tracking-widest group"
-      >
-        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-        Back to Engineering Hub
+    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <button onClick={onBack} className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest group">
+        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+        Back to Tech Feed
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-        {/* Media Section */}
         <div className="space-y-6">
-          <div className="aspect-square rounded-[3rem] overflow-hidden bg-white/5 border border-white/10 relative">
+          <div className="aspect-square rounded-[2rem] overflow-hidden bg-white/5 border border-white/10 relative group">
             {product.videoUrl ? (
-              <video 
-                src={product.videoUrl} 
-                className="w-full h-full object-cover"
-                autoPlay 
-                muted 
-                loop 
-                playsInline
-                controls
-              />
+              <video src={product.videoUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline controls />
             ) : (
               <img src={product.image} className="w-full h-full object-cover" alt={product.name} />
             )}
             {product.isVerified && (
-              <div className="absolute bottom-8 left-8 flex items-center gap-2 px-4 py-2 bg-green-500/80 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-2xl">
-                <BadgeCheck size={14} />
-                Verified Authentic Hardware
+              <div className="absolute top-6 left-6 flex items-center gap-2 px-3 py-1.5 bg-green-500/90 backdrop-blur rounded-full text-[8px] font-black uppercase tracking-widest text-white">
+                <BadgeCheck size={12} /> Verified Hardware
               </div>
             )}
           </div>
         </div>
 
-        {/* Info Section */}
         <div className="flex flex-col">
           <div className="mb-8">
-            <span className="px-4 py-1.5 bg-blue-600/20 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+            <span className="px-3 py-1 bg-white/5 border border-white/10 text-gray-400 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">
               {product.category}
             </span>
-            <h1 className="text-5xl font-black text-white tracking-tighter mt-4 mb-2 uppercase italic">
+            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mt-4 mb-2 uppercase italic leading-none">
               {product.name}
             </h1>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mt-4">
               <div className="flex text-amber-500">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={14} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
+                  <Star key={i} size={12} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
                 ))}
               </div>
-              <span className="text-xs font-mono text-gray-500 font-bold uppercase tracking-widest">
-                {product.rating || 5}.0 Performance Rating
-              </span>
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Premium Performance</span>
             </div>
           </div>
 
           <div className="mb-12">
-            <p className="text-4xl font-black text-white font-mono tracking-tighter">
-              UGX {product.price.toLocaleString()}
-            </p>
-            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-2">
-              Standard Regional Pricing | Inc. VAT
-            </p>
+            <p className="text-4xl font-black text-white font-mono tracking-tighter">UGX {product.price.toLocaleString()}</p>
+            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">Official Regional Price | Lira Delivery Included</p>
           </div>
 
           <div className="space-y-8 mb-12">
             <div>
-              <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Shield size={14} className="text-blue-500" /> Technical Overview
-              </h3>
-              <p className="text-gray-400 leading-relaxed font-light">
-                {product.description}
-              </p>
+              <h3 className="text-[10px] font-black text-white uppercase tracking-widest mb-3 flex items-center gap-2"><Shield size={12} className="text-blue-500" /> Engineering Specs</h3>
+              <p className="text-gray-400 text-sm leading-relaxed font-medium">{product.description}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                 <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                   <Zap size={10} className="text-yellow-500" /> Condition
-                 </h4>
-                 <p className="text-white font-bold text-sm uppercase italic">High-Grade Stock</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                 <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Zap size={10} className="text-yellow-500" /> Grade</h4>
+                 <p className="text-white font-black text-xs uppercase italic">Direct Import</p>
               </div>
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                 <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                   <Truck size={10} className="text-blue-500" /> Availability
-                 </h4>
-                 <p className="text-white font-bold text-sm uppercase italic">{product.stock > 0 ? 'Ready for Dispatch' : 'Awaiting Import'}</p>
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                 <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Truck size={10} className="text-blue-500" /> Availability</h4>
+                 <p className="text-white font-black text-xs uppercase italic">{product.stock > 0 ? 'Ready for Lira' : 'Restocking'}</p>
               </div>
             </div>
           </div>
 
-          <div className="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => onAddToCart(product)}
-              className="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-500/20 active:scale-95 text-xs uppercase tracking-widest"
-            >
-              <ShoppingCart size={20} />
-              Acquire Item
+          <div className="mt-auto flex flex-col sm:flex-row gap-4">
+            <button onClick={() => onAddToCart(product)} className="flex-1 py-5 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 text-xs uppercase tracking-widest group">
+              <ShoppingCart size={18} className="group-hover:rotate-12 transition-transform" /> Add to Basket
             </button>
-            <button
-              onClick={handleWhatsAppBuy}
-              className="py-5 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all border border-green-400/30 shadow-xl shadow-green-900/20 active:scale-95 text-xs uppercase tracking-widest"
-            >
-              <MessageCircle size={20} fill="currentColor" />
-              Direct Inquiry
+            <button onClick={handleWhatsAppBuy} className="flex-1 py-5 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-green-900/20 text-xs uppercase tracking-widest">
+              <MessageCircle size={18} fill="currentColor" /> Live Inquiry
             </button>
           </div>
         </div>

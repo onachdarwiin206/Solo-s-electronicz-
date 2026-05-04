@@ -1,94 +1,60 @@
 {
   "entities": {
-    "User": {
+    "UserProfile": {
       "title": "User Profile",
-      "description": "User profile information and role.",
+      "description": "Customer and Admin profiles",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string" },
         "phone": { "type": "string" },
-        "district": { "type": "string" },
-        "address": { "type": "string" },
-        "role": { "type": "string", "enum": ["customer", "staff", "admin"] },
-        "wishlist": { "type": "array" },
-        "likes": { "type": "array" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "role": { "type": "string", "enum": ["customer", "admin"] },
+        "wishlist": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLogin": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "email", "role"]
+      "required": ["id", "name", "role", "createdAt"]
     },
     "Product": {
       "title": "Product",
-      "description": "Electronic devices available for sale.",
+      "description": "Electronics inventory item",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "name": { "type": "string" },
         "description": { "type": "string" },
         "price": { "type": "number" },
-        "category": { "type": "string", "enum": ["Phones", "Computers", "Electronics"] },
+        "category": { "type": "string" },
         "image": { "type": "string" },
         "videoUrl": { "type": "string" },
-        "stock": { "type": "integer" },
-        "featured": { "type": "boolean" },
+        "stock": { "type": "number" },
         "isVerified": { "type": "boolean" },
-        "likesCount": { "type": "integer" }
+        "featured": { "type": "boolean" }
       },
-      "required": ["name", "price", "category", "image"]
+      "required": ["id", "name", "price", "category", "stock"]
     },
     "Order": {
       "title": "Order",
-      "description": "Customer purchase records.",
+      "description": "Simplified WhatsApp-bound order",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "userId": { "type": "string" },
         "customerName": { "type": "string" },
         "customerPhone": { "type": "string" },
         "items": { "type": "array" },
-        "subtotal": { "type": "number" },
-        "deliveryFee": { "type": "number" },
         "total": { "type": "number" },
-        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Paid", "Packing", "Out for Delivery", "Delivered", "Cancelled"] },
-        "paymentMethod": { "type": "string" },
-        "district": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "delivering", "delivered"] },
         "deliveryAddress": { "type": "string" },
-        "receiptId": { "type": "string" },
-        "notes": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "items", "total", "status", "deliveryAddress", "receiptId"]
-    },
-    "MarketingPost": {
-      "title": "Marketing Post",
-      "description": "Posts created by staff for marketing.",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string" },
-        "content": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "staffId": { "type": "string" },
-        "staffName": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["title", "content", "staffId", "staffName"]
+      "required": ["userId", "items", "total", "status"]
     }
   },
   "firestore": {
-    "users/{userId}": {
-      "schema": "User",
-      "description": "Stores user profiles."
-    },
-    "products/{productId}": {
-      "schema": "Product",
-      "description": "Stores product information."
-    },
-    "orders/{orderId}": {
-      "schema": "Order",
-      "description": "Stores customer orders."
-    },
-    "marketing_posts/{postId}": {
-      "schema": "MarketingPost",
-      "description": "Stores marketing material."
-    }
+    "/users/{userId}": { "schema": "UserProfile", "description": "User accounts" },
+    "/products/{productId}": { "schema": "Product", "description": "Inventory management" },
+    "/orders/{orderId}": { "schema": "Order", "description": "Sales and tracking" }
   }
 }
