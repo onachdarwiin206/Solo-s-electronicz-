@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ShoppingCart, Plus, Loader2, Heart, Star } from 'lucide-react';
+import { ShoppingCart, Plus, Loader2, Heart, Star, Bookmark } from 'lucide-react';
 import { Product } from '../../types';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
@@ -9,6 +9,8 @@ interface ProductCardProps {
   onAddToCart: (product: Product) => void;
   isWishlisted?: boolean;
   onToggleWishlist?: (id: string) => void;
+  isLiked?: boolean;
+  onToggleLike?: (id: string) => void;
   key?: string | number;
 }
 
@@ -16,7 +18,9 @@ export function ProductCard({
   product, 
   onAddToCart, 
   isWishlisted = false,
-  onToggleWishlist 
+  onToggleWishlist,
+  isLiked = false,
+  onToggleLike
 }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
@@ -53,21 +57,43 @@ export function ProductCard({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
         
-        {/* Wishlist Button */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleWishlist?.(product.id);
-          }}
-          className={cn(
-            "absolute top-4 right-4 p-3 rounded-2xl backdrop-blur-md transition-all z-20 border",
-            isWishlisted 
-              ? "bg-pink-600 border-pink-400 text-white shadow-xl shadow-pink-900/40" 
-              : "bg-black/40 border-white/10 text-white hover:bg-black/60"
-          )}
-        >
-          <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
-        </button>
+        {/* Interaction Buttons */}
+        <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleWishlist?.(product.id);
+            }}
+            className={cn(
+              "p-3 rounded-2xl backdrop-blur-md transition-all border",
+              isWishlisted 
+                ? "bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-900/40" 
+                : "bg-black/40 border-white/10 text-white hover:bg-black/60"
+            )}
+            title="Add to Wishlist"
+          >
+            <Bookmark size={18} fill={isWishlisted ? "currentColor" : "none"} />
+          </button>
+
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleLike?.(product.id);
+            }}
+            className={cn(
+              "p-3 rounded-2xl backdrop-blur-md transition-all border flex flex-col items-center gap-0.5",
+              isLiked 
+                ? "bg-pink-600 border-pink-400 text-white shadow-xl shadow-pink-900/40" 
+                : "bg-black/40 border-white/10 text-white hover:bg-black/60"
+            )}
+            title="Like Product"
+          >
+            <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+            {product.likesCount !== undefined && (
+               <span className="text-[8px] font-black">{product.likesCount}</span>
+            )}
+          </button>
+        </div>
 
         <div className="absolute top-4 left-4 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase text-white shadow-lg">
           {product.category}
@@ -75,11 +101,11 @@ export function ProductCard({
       </div>
 
       <div className="p-6">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+        <div className="flex justify-between items-start mb-2 gap-2">
+          <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1">
             {product.name}
           </h3>
-          <p className="text-xl font-mono font-bold text-blue-500">
+          <p className="text-xl font-mono font-bold text-blue-500 whitespace-nowrap">
             UGX {product.price.toLocaleString()}
           </p>
         </div>

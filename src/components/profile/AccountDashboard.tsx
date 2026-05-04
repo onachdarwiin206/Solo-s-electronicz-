@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Clock } from 'lucide-react';
+import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Clock, Bookmark } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { db } from '../../lib/firebase';
 import { doc, updateDoc, deleteDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -17,7 +17,7 @@ interface AccountDashboardProps {
 export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }: AccountDashboardProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'wishlist'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'likes'>('orders');
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -40,6 +40,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   }, [user.id]);
 
   const wishlistProducts = products.filter(p => user.wishlist?.includes(p.id));
+  const likedProducts = products.filter(p => user.likes?.includes(p.id));
 
   return (
     <div className="max-w-7xl mx-auto py-24 px-4 sm:px-6 lg:px-8">
@@ -62,10 +63,17 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
               </button>
               <button 
                 onClick={() => setActiveTab('wishlist')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeTab === 'wishlist' ? 'bg-pink-600 text-white' : 'text-gray-400 hover:bg-white/5'}`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeTab === 'wishlist' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-white/5'}`}
+              >
+                <Bookmark size={20} />
+                <span className="font-bold text-sm">Wishlist</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('likes')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeTab === 'likes' ? 'bg-pink-600 text-white' : 'text-gray-400 hover:bg-white/5'}`}
               >
                 <Heart size={20} />
-                <span className="font-bold text-sm">Wishlist</span>
+                <span className="font-bold text-sm">Liked Items</span>
               </button>
             </div>
           </div>
@@ -167,7 +175,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                   </div>
                 )}
               </motion.div>
-            ) : (
+            ) : activeTab === 'wishlist' ? (
               <motion.div 
                 key="wishlist"
                 initial={{ opacity: 0, x: 20 }}
@@ -176,13 +184,56 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                 className="space-y-6"
               >
                 <div className="mb-12">
-                   <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">Favorites</h2>
+                   <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">Inventory Saved</h2>
                    <p className="text-gray-500 font-mono text-[10px] tracking-widest mt-2 uppercase">Curated Technology Selection</p>
                 </div>
 
                 {wishlistProducts.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {wishlistProducts.map(product => (
+                      <div key={product.id} className="relative group bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-blue-500/30 transition-all duration-500 shadow-2xl">
+                         <div className="aspect-video overflow-hidden relative">
+                            <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+                         </div>
+                         <div className="p-8">
+                            <div className="flex justify-between items-start mb-4">
+                               <h4 className="text-xl font-black text-white tracking-tighter truncate leading-tight uppercase">{product.name}</h4>
+                               <span className="text-blue-500 font-mono font-bold text-xs">UGX {product.price.toLocaleString()}</span>
+                            </div>
+                            <button 
+                              onClick={() => onViewProduct(product.id)}
+                              className="w-full py-4 bg-white/5 hover:bg-white text-gray-300 hover:text-black font-black text-xs uppercase tracking-widest rounded-2xl transition-all border border-white/10 hover:border-white"
+                            >
+                              Explore Detail
+                            </button>
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-20 text-center bg-white/5 rounded-[2rem] border border-dashed border-white/10">
+                    <Bookmark size={40} className="mx-auto text-gray-700 mb-4" />
+                    <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">Your wishlist is empty</p>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="likes"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div className="mb-12">
+                   <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">Appreciated Tech</h2>
+                   <p className="text-gray-500 font-mono text-[10px] tracking-widest mt-2 uppercase">Products you've acknowledged</p>
+                </div>
+
+                {likedProducts.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {likedProducts.map(product => (
                       <div key={product.id} className="relative group bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-pink-500/30 transition-all duration-500 shadow-2xl">
                          <div className="aspect-video overflow-hidden relative">
                             <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
@@ -206,11 +257,12 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                 ) : (
                   <div className="py-20 text-center bg-white/5 rounded-[2rem] border border-dashed border-white/10">
                     <Heart size={40} className="mx-auto text-gray-700 mb-4" />
-                    <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">Your wishlist is empty</p>
+                    <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">You haven't liked anything yet</p>
                   </div>
                 )}
               </motion.div>
-            )}
+            )
+}
           </AnimatePresence>
         </div>
       </div>

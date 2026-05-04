@@ -74,6 +74,12 @@ export default function App() {
             let userData: UserProfile;
             if (userDoc.exists()) {
               userData = userDoc.data() as UserProfile;
+              // Sync name from FB if missing or different
+              const fbName = fbUser.displayName || fbUser.email?.split('@')[0] || 'Guest User';
+              if (!userData.name || (fbUser.displayName && userData.name !== fbUser.displayName)) {
+                await updateDoc(userRef, { name: fbName });
+                userData.name = fbName;
+              }
               // Ensure admin role for specific email
               if (fbUser.email === 'onachdarwiin@gmail.com' && userData.role !== 'admin') {
                 userData.role = 'admin';
@@ -88,6 +94,7 @@ export default function App() {
                 name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Guest User',
                 email: fbUser.email || '',
                 role: fbUser.email === 'onachdarwiin@gmail.com' ? 'admin' : 'customer',
+                wishlist: [],
                 createdAt: serverTimestamp(),
               };
               await setDoc(userRef, userData);
@@ -176,22 +183,46 @@ export default function App() {
     }
   };
 
-  const handleCheckout = async (method: any) => {
+  const handleToggleLike = async (productId: string) => {
     if (!user) {
       handleProfileClick();
       return;
     }
-    
-    // Auto-promote first user to admin for testing purposes in this environment
-    if (user.role === 'customer' && user.email === 'onachdarwiin@gmail.com') {
-      const updatedUser = { ...user, role: 'admin' as const };
-      const path = `users/${user.id}`;
-      try {
-        await setDoc(doc(db, 'users', user.id), updatedUser);
-        setUser(updatedUser);
-      } catch (e) {
-        handleFirestoreError(e, OperationType.WRITE, path);
+
+    const isLiked = user.likes?.includes(productId);
+    const userRef = doc(db, 'users', user.id);
+    const prodRef = doc(db, 'products', productId);
+    const userPath = `users/${user.id}`;
+
+    try {
+      if (isLiked) {
+        await updateDoc(userRef, {
+          likes: arrayRemove(productId)
+        });
+        await updateDoc(prodRef, {
+          likesCount: Math.max(0, (products.find(p => p.id === productId)?.likesCount || 1) - 1)
+        });
+        setUser(prev => prev ? { ...prev, likes: prev.likes?.filter(id => id !== productId) } : null);
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, likesCount: Math.max(0, (p.likesCount || 0) - 1) } : p));
+      } else {
+        await updateDoc(userRef, {
+          likes: arrayUnion(productId)
+        });
+        await updateDoc(prodRef, {
+          likesCount: (products.find(p => p.id === productId)?.likesCount || 0) + 1
+        });
+        setUser(prev => prev ? { ...prev, likes: [...(prev.likes || []), productId] } : null);
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, likesCount: (p.likesCount || 0) + 1 } : p));
       }
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, userPath);
+    }
+  };
+
+  const handleCheckout = async (method: any) => {
+    if (!user) {
+      handleProfileClick();
+      return;
     }
     
     const newOrder: Order = {
@@ -202,24 +233,36 @@ export default function App() {
       total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
       status: 'processing',
       paymentMethod: method,
-      deliveryAddress: 'Default User Address Street, Tech District',
+      deliveryAddress: 'Main Delivery Hub - Lira City Center',
       receiptId: `SOLO-RC-${Date.now()}`,
       createdAt: new Date(),
     };
     
-    // Attempt to save order to Firestore
+    // Attempt to save order to Firestore with robust error handling
     const orderPath = `orders/${newOrder.id}`;
     try {
       await setDoc(doc(db, 'orders', newOrder.id), {
         ...newOrder,
         createdAt: serverTimestamp(),
       });
+      
+      // Update inventory (simplified stock management)
+      for (const item of cart) {
+        const prodRef = doc(db, 'products', item.id);
+        try {
+          await updateDoc(prodRef, {
+            stock: Math.max(0, (item.stock || 0) - item.quantity)
+          });
+        } catch (err) {
+          console.warn(`Could not update stock for product ${item.id}`);
+        }
+      }
+      
+      setOrderResult(newOrder);
+      setCart([]);
     } catch (e) {
-       console.error("Could not save order to Firestore, showing local preview only", e);
+       handleFirestoreError(e, OperationType.WRITE, orderPath);
     }
-    
-    setOrderResult(newOrder);
-    setCart([]);
   };
 
   const t = translations[language];
@@ -310,6 +353,8 @@ export default function App() {
                     onAddToCart={addToCart}
                     isWishlisted={user?.wishlist?.includes(product.id)}
                     onToggleWishlist={handleToggleWishlist}
+                    isLiked={user?.likes?.includes(product.id)}
+                    onToggleLike={handleToggleLike}
                   />
                 ))}
               </div>

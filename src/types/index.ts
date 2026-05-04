@@ -20,6 +20,7 @@ export interface Product {
   stock: number;
   featured?: boolean;
   rating?: number;
+  likesCount?: number;
   reviews?: Review[];
 }
 
@@ -59,5 +60,6 @@ export interface UserProfile {
   email: string;
   role: 'customer' | 'staff' | 'admin';
   wishlist?: string[];
+  likes?: string[];
   createdAt: any;
 }
