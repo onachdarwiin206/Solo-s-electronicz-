@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { 
+  onAuthStateChanged, 
+  User as FirebaseUser, 
+  signInWithPopup, 
+  signOut as firebaseSignOut 
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { auth, db, googleProvider } from '../lib/firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -9,6 +14,8 @@ interface AuthContextType {
   fbUser: FirebaseUser | null;
   loading: boolean;
   isAdmin: boolean;
+  signInWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -30,12 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (userDoc.exists()) {
         const data = userDoc.data() as UserProfile;
-        // Verify admin role consistency
+        // Keep in sync and update lastLogin
+        const updates: any = { lastLogin: serverTimestamp() };
         if (isAdminUser && data.role !== 'admin') {
-          await updateDoc(userRef, { role: 'admin' });
+          updates.role = 'admin';
           data.role = 'admin';
         }
-        setUser(data);
+        await updateDoc(userRef, updates);
+        setUser({ ...data, id: firebaseUser.uid });
       } else {
         const newProfile: UserProfile = {
           id: firebaseUser.uid,
@@ -44,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           phone: firebaseUser.phoneNumber || '',
           role: isAdminUser ? 'admin' : 'customer',
           createdAt: serverTimestamp(),
+          lastLogin: serverTimestamp(),
         };
         await setDoc(userRef, newProfile);
         setUser(newProfile);
@@ -55,19 +65,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
-      if (firebaseUser) {
-        setFbUser(firebaseUser);
-        await fetchProfile(firebaseUser);
-      } else {
-        setFbUser(null);
-        setUser(null);
+      try {
+        if (firebaseUser) {
+          setFbUser(firebaseUser);
+          await fetchProfile(firebaseUser);
+        } else {
+          setFbUser(null);
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Auth state change error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
   }, []);
+
+  const signInWithGoogle = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      console.error("Google Sign In Error:", error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await firebaseSignOut(auth);
+    } catch (error) {
+      console.error("Sign Out Error:", error);
+    }
+  };
 
   const refreshProfile = async () => {
     if (fbUser) {
@@ -78,7 +109,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, fbUser, loading, isAdmin, refreshProfile }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      fbUser, 
+      loading, 
+      isAdmin, 
+      signInWithGoogle, 
+      logout,
+      refreshProfile 
+    }}>
       {children}
     </AuthContext.Provider>
   );

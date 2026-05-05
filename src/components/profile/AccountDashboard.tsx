@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Clock, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { db } from '../../lib/firebase';
+import { useAuth } from '../../context/AuthContext';
 import { doc, updateDoc, deleteDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 import { format } from 'date-fns';
@@ -15,6 +16,7 @@ interface AccountDashboardProps {
 }
 
 export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }: AccountDashboardProps) {
+  const { logout } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'likes'>('orders');
@@ -103,8 +105,8 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
               )}
               <button 
                 onClick={() => {
-                  import('../../lib/firebase').then(({ auth }) => auth.signOut());
-                  window.location.reload();
+                  logout();
+                  window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }));
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 text-red-400 hover:bg-red-500/10 transition-all font-bold text-sm"
               >

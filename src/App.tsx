@@ -27,7 +27,7 @@ type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 
 const WHATSAPP_NUMBER = "256793405517";
 
 export default function App() {
-  const { user, loading: authResolving, isAdmin } = useAuth();
+  const { user, loading: authResolving, isAdmin, logout } = useAuth();
   const [view, setView] = useState<View>('shop');
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +38,21 @@ export default function App() {
   const [showTerms, setShowTerms] = useState(false);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [language, setLanguage] = useState<Language>('en');
+
+  // Handle protected views
+  useEffect(() => {
+    if (authResolving) return;
+    
+    const protectedViews: View[] = ['admin', 'profile'];
+    if (protectedViews.includes(view) && !user) {
+      setView('shop');
+      setLoginModalOpen(true);
+    }
+    
+    if (view === 'admin' && !isAdmin) {
+      setView('shop');
+    }
+  }, [view, user, isAdmin, authResolving]);
 
   useEffect(() => {
     const handleNav = (e: any) => { if (e.detail) setView(e.detail); };
@@ -115,6 +130,39 @@ export default function App() {
     }
   };
 
+  const toggleWishlist = async (productId: string) => {
+    if (!user) { setLoginModalOpen(true); return; }
+    
+    const userRef = doc(db, 'users', user.id);
+    const isWishlisted = user.wishlist?.includes(productId);
+    const newWishlist = isWishlisted 
+      ? user.wishlist?.filter(id => id !== productId) 
+      : [...(user.wishlist || []), productId];
+    
+    try {
+      await updateDoc(userRef, { wishlist: newWishlist });
+      // The AuthContext will pick up the change or we can refresh it
+    } catch (e) {
+      console.error("Wishlist sync error:", e);
+    }
+  };
+
+  const toggleLike = async (productId: string) => {
+    if (!user) { setLoginModalOpen(true); return; }
+    
+    const userRef = doc(db, 'users', user.id);
+    const isLiked = user.likes?.includes(productId);
+    const newLikes = isLiked 
+      ? user.likes?.filter(id => id !== productId) 
+      : [...(user.likes || []), productId];
+    
+    try {
+      await updateDoc(userRef, { likes: newLikes });
+    } catch (e) {
+      console.error("Like sync error:", e);
+    }
+  };
+
   const t = translations[language];
 
   const filteredProducts = products.filter(p => {
@@ -171,7 +219,16 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredProducts.map(product => (
-                      <ProductCard key={product.id} product={product} onAddToCart={addToCart} onClick={() => { setSelectedProduct(product); setView('product-detail'); }} />
+                      <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        onAddToCart={addToCart} 
+                        onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
+                        isWishlisted={user?.wishlist?.includes(product.id)}
+                        onToggleWishlist={toggleWishlist}
+                        isLiked={user?.likes?.includes(product.id)}
+                        onToggleLike={toggleLike}
+                      />
                     ))}
                   </div>
                 </section>

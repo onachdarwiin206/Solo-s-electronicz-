@@ -126,6 +126,14 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
 
   return (
     <div className="max-w-7xl mx-auto py-20 px-4">
+      <button 
+        onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))}
+        className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest group"
+      >
+        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+        Exit Command Center
+      </button>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div className="space-y-4">
           <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">Command Center</h2>
