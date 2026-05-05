@@ -14,7 +14,7 @@ export const analytics = isSupported().then(yes => yes ? getAnalytics(app) : nul
 // to fix connectivity issues in sandboxed/iframe environments.
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
+});
 
 // Proactively enable network to ensure connection attempts start immediately
 enableNetwork(db).catch(err => console.warn("Firestore enableNetwork failed:", err));
@@ -43,11 +43,18 @@ async function testConnection() {
 
     if (isOffline) {
       console.error("%cFirebase Connection Result: OFFLINE / UNAVAILABLE", "color: red; font-weight: bold;");
-      console.warn("ACTION REQUIRED: \n1. Go to Firebase Console (https://console.firebase.google.com/)\n2. Projects -> soloz-aa9a1 -> Build -> Firestore Database\n3. Click 'Create Database' if not already created.\n4. Ensure you are using '(default)' database or update firestoreDatabaseId in config.\n5. Auth -> Settings -> Authorized Domains -> Add: ais-dev-u4d3jlgb5swspoztdkme7a-420958073420.europe-west1.run.app");
+      console.warn("ACTION REQUIRED FOR DEVELOPER: \n" +
+        "1. Open Firebase Console: https://console.firebase.google.com/project/soloz-aa9a1/firestore \n" +
+        "2. Ensure a Database is created in 'Production Mode' (or Test Mode). \n" +
+        "3. Add these domains to Auth/Settings/Authorized Domains: \n" +
+        `   - ${window.location.hostname} \n` +
+        "   - ais-dev-u4d3jlgb5swspoztdkme7a-420958073420.europe-west1.run.app \n" +
+        "   - ais-pre-u4d3jlgb5swspoztdkme7a-420958073420.europe-west1.run.app \n" +
+        "4. If error persists, check if the Firestore API is enabled in Google Cloud Console.");
       
       setTimeout(() => {
         enableNetwork(db).then(() => testConnection());
-      }, 5000);
+      }, 10000); // Increased retry to 10s to reduce noise
     } else if (isPermission) {
       console.log("%cFirebase connected (Access restricted as expected)", "color: orange;");
     } else {
