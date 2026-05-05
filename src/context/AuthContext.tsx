@@ -3,7 +3,10 @@ import {
   onAuthStateChanged, 
   User as FirebaseUser, 
   signInWithPopup, 
-  signOut as firebaseSignOut 
+  signOut as firebaseSignOut,
+  signInWithPhoneNumber,
+  ConfirmationResult,
+  RecaptchaVerifier
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
@@ -15,6 +18,8 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   signInWithGoogle: () => Promise<void>;
+  loginWithPhone: (phoneNumber: string, verifier: RecaptchaVerifier) => Promise<void>;
+  verifyOTP: (code: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -27,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   const fetchProfile = async (firebaseUser: FirebaseUser) => {
     try {
@@ -37,7 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (userDoc.exists()) {
         const data = userDoc.data() as UserProfile;
-        // Keep in sync and update lastLogin
         const updates: any = { lastLogin: serverTimestamp() };
         if (isAdminUser && data.role !== 'admin') {
           updates.role = 'admin';
@@ -92,6 +97,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithPhone = async (phoneNumber: string, verifier: RecaptchaVerifier) => {
+    try {
+      const result = await signInWithPhoneNumber(auth, phoneNumber, verifier);
+      setConfirmationResult(result);
+    } catch (error) {
+      console.error("Phone Auth Login Error:", error);
+      throw error;
+    }
+  };
+
+  const verifyOTP = async (code: string) => {
+    try {
+      if (!confirmationResult) throw new Error("No active verification session");
+      await confirmationResult.confirm(code);
+      setConfirmationResult(null);
+    } catch (error) {
+      console.error("OTP Verification Error:", error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await firebaseSignOut(auth);
@@ -115,6 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading, 
       isAdmin, 
       signInWithGoogle, 
+      loginWithPhone,
+      verifyOTP,
       logout,
       refreshProfile 
     }}>

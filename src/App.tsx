@@ -18,6 +18,7 @@ import { Product, CartItem, Order, UserProfile, PaymentMethod } from './types';
 import { db } from './lib/firebase';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
 import { useAuth } from './context/AuthContext';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { doc, setDoc, serverTimestamp, collection, getDocs, updateDoc } from 'firebase/firestore';
 import { Language, translations } from './translations';
 import { ShieldCheck, ChevronRight, X, UserCog } from 'lucide-react';
@@ -39,20 +40,21 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [language, setLanguage] = useState<Language>('en');
 
-  // Handle protected views
+  // Handle protected views and login trigger
+  useEffect(() => {
+    const handleOpenLogin = () => setLoginModalOpen(true);
+    window.addEventListener('openLogin', handleOpenLogin);
+    return () => window.removeEventListener('openLogin', handleOpenLogin);
+  }, []);
+
   useEffect(() => {
     if (authResolving) return;
     
-    const protectedViews: View[] = ['admin', 'profile'];
-    if (protectedViews.includes(view) && !user) {
-      setView('shop');
-      setLoginModalOpen(true);
-    }
-    
-    if (view === 'admin' && !isAdmin) {
+    // Redirect logic for specific views if needed
+    if (view === 'admin' && !isAdmin && !authResolving) {
       setView('shop');
     }
-  }, [view, user, isAdmin, authResolving]);
+  }, [view, isAdmin, authResolving]);
 
   useEffect(() => {
     const handleNav = (e: any) => { if (e.detail) setView(e.detail); };
@@ -239,14 +241,22 @@ export default function App() {
               <ProductDetail product={selectedProduct} onBack={() => setView('shop')} onAddToCart={addToCart} />
             )}
 
-            {view === 'tracking' && <OrderTracking />}
+            {view === 'tracking' && (
+              <ProtectedRoute>
+                <OrderTracking />
+              </ProtectedRoute>
+            )}
             {view === 'marketing' && <MarketingPortal />}
-            {view === 'admin' && isAdmin && (
-              <AdminDashboard products={products} onProductAdded={(p) => setProducts(prev => [p, ...prev])} />
+            {view === 'admin' && (
+              <ProtectedRoute requireAdmin>
+                <AdminDashboard products={products} onProductAdded={(p) => setProducts(prev => [p, ...prev])} />
+              </ProtectedRoute>
             )}
             
             {view === 'profile' && user && (
-              <AccountDashboard user={user} products={products} onTrackOrder={() => setView('tracking')} onViewProduct={() => setView('shop')} />
+              <ProtectedRoute>
+                <AccountDashboard user={user} products={products} onTrackOrder={() => setView('tracking')} onViewProduct={() => setView('shop')} />
+              </ProtectedRoute>
             )}
           </motion.div>
         </AnimatePresence>

@@ -11,14 +11,20 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
     function isAdmin() {
+      // Primary check: document role
+      // Secondary check for bootstrapping: literal email
       return isSignedIn() && (
-        request.auth.token.email == 'onachdarwiin@gmail.com' && 
-        request.auth.token.email_verified == true
+        (request.auth.token.email == 'onachdarwiin@gmail.com' && request.auth.token.email_verified == true) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
     }
 
@@ -34,10 +40,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && isOwner(userId) && 
-        (incoming().role == 'customer' || (incoming().role == 'admin' && isAdmin()));
+      allow create: if isSignedIn() && isOwner(userId) && isValidId(userId) &&
+        (incoming().role == 'customer' || (incoming().role == 'admin' && isAdmin())) &&
+        incoming().name is string && incoming().name.size() <= 100;
       allow update: if (isOwner(userId) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'district', 'address', 'wishlist', 'likes'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'district', 'address', 'wishlist', 'likes', 'lastLogin'])
       )) || isAdmin();
     }
 

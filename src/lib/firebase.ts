@@ -2,11 +2,16 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { initializeFirestore, doc, getDocFromServer, enableNetwork } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// CRITICAL: Using initializeFirestore with experimentalForceLongPolling to fix connectivity issues in sandboxed environments
+// Initialize Analytics conditionally
+export const analytics = isSupported().then(yes => yes ? getAnalytics(app) : null);
+
+// CRITICAL: Using initializeFirestore with experimentalForceLongPolling
+// to fix connectivity issues in sandboxed/iframe environments.
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
@@ -29,18 +34,24 @@ setPersistence(auth, browserLocalPersistence).catch(err => console.error("Auth p
 async function testConnection() {
   try {
     const start = Date.now();
-    // Using getDocFromServer forces a network check
+    // Using getDocFromServer forces a network check and bypasses cache
     await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log(`Firebase connected successfully in ${Date.now() - start}ms`);
+    console.log(`%cFirebase connected successfully in ${Date.now() - start}ms`, "color: green; font-weight: bold;");
   } catch (error: any) {
-    if (error.code === 'unavailable' || error.message?.includes('offline')) {
-      console.error("Firebase Connection Test Result: SERVICE UNAVAILABLE OR OFFLINE", error);
-      console.warn("Retrying Firestore connection in 5 seconds...");
+    const isOffline = error.code === 'unavailable' || error.message?.includes('offline');
+    const isPermission = error.code === 'permission-denied';
+
+    if (isOffline) {
+      console.error("%cFirebase Connection Result: OFFLINE / UNAVAILABLE", "color: red; font-weight: bold;");
+      console.warn("ACTION REQUIRED: \n1. Go to Firebase Console (https://console.firebase.google.com/)\n2. Projects -> soloz-aa9a1 -> Build -> Firestore Database\n3. Click 'Create Database' if not already created.\n4. Ensure you are using '(default)' database or update firestoreDatabaseId in config.\n5. Auth -> Settings -> Authorized Domains -> Add: ais-dev-u4d3jlgb5swspoztdkme7a-420958073420.europe-west1.run.app");
+      
       setTimeout(() => {
         enableNetwork(db).then(() => testConnection());
       }, 5000);
+    } else if (isPermission) {
+      console.log("%cFirebase connected (Access restricted as expected)", "color: orange;");
     } else {
-      console.log("Firebase initialized (test doc missing or permission restricted, which is expected)", error.message);
+      console.log("Firebase initialized (Status:", error.code, ")", error.message);
     }
   }
 }
