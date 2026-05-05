@@ -8,8 +8,9 @@ import {
   ConfirmationResult,
   RecaptchaVerifier
 } from 'firebase/auth';
+import { loginWithGoogle as firebaseLoginWithGoogle } from '../auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../firebase';
+import { auth, db } from '../firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {
@@ -90,9 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      await firebaseLoginWithGoogle();
     } catch (error: any) {
-      console.error("Google Sign In Error:", error);
+      console.error("Google Sign In Error in Context:", error);
       throw error;
     }
   };
