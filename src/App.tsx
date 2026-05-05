@@ -17,7 +17,7 @@ import { INITIAL_PRODUCTS } from './constants';
 import { Product, CartItem, Order, UserProfile, PaymentMethod } from './types';
 import { db } from './firebase';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { doc, setDoc, serverTimestamp, collection, getDocs, updateDoc } from 'firebase/firestore';
 import { Language, translations } from './translations';
@@ -28,7 +28,14 @@ type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 
 const WHATSAPP_NUMBER = "256793405517";
 
 export default function App() {
-  const { user, loading: authResolving, isAdmin, logout } = useAuth();
+  const { user, fbUser, loading: authResolving, isAdmin, logout } = useAuth();
+
+  useEffect(() => {
+    if (!authResolving) {
+      console.log("Current user console sync:", user);
+      console.log("Firebase user console sync:", fbUser);
+    }
+  }, [user, fbUser, authResolving]);
   const [view, setView] = useState<View>('shop');
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

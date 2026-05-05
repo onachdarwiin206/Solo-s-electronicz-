@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../AuthContext';
 import { Loader2, ShieldAlert } from 'lucide-react';
 
 interface ProtectedRouteProps {

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Chrome, AlertCircle, Loader2, Phone, ArrowRight, CheckCircle, ShieldCheck } from 'lucide-react';
 import { auth, googleProvider } from '../../firebase';
 import { RecaptchaVerifier } from 'firebase/auth';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../AuthContext';
 
 interface LoginModalProps {
   isOpen: boolean;
