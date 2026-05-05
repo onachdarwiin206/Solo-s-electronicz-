@@ -15,7 +15,7 @@ import { ProductDetail } from './components/shop/ProductDetail';
 import { LoginModal } from './components/auth/LoginModal';
 import { INITIAL_PRODUCTS } from './constants';
 import { Product, CartItem, Order, UserProfile, PaymentMethod } from './types';
-import { db } from './lib/firebase';
+import { db } from './firebase';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
 import { useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';

@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Chrome, AlertCircle, Loader2, Phone, ArrowRight, CheckCircle, ShieldCheck } from 'lucide-react';
-import { auth } from '../../lib/firebase';
+import { auth, googleProvider } from '../../firebase';
 import { RecaptchaVerifier } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 
@@ -142,11 +142,15 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     } catch (err: any) {
       let msg = "Google Sign-In failed.";
       if (err.code === 'auth/popup-closed-by-user') return;
-      if (err.code === 'auth/unauthorized-domain') {
-        msg = `Domain Error: Add '${window.location.hostname}' to Authorized Domains.`;
+      
+      if (err.code === 'auth/configuration-not-found') {
+        msg = "Satellite Config Error: Google Sign-in must be ENABLED in the Firebase Console (Auth > Sign-in method).";
+      } else if (err.code === 'auth/unauthorized-domain') {
+        msg = `Domain Error: Add '${window.location.hostname}' to Authorized Domains in Firebase Console.`;
       } else if (err.code === 'auth/popup-blocked') {
-        msg = "Popup blocked. Please allow popups.";
+        msg = "Popup blocked. Please allow popups for authentication.";
       }
+      
       setError(msg);
     } finally {
       setLoading(false);

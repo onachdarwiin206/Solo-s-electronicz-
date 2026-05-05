@@ -9,7 +9,7 @@ import {
   RecaptchaVerifier
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../lib/firebase';
+import { auth, db, googleProvider } from '../firebase';
 import { UserProfile } from '../types';
 
 interface AuthContextType {

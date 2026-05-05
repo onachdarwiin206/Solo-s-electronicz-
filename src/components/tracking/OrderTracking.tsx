@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Truck, Search, MapPin, CheckCircle2, Circle, ArrowLeft, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { db } from '../../lib/firebase';
+import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 import { Order, OrderStatus } from '../../types';

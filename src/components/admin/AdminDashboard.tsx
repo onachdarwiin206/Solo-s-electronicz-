@@ -2,7 +2,7 @@ import { useState, ChangeEvent, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { Product, Category, Order, OrderStatus } from '../../types';
-import { db, storage } from '../../lib/firebase';
+import { db, storage } from '../../firebase';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDocs, orderBy, query, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
