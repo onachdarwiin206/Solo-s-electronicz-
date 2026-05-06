@@ -5,6 +5,7 @@ interface TooltipProps {
   children: React.ReactNode;
   content: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
+  key?: React.Key;
 }
 
 export function Tooltip({ children, content, position = 'top' }: TooltipProps) {

@@ -1,7 +1,7 @@
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye } from 'lucide-react';
+import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye, Star, MessageCircle } from 'lucide-react';
 import { Product } from '../../types';
-import { useState } from 'react';
 import { cn } from '../../lib/utils';
 import { Tooltip } from '../ui/Tooltip';
 
