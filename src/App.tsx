@@ -14,7 +14,10 @@ import { ProductDetail } from './components/shop/ProductDetail';
 import { AdminLoginModal } from './components/auth/LoginModal';
 import { QuickViewModal } from './components/shop/QuickViewModal';
 import { INITIAL_PRODUCTS } from './constants';
-import { Product, CartItem, PaymentMethod } from './types';
+import { db } from './firebase';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from './lib/error-handler';
+import { Product, CartItem, PaymentMethod, Order } from './types';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
@@ -39,6 +42,25 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
+
+  useEffect(() => {
+    setLoadingProducts(true);
+    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedProducts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Product[];
+      setProducts(fetchedProducts);
+      setLoadingProducts(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'products');
+      setLoadingProducts(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Handle admin login trigger
   useEffect(() => {
@@ -105,14 +127,32 @@ export default function App() {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const orderId = `SOLO-ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-    const cartSummary = cart.map(i => `- ${i.name} (x${i.quantity})`).join('\n');
-    const whatsappMessage = `*New Order: ${orderId}*\n\n*Customer:* ${customerName}\n*Items:*\n${cartSummary}\n\n*Total:* UGX ${(subtotal + deliveryFee).toLocaleString()}\n*Delivery:* ${district}, ${address}\n*Contact:* ${phone}\n\n_Hardware Order via Solo App._`;
-    
-    // In local mode, we just trigger WhatsApp directly
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
-    setCart([]);
-    setCartOpen(false);
-    setView('shop'); // Go back to shop as we don't have DB tracking for guests anymore
+    const orderData: Omit<Order, 'id'> = {
+      userId: 'guest',
+      customerName,
+      customerPhone: phone,
+      items: cart,
+      total: subtotal + deliveryFee,
+      status: 'pending',
+      createdAt: serverTimestamp() as any,
+      deliveryAddress: address,
+      district,
+      paymentMethod: method
+    };
+
+    try {
+      await addDoc(collection(db, 'orders'), orderData);
+      
+      const cartSummary = cart.map(i => `- ${i.name} (x${i.quantity})`).join('\n');
+      const whatsappMessage = `*New Order: ${orderId}*\n\n*Customer:* ${customerName}\n*Items:*\n${cartSummary}\n\n*Total:* UGX ${(subtotal + deliveryFee).toLocaleString()}\n*Delivery:* ${district}, ${address}\n*Contact:* ${phone}\n\n_Hardware Order via Solo App._`;
+      
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+      setCart([]);
+      setCartOpen(false);
+      setView('shop');
+    } catch (e) {
+      handleFirestoreError(e, OperationType.CREATE, 'orders');
+    }
   };
 
   const toggleWishlist = (productId: string) => {
@@ -214,17 +254,7 @@ export default function App() {
             {view === 'marketing' && <MarketingPortal />}
             {view === 'admin' && (
               <ProtectedRoute requireAdmin>
-                <AdminDashboard 
-                  products={products} 
-                  onProductAdded={(p) => setProducts(prev => {
-                    const exists = prev.find(item => item.id === p.id);
-                    if (exists) {
-                      return prev.map(item => item.id === p.id ? p : item);
-                    }
-                    return [p, ...prev];
-                  })} 
-                  onProductRemoved={(id) => setProducts(prev => prev.filter(p => p.id !== id))}
-                />
+                <AdminDashboard products={products} />
               </ProtectedRoute>
             )}
             

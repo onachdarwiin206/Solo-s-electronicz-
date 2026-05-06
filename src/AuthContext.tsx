@@ -1,5 +1,8 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
+import { db, auth } from "./firebase";
+import { doc, getDocFromServer } from 'firebase/firestore';
 import { UserProfile } from './types';
+import { handleFirestoreError, OperationType } from './lib/error-handler';
 
 type AuthType = {
   user: UserProfile | null;
@@ -73,14 +76,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isAdmin]);
 
   const loginAsAdmin = async (pin: string) => {
-    // Simulated delay
-    await new Promise(r => setTimeout(r, 500));
-    
-    if (pin === ADMIN_PIN) {
-      setIsAdmin(true);
-      sessionStorage.setItem('admin_auth', 'true');
-      sessionStorage.setItem('admin_last_active', Date.now().toString());
-      return true;
+    const adminPath = 'system/admin';
+    try {
+      const adminDoc = await getDocFromServer(doc(db, adminPath));
+      if (adminDoc.exists()) {
+        const data = adminDoc.data();
+        if (data.pin === pin) {
+          setIsAdmin(true);
+          sessionStorage.setItem('admin_auth', 'true');
+          sessionStorage.setItem('admin_last_active', Date.now().toString());
+          return true;
+        }
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, adminPath);
     }
     return false;
   };

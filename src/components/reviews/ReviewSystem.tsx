@@ -4,6 +4,9 @@ import { Star, MessageSquare, Send, User, Calendar, Loader2, AlertCircle, Quote 
 import { Review, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
 import { cn } from '../../lib/utils';
+import { db } from '../../firebase';
+import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 
 interface ReviewSystemProps {
   product: Product;
@@ -21,11 +24,27 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
   const [hoverRating, setHoverRating] = useState(0);
 
   useEffect(() => {
-    // Simulated fetch
-    setTimeout(() => {
+    setLoading(true);
+    const q = query(
+      collection(db, 'reviews'),
+      where('productId', '==', product.id),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedReviews = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date()
+      })) as Review[];
+      setReviews(fetchedReviews);
       setLoading(false);
-      setReviews([]);
-    }, 500);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'reviews');
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [product.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,28 +52,24 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
     if (!guestName.trim() || rating < 1 || !comment.trim()) return;
 
     setSubmitting(true);
-    // Simulated save
-    setTimeout(() => {
-      const newReview: Review = {
-        id: `LOCAL-REV-${Date.now()}`,
+    try {
+      await addDoc(collection(db, 'reviews'), {
         productId: product.id,
         userId: 'guest',
         userName: guestName.trim(),
         rating,
         comment,
-        createdAt: new Date()
-      };
-      setReviews(prev => [newReview, ...prev]);
-      
-      const allReviews = [newReview, ...reviews];
-      const averageRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-      onReviewAdded?.(averageRating);
+        createdAt: serverTimestamp()
+      });
 
       setComment('');
       setGuestName('');
       setRating(5);
+    } catch (e) {
+      handleFirestoreError(e, OperationType.CREATE, 'reviews');
+    } finally {
       setSubmitting(false);
-    }, 600);
+    }
   };
 
   return (
@@ -166,7 +181,7 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
             <div className="p-6 bg-white/5 border border-white/10 rounded-3xl flex items-start gap-4">
                <AlertCircle size={20} className="text-blue-500 mt-1 flex-shrink-0" />
                <p className="text-[11px] text-gray-500 leading-relaxed uppercase font-medium">
-                 Reviews are currently local and temporary. Persistence is handled via secure WhatsApp verification in production.
+                 Reviews are cloud-synced and verified. Your technical feedback helps the Solo engineering community.
                </p>
             </div>
           </div>

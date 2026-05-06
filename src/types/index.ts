@@ -48,6 +48,7 @@ export interface Order {
   district?: string;
   createdAt: any;
   receiptId?: string;
+  paymentMethod?: PaymentMethod;
 }
 
 export type PaymentMethod = 'cod' | 'mobile_money';

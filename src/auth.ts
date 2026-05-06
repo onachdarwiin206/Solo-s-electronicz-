@@ -1,4 +1,12 @@
+import { auth, googleProvider } from "./firebase";
+import { signInWithPopup } from "firebase/auth";
+
 export const loginWithGoogle = async () => {
-  console.warn("Google Login is disabled in local mode.");
-  return null;
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.error("Login error:", error);
+    return null;
+  }
 };

@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { Product, Category, Order, OrderStatus } from '../../types';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
+import { db, storage } from '../../firebase';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 
 interface AdminDashboardProps {
   products: Product[];
-  onProductAdded: (product: Product) => void;
-  onProductRemoved: (id: string) => void;
 }
 
-export function AdminDashboard({ products, onProductAdded, onProductRemoved }: AdminDashboardProps) {
+export function AdminDashboard({ products }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -30,34 +32,83 @@ export function AdminDashboard({ products, onProductAdded, onProductRemoved }: A
     isVerified: true
   });
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+  useEffect(() => {
+    setLoadingOrders(true);
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
+      setLoadingOrders(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders');
+      setLoadingOrders(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      await updateDoc(doc(db, 'orders', orderId), { status });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
+    }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // In local mode, we'll use placeholder or local URL
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
+    if (!file) return;
+
+    setSubmitting(true);
+    try {
+      const storageRef = ref(storage, `products/${Date.now()}-${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      
       if (file.type.startsWith('video/')) {
         setNewProduct(prev => ({ ...prev, videoUrl: url, videoDuration: 30 }));
       } else {
         setNewProduct(prev => ({ ...prev, image: url }));
       }
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, 'storage');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!newProduct.name || !newProduct.price || !newProduct.image) return;
     setSubmitting(true);
     
-    // Simulate save
-    setTimeout(() => {
-      const data = { ...newProduct, id: editingId || `LOCAL-${Date.now()}` } as Product;
-      onProductAdded(data);
+    try {
+      const data = {
+        ...newProduct,
+        updatedAt: serverTimestamp()
+      };
+
+      if (editingId) {
+        await updateDoc(doc(db, 'products', editingId), data);
+      } else {
+        await addDoc(collection(db, 'products'), {
+          ...data,
+          createdAt: serverTimestamp(),
+          rating: 0
+        });
+      }
       resetForm();
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, 'products');
+    } finally {
       setSubmitting(false);
-    }, 500);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to remove this asset?')) return;
+    try {
+      await deleteDoc(doc(db, 'products', id));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, `products/${id}`);
+    }
   };
 
   const resetForm = () => {
@@ -153,7 +204,7 @@ export function AdminDashboard({ products, onProductAdded, onProductRemoved }: A
                 className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-xl italic uppercase flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
-                {editingId ? 'Modify Local Asset' : 'Commit to Local Inventory'}
+                {editingId ? 'Modify Cloud Asset' : 'Commit to Cloud Inventory'}
               </button>
             </div>
           </div>
@@ -169,20 +220,22 @@ export function AdminDashboard({ products, onProductAdded, onProductRemoved }: A
                 <h4 className="text-white font-black uppercase italic tracking-tighter truncate">{p.name}</h4>
                 <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
                 <div className="flex items-center gap-4 mt-2">
-                   <div className="flex items-center bg-black/40 rounded-lg px-2 border border-white/10">
-                      <Tooltip content="Stock Control (Local)">
-                        <button className="px-2 py-1 text-gray-500 hover:text-white">-</button>
-                      </Tooltip>
+                <div className="flex items-center bg-black/40 rounded-lg px-2 border border-white/10">
+                      <button 
+                        onClick={() => updateDoc(doc(db, 'products', p.id), { stock: Math.max(0, (p.stock || 0) - 1) })}
+                        className="px-2 py-1 text-gray-500 hover:text-white"
+                      >-</button>
                       <span className="px-2 font-mono text-xs text-white">{p.stock}</span>
-                      <Tooltip content="Stock Control (Local)">
-                        <button className="px-2 py-1 text-gray-500 hover:text-white">+</button>
-                      </Tooltip>
+                      <button 
+                        onClick={() => updateDoc(doc(db, 'products', p.id), { stock: (p.stock || 0) + 1 })}
+                        className="px-2 py-1 text-gray-500 hover:text-white"
+                      >+</button>
                    </div>
                    <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase">Edit</button>
                 </div>
               </div>
-                <Tooltip content="Remove (Local)" position="left">
-                  <button onClick={() => onProductRemoved(p.id)} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Tooltip content="Remove (Cloud)" position="left">
+                  <button onClick={() => handleDelete(p.id)} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 size={14} className="text-red-500/50 hover:text-red-500" />
                   </button>
                 </Tooltip>
@@ -191,9 +244,67 @@ export function AdminDashboard({ products, onProductAdded, onProductRemoved }: A
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">
-             Logistics Database Offline (Local Mode)
-          </div>
+          {loadingOrders ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="animate-spin text-blue-500" size={32} />
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">
+               No Active Logistical Requests
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {orders.map((order) => (
+                <div key={order.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl">
+                  <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{order.id}</span>
+                        <span className="text-gray-500 text-xs font-bold">{format(order.createdAt?.toDate ? order.createdAt.toDate() : new Date(), 'MMM dd, HH:mm')}</span>
+                      </div>
+                      <h4 className="text-lg font-bold text-white uppercase">{order.deliveryAddress}</h4>
+                      <p className="text-blue-500 font-mono text-sm">{order.phone}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(['pending', 'confirmed', 'delivering', 'delivered'] as OrderStatus[]).map((status) => {
+                        const Icon = statusMap[status].icon;
+                        return (
+                          <button
+                            key={status}
+                            onClick={() => updateOrderStatus(order.id, status)}
+                            className={cn(
+                              "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                              order.status === status 
+                                ? "bg-white text-black" 
+                                : "bg-white/5 text-gray-500 hover:bg-white/10"
+                            )}
+                          >
+                            <Icon size={12} />
+                            {status}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="border-t border-white/5 pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-4">
+                        <img src={item.image} className="w-12 h-12 rounded-xl object-cover" />
+                        <div>
+                          <p className="text-xs font-bold text-white uppercase">{item.name}</p>
+                          <p className="text-[10px] text-gray-500">Qty: {item.quantity}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="lg:col-start-4 text-right">
+                       <p className="text-[10px] text-gray-500 font-black uppercase mb-1">Total Payload</p>
+                       <p className="text-white font-black text-xl italic tracking-tighter">UGX {order.total.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

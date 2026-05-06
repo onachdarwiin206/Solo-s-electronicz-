@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
+import { db } from '../../firebase';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 
 interface AccountDashboardProps {
   user: UserProfile;
@@ -18,11 +21,22 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'likes'>('orders');
 
   useEffect(() => {
-    // Simulated fetch
-    setTimeout(() => {
+    setLoading(true);
+    const q = query(
+      collection(db, 'orders'),
+      where('userId', '==', user.id),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
       setLoading(false);
-      setOrders([]);
-    }, 600);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders');
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user.id]);
 
   const wishlistProducts = products.filter(p => user.wishlist?.includes(p.id));
@@ -108,7 +122,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                </div>
                <div>
                   <p className="text-white font-bold text-xs">Customer History</p>
-                  <p className="text-gray-500 text-[10px]">Logistics: Offline Mode</p>
+                  <p className="text-gray-500 text-[10px]">Logistics: Cloud Synced</p>
                </div>
             </div>
           </div>
