@@ -36,6 +36,17 @@ export default function App() {
       console.log("Firebase user console sync:", fbUser);
     }
   }, [user, fbUser, authResolving]);
+
+  if (authResolving) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+        <BackgroundSlideshow />
+        <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin z-10" />
+        <p className="mt-4 text-white font-black tracking-widest uppercase italic animate-pulse">Syncing Hardware Feed...</p>
+      </div>
+    );
+  }
+
   const [view, setView] = useState<View>('shop');
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,15 +191,6 @@ export default function App() {
                          p.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
-  if (authResolving) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-        <BackgroundSlideshow />
-        <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin z-10" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen">
