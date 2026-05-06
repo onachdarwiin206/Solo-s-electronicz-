@@ -11,8 +11,7 @@ interface AdminLoginModalProps {
 export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pin, setPin] = useState('');
-  const { loginAsAdmin, loginWithGoogleAdmin } = useAuth();
+  const { loginWithGoogleAdmin } = useAuth();
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -22,22 +21,6 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
       onClose();
     } else {
       setError("Restricted Access: Your account is not in the authorized 5-person admin whitelist.");
-    }
-    setLoading(false);
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const success = await loginAsAdmin(pin);
-    
-    if (success) {
-      onClose();
-    } else {
-      setError("Authorization denied. Invalid security PIN.");
-      setPin('');
     }
     setLoading(false);
   };
@@ -76,10 +59,10 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
 
                 <div className="mb-10 text-center">
                   <h2 className="text-4xl font-black tracking-tighter text-white mb-3 uppercase italic">
-                    Level 1 Access
+                    Admin Terminal
                   </h2>
                   <p className="text-gray-500 text-xs font-bold uppercase tracking-widest leading-relaxed">
-                    Input security override PIN to access terminal controls.
+                    Identity verification required for command access.
                   </p>
                 </div>
 
@@ -91,60 +74,23 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
                   >
                     <AlertCircle size={16} className="shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest">Protocol Failure</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest">Access Denied</p>
                       <p className="text-xs font-medium leading-tight">{error}</p>
                     </div>
                   </motion.div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center block">Security PIN</label>
-                    <div className="relative">
-                      <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
-                      <input 
-                        type="password"
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value)}
-                        required
-                        autoFocus
-                        maxLength={4}
-                        className="w-full bg-black/40 border border-white/10 rounded-3xl p-6 pl-16 text-white placeholder:text-gray-800 outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-4xl tracking-[0.8em]"
-                        placeholder="••••"
-                      />
-                    </div>
-                  </div>
-
-                  <button 
-                    type="submit"
-                    disabled={loading || pin.length < 4}
-                    className="group w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition-all shadow-xl shadow-blue-500/10 uppercase tracking-widest text-xs flex items-center justify-center gap-3 disabled:opacity-50 disabled:grayscale"
-                  >
-                    {loading ? <Loader2 className="animate-spin" size={20} /> : (
-                      <>
-                        Initialize Override
-                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                <div className="relative my-8">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/5"></div>
-                  </div>
-                  <div className="relative flex justify-center text-[8px] uppercase tracking-widest font-black">
-                    <span className="bg-neutral-900 px-4 text-gray-600 italic">Identity Verification Required</span>
-                  </div>
-                </div>
-
                 <button 
                   onClick={handleGoogleLogin}
                   disabled={loading}
-                  className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black rounded-3xl transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-3"
+                  className="w-full py-8 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-[2rem] transition-all shadow-xl shadow-blue-500/20 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-4 disabled:opacity-50"
                 >
-                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-4 h-4" alt="Google" />
-                  Secure Google Sign-In
+                  {loading ? <Loader2 className="animate-spin" size={20} /> : (
+                    <>
+                      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 brightness-200 grayscale contrast-200" alt="Google" />
+                      Whitelisted Google Login
+                    </>
+                  )}
                 </button>
 
                 <div className="mt-12 text-center">

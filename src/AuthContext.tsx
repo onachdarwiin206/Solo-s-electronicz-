@@ -8,7 +8,6 @@ type AuthType = {
   user: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
-  loginAsAdmin: (pin: string) => Promise<boolean>;
   loginWithGoogleAdmin: () => Promise<boolean>;
   logout: () => void;
 };
@@ -17,13 +16,11 @@ const AuthContext = createContext<AuthType>({
   user: null,
   loading: true,
   isAdmin: false,
-  loginAsAdmin: async () => false,
   loginWithGoogleAdmin: async () => false,
   logout: () => {}
 });
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-const ADMIN_PIN = "8585";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -110,25 +107,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
-  const loginAsAdmin = async (pin: string) => {
-    const adminPath = 'system/admin';
-    try {
-      const adminDoc = await getDocFromServer(doc(db, adminPath));
-      if (adminDoc.exists()) {
-        const data = adminDoc.data();
-        if (data.pin === pin) {
-          setIsAdmin(true);
-          sessionStorage.setItem('admin_auth', 'true');
-          sessionStorage.setItem('admin_last_active', Date.now().toString());
-          return true;
-        }
-      }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.GET, adminPath);
-    }
-    return false;
-  };
-
   const logout = () => {
     setIsAdmin(false);
     sessionStorage.removeItem('admin_auth');
@@ -141,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user: null,
         loading,
         isAdmin,
-        loginAsAdmin,
+        loginWithGoogleAdmin,
         logout
       }}
     >
