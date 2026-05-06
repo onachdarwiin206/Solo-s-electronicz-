@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const BACKGROUNDS = [
-  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop', // Deep Blue
-  'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop', // Purple Tech
-  'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop', // Cyan Circuit
-  'https://images.unsplash.com/photo-1531297484001-80022131f5a1?q=80&w=2020&auto=format&fit=crop', // Dark Modern
+  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=60&w=1200&auto=format&fit=crop', // Deep Blue
+  'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=60&w=1200&auto=format&fit=crop', // Purple Tech
+  'https://images.unsplash.com/photo-1518770660439-4636190af475?q=60&w=1200&auto=format&fit=crop', // Cyan Circuit
+  'https://images.unsplash.com/photo-1531297484001-80022131f5a1?q=60&w=1200&auto=format&fit=crop', // Dark Modern
 ];
 
 export function BackgroundSlideshow() {
@@ -34,6 +34,7 @@ export function BackgroundSlideshow() {
             src={BACKGROUNDS[index]} 
             alt="Background" 
             className="w-full h-full object-cover"
+            {...({ "fetchPriority": index === 0 ? "high" : "low" } as any)}
           />
         </motion.div>
       </AnimatePresence>

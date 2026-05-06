@@ -14,6 +14,8 @@ export interface Product {
   isVerified?: boolean;
   rating?: number;
   likesCount?: number;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export type Category = 'Phones' | 'Computers' | 'Electronics' | 'Accessories';

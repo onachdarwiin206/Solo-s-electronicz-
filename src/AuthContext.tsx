@@ -9,6 +9,7 @@ type AuthType = {
   loading: boolean;
   isAdmin: boolean;
   loginAsAdmin: (pin: string) => Promise<boolean>;
+  loginWithGoogleAdmin: () => Promise<boolean>;
   logout: () => void;
 };
 
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthType>({
   loading: true,
   isAdmin: false,
   loginAsAdmin: async () => false,
+  loginWithGoogleAdmin: async () => false,
   logout: () => {}
 });
 
@@ -74,6 +76,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       sessionStorage.setItem('admin_last_active', Date.now().toString());
     }
   }, [isAdmin]);
+
+  const loginWithGoogleAdmin = async () => {
+    const adminPath = 'system/admin';
+    try {
+      const { loginWithGoogle } = await import('./auth');
+      const user = await loginWithGoogle();
+      
+      if (!user || !user.email) return false;
+
+      const adminDoc = await getDocFromServer(doc(db, adminPath));
+      if (adminDoc.exists()) {
+        const data = adminDoc.data();
+        let allowedEmails = data.allowedEmails || [];
+        
+        // Bootstrap: If list is empty, the first person to try is whitelisted
+        if (allowedEmails.length === 0) {
+          const { updateDoc } = await import('firebase/firestore');
+          await updateDoc(doc(db, adminPath), { allowedEmails: [user.email] });
+          allowedEmails = [user.email];
+        }
+
+        if (allowedEmails.includes(user.email)) {
+          setIsAdmin(true);
+          sessionStorage.setItem('admin_auth', 'true');
+          sessionStorage.setItem('admin_last_active', Date.now().toString());
+          return true;
+        }
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, adminPath);
+    }
+    return false;
+  };
 
   const loginAsAdmin = async (pin: string) => {
     const adminPath = 'system/admin';

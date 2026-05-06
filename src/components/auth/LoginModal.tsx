@@ -12,7 +12,19 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pin, setPin] = useState('');
-  const { loginAsAdmin } = useAuth();
+  const { loginAsAdmin, loginWithGoogleAdmin } = useAuth();
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    const success = await loginWithGoogleAdmin();
+    if (success) {
+      onClose();
+    } else {
+      setError("Restricted Access: Your account is not in the authorized 5-person admin whitelist.");
+    }
+    setLoading(false);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -116,6 +128,24 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
                     )}
                   </button>
                 </form>
+
+                <div className="relative my-8">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/5"></div>
+                  </div>
+                  <div className="relative flex justify-center text-[8px] uppercase tracking-widest font-black">
+                    <span className="bg-neutral-900 px-4 text-gray-600 italic">Identity Verification Required</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black rounded-3xl transition-all uppercase tracking-widest text-[10px] flex items-center justify-center gap-3"
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-4 h-4" alt="Google" />
+                  Secure Google Sign-In
+                </button>
 
                 <div className="mt-12 text-center">
                   <p className="text-[8px] text-gray-600 font-bold uppercase tracking-[0.2em] leading-loose max-w-[240px] mx-auto">

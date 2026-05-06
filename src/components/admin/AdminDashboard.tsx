@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
 import { Product, Category, Order, OrderStatus } from '../../types';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
@@ -54,18 +54,23 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
 }
 
 export function AdminDashboard({ products }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'admins'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [allowedEmails, setAllowedEmails] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState('');
 
   useEffect(() => {
     const checkSync = async () => {
       try {
-        await getDocFromServer(doc(db, 'system', 'admin'));
+        const adminDoc = await getDocFromServer(doc(db, 'system', 'admin'));
+        if (adminDoc.exists()) {
+          setAllowedEmails(adminDoc.data().allowedEmails || []);
+        }
         setIsSyncing(true);
       } catch (e) {
         setIsSyncing(false);
@@ -73,6 +78,26 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
     };
     checkSync();
   }, []);
+
+  const updateAllowedEmails = async (newList: string[]) => {
+    if (newList.length > 5) return;
+    try {
+      await updateDoc(doc(db, 'system', 'admin'), { allowedEmails: newList });
+      setAllowedEmails(newList);
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, 'system/admin');
+    }
+  };
+
+  const handleAddEmail = () => {
+    if (!newEmail || allowedEmails.length >= 5 || allowedEmails.includes(newEmail)) return;
+    updateAllowedEmails([...allowedEmails, newEmail]);
+    setNewEmail('');
+  };
+
+  const handleRemoveEmail = (email: string) => {
+    updateAllowedEmails(allowedEmails.filter(e => e !== email));
+  };
 
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
@@ -163,14 +188,17 @@ _Thank you for choosing Solo Electronics!_
       };
 
       if (editingId) {
+        console.log(`[Admin] Updating product: ${editingId}`, data);
         await updateDoc(doc(db, 'products', editingId), data);
       } else {
+        console.log("[Admin] Adding new product", data);
         await addDoc(collection(db, 'products'), {
           ...data,
           createdAt: serverTimestamp(),
-          rating: 0
+          rating: 5
         });
       }
+      console.log("[Admin] Product operation successful");
       resetForm();
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, 'products');
@@ -222,7 +250,7 @@ _Thank you for choosing Solo Electronics!_
             </div>
           </div>
           <div className="flex gap-2">
-            {['inventory', 'orders'].map((tab) => (
+            {['inventory', 'orders', 'admins'].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all", activeTab === tab ? "bg-blue-600 text-white" : "bg-white/5 text-gray-500 border border-white/10 hover:bg-white/10")}>{tab}</button>
             ))}
           </div>
@@ -296,7 +324,7 @@ _Thank you for choosing Solo Electronics!_
         </motion.div>
       )}
 
-      {activeTab === 'inventory' ? (
+      {activeTab === 'inventory' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map(p => (
             <div key={p.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl flex items-center gap-6 relative group overflow-hidden">
@@ -327,7 +355,9 @@ _Thank you for choosing Solo Electronics!_
             </div>
           ))}
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'orders' && (
         <div className="space-y-6">
           {loadingOrders ? (
             <div className="flex items-center justify-center py-20">
@@ -341,6 +371,7 @@ _Thank you for choosing Solo Electronics!_
             <div className="grid grid-cols-1 gap-6">
               {orders.map((order) => (
                 <div key={order.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl">
+                  {/* ... order content exists ... */}
                   <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
@@ -400,6 +431,65 @@ _Thank you for choosing Solo Electronics!_
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'admins' && (
+        <div className="max-w-2xl bg-white/5 border border-white/10 rounded-[2.5rem] p-10">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+               <ShieldCheck className="text-blue-500" size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Identity Whitelist</h3>
+              <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Restricted to 5 Authorized Personnel</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <input 
+                placeholder="Google Account Email (e.g. name@gmail.com)"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-700"
+              />
+              <button 
+                onClick={handleAddEmail}
+                disabled={allowedEmails.length >= 5 || !newEmail}
+                className="px-8 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:grayscale text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg transition-all"
+              >
+                Whitelist
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {allowedEmails.map((email) => (
+                <div key={email} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-sm font-bold text-white">{email}</span>
+                  </div>
+                  <button onClick={() => handleRemoveEmail(email)} className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-500/50 hover:text-red-500">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+              
+              {[...Array(5 - allowedEmails.length)].map((_, i) => (
+                <div key={i} className="p-4 border border-dashed border-white/5 rounded-2xl flex items-center justify-center">
+                  <span className="text-[8px] font-black text-gray-700 uppercase tracking-[0.3em]">Identity Slot {allowedEmails.length + i + 1} Available</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-10 p-6 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-start gap-4">
+             <AlertCircle size={18} className="text-blue-500 shrink-0 mt-0.5" />
+             <p className="text-[10px] font-medium text-blue-300 leading-relaxed uppercase tracking-wider">
+               *Note:* These individuals will be required to verify their identity via Secure Google Sign-In to access the Command Center.
+             </p>
+          </div>
         </div>
       )}
     </div>

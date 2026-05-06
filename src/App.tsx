@@ -54,22 +54,30 @@ export default function App() {
 
   useEffect(() => {
     setLoadingProducts(true);
-    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    console.log("[Firestore] Subscribing to products collection...");
+    const q = collection(db, 'products');
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log(`[Firestore] Snapshot received. Document count: ${snapshot.size}`);
       const fetchedProducts = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data({ serverTimestamps: 'estimate' })
       })) as Product[];
       
-      // If DB has products, use them. Otherwise fallback to INITIAL_PRODUCTS for demo feel.
       if (fetchedProducts.length > 0) {
+        fetchedProducts.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis?.() || a.updatedAt?.toMillis?.() || Date.now();
+          const timeB = b.createdAt?.toMillis?.() || b.updatedAt?.toMillis?.() || Date.now();
+          return timeB - timeA;
+        });
+        console.log("[Firestore] Updating products state with fetched data");
         setProducts(fetchedProducts);
       } else {
-        setProducts(INITIAL_PRODUCTS);
+        console.log("[Firestore] Collection empty, persisting initial products");
       }
       setLoadingProducts(false);
     }, (error) => {
+      console.error("[Firestore] Subscription error:", error);
       handleFirestoreError(error, OperationType.LIST, 'products');
       setLoadingProducts(false);
     });

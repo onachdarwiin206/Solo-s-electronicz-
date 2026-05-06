@@ -71,7 +71,12 @@
       "description": "System-wide admin settings",
       "type": "object",
       "properties": {
-        "pin": { "type": "string" }
+        "pin": { "type": "string" },
+        "allowedEmails": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "Whitelist of up to 5 admin emails"
+        }
       },
       "required": ["pin"]
     }
