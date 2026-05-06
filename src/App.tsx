@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
 import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
@@ -7,12 +7,6 @@ import { Hero } from './components/home/Hero';
 import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
 import { Footer } from './components/layout/Footer';
-import { OrderTracking } from './components/tracking/OrderTracking';
-import { MarketingPortal } from './components/marketing/MarketingPortal';
-import { AdminDashboard } from './components/admin/AdminDashboard';
-import { ProductDetail } from './components/shop/ProductDetail';
-import { AdminLoginModal } from './components/auth/LoginModal';
-import { QuickViewModal } from './components/shop/QuickViewModal';
 import { INITIAL_PRODUCTS } from './constants';
 import { db } from './firebase';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -22,6 +16,13 @@ import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
 import { ShieldCheck, ChevronRight, X, UserCog, Loader2 } from 'lucide-react';
+
+const OrderTracking = lazy(() => import('./components/tracking/OrderTracking').then(module => ({ default: module.OrderTracking })));
+const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal').then(module => ({ default: module.MarketingPortal })));
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const ProductDetail = lazy(() => import('./components/shop/ProductDetail').then(module => ({ default: module.ProductDetail })));
+const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal').then(module => ({ default: module.QuickViewModal })));
+const AdminLoginModal = lazy(() => import('./components/auth/LoginModal').then(module => ({ default: module.AdminLoginModal })));
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
 
@@ -42,6 +43,14 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
+
+  // Prefetch Admin Dashboard when modal is opened for instant switch
+  useEffect(() => {
+    if (isAdminModalOpen) {
+      const prefetch = import('./components/admin/AdminDashboard');
+      // We don't need to do anything with the result, the browser will cache it
+    }
+  }, [isAdminModalOpen]);
 
   useEffect(() => {
     setLoadingProducts(true);
@@ -202,67 +211,68 @@ export default function App() {
       <main className="pb-24 md:pb-0">
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            {view === 'shop' && (
-              <>
-                {!category && (
-                  <Hero onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
-                )}
-                <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="flex justify-between items-end mb-12">
-                     <h2 className="text-4xl font-black tracking-tighter uppercase italic">{category || 'Hardware Feed'}</h2>
-                     <div className="flex items-center gap-4">
-                        {loadingProducts && <Loader2 size={16} className="animate-spin text-blue-500" />}
-                        <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filteredProducts.length} Results</span>
-                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {loadingProducts ? (
-                      [...Array(6)].map((_, i) => (
-                        <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
-                           <div className="aspect-square bg-white/5" />
-                           <div className="p-6 space-y-4">
-                              <div className="h-6 bg-white/5 rounded-full w-3/4" />
-                              <div className="h-4 bg-white/5 rounded-full w-1/4" />
-                              <div className="h-12 bg-white/5 rounded-2xl w-full" />
-                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      filteredProducts.map(product => (
-                        <ProductCard 
-                          key={product.id} 
-                          product={product} 
-                          onAddToCart={addToCart} 
-                          onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
-                          onQuickView={(p) => setQuickViewProduct(p)}
-                          isWishlisted={wishlist.includes(product.id)}
-                          onToggleWishlist={toggleWishlist}
-                          isLiked={likes.includes(product.id)}
-                          onToggleLike={toggleLike}
-                        />
-                      ))
-                    )}
-                  </div>
-                </section>
-              </>
-            )}
+            <Suspense fallback={<div className="flex items-center justify-center py-40"><Loader2 className="animate-spin text-blue-500" size={48} /></div>}>
+              {view === 'shop' && (
+                <>
+                  {!category && (
+                    <Hero onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
+                  )}
+                  <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-end mb-12">
+                       <h2 className="text-4xl font-black tracking-tighter uppercase italic">{category || 'Hardware Feed'}</h2>
+                       <div className="flex items-center gap-4">
+                          {loadingProducts && <Loader2 size={16} className="animate-spin text-blue-500" />}
+                          <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filteredProducts.length} Results</span>
+                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {loadingProducts ? (
+                        [...Array(6)].map((_, i) => (
+                          <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
+                             <div className="aspect-square bg-white/5" />
+                             <div className="p-6 space-y-4">
+                                <div className="h-6 bg-white/5 rounded-full w-3/4" />
+                                <div className="h-4 bg-white/5 rounded-full w-1/4" />
+                                <div className="h-12 bg-white/5 rounded-2xl w-full" />
+                             </div>
+                          </div>
+                        ))
+                      ) : (
+                        filteredProducts.map(product => (
+                          <ProductCard 
+                            key={product.id} 
+                            product={product} 
+                            onAddToCart={addToCart} 
+                            onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
+                            onQuickView={(p) => setQuickViewProduct(p)}
+                            isWishlisted={wishlist.includes(product.id)}
+                            onToggleWishlist={toggleWishlist}
+                            isLiked={likes.includes(product.id)}
+                            onToggleLike={toggleLike}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </section>
+                </>
+              )}
 
-            {view === 'product-detail' && selectedProduct && (
-              <ProductDetail product={selectedProduct} onBack={() => setView('shop')} onAddToCart={addToCart} />
-            )}
+              {view === 'product-detail' && selectedProduct && (
+                <ProductDetail product={selectedProduct} onBack={() => setView('shop')} onAddToCart={addToCart} />
+              )}
 
-            {view === 'tracking' && (
-              <ProtectedRoute>
-                <OrderTracking />
-              </ProtectedRoute>
-            )}
-            {view === 'marketing' && <MarketingPortal />}
-            {view === 'admin' && (
-              <ProtectedRoute requireAdmin>
-                <AdminDashboard products={products} />
-              </ProtectedRoute>
-            )}
-            
+              {view === 'tracking' && (
+                <ProtectedRoute>
+                  <OrderTracking />
+                </ProtectedRoute>
+              )}
+              {view === 'marketing' && <MarketingPortal />}
+              {view === 'admin' && (
+                <ProtectedRoute requireAdmin>
+                  <AdminDashboard products={products} />
+                </ProtectedRoute>
+              )}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
 
@@ -282,8 +292,11 @@ export default function App() {
 
       <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
       <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
-      <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
-      <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
+      
+      <Suspense fallback={null}>
+        <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
+        <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
+      </Suspense>
 
       <AnimatePresence>
         {showTerms && (

@@ -19,9 +19,6 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
     setLoading(true);
     setError(null);
 
-    // Artificial delay for "security" feel
-    await new Promise(r => setTimeout(r, 600));
-
     const success = await loginAsAdmin(pin);
     
     if (success) {
