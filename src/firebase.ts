@@ -1,6 +1,12 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { initializeFirestore, doc, getDocFromServer } from "firebase/firestore";
+import { 
+  initializeFirestore, 
+  doc, 
+  getDocFromServer, 
+  enableIndexedDbPersistence,
+  CACHE_SIZE_UNLIMITED
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -15,18 +21,35 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
-// CRITICAL: experimentalForceLongPolling is REQURIED for Firestore to work in this preview environment
+
+// Optimized for AI Studio Preview
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
-});
+  useFetchStreams: false,
+} as any);
+
+// Enable persistence for better offline/local experience
+try {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn("Multiple tabs open, persistence can only be enabled in one tab at a time.");
+    } else if (err.code === 'unimplemented') {
+      console.warn("The current browser does not support all of the features required to enable persistence.");
+    }
+  });
+} catch (e) {
+  console.error("Persistence initialization failed", e);
+}
 
 async function testConnection() {
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    console.log("Checking cloud sync status...");
+    // Attempting a server-forced fetch to verify connectivity
+    await getDocFromServer(doc(db, 'system', 'admin'));
+    console.log("Cloud Infrastructure: ONLINE");
   } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration or network. Firestore client is offline.");
-    }
+    console.warn("Cloud Infrastructure: OFFLINE. Switching to local-first mode with background sync.");
+    console.error("Connection Error:", error);
   }
 }
 testConnection();

@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
 import { db, storage } from '../../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, onSnapshot, getDocFromServer } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 
@@ -21,6 +21,20 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true);
+
+  useEffect(() => {
+    const checkSync = async () => {
+      try {
+        await getDocFromServer(doc(db, 'system', 'admin'));
+        setIsSyncing(true);
+      } catch (e) {
+        setIsSyncing(false);
+      }
+    };
+    checkSync();
+  }, []);
+
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     description: '',
@@ -135,7 +149,15 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div className="space-y-4">
-          <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">Command Center</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">Command Center</h2>
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+               <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isSyncing ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]")} />
+               <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">
+                 {isSyncing ? "SYNCED" : "OFFLINE"}
+               </p>
+            </div>
+          </div>
           <div className="flex gap-2">
             {['inventory', 'orders'].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all", activeTab === tab ? "bg-blue-600 text-white" : "bg-white/5 text-gray-500 border border-white/10 hover:bg-white/10")}>{tab}</button>

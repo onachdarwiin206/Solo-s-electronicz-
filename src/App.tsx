@@ -48,11 +48,16 @@ export default function App() {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty && products.length === INITIAL_PRODUCTS.length) {
+        // Keep initial products if DB is empty to maintain demo feel
+        setLoadingProducts(false);
+        return;
+      }
       const fetchedProducts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Product[];
-      setProducts(fetchedProducts);
+      setProducts(fetchedProducts.length > 0 ? fetchedProducts : INITIAL_PRODUCTS);
       setLoadingProducts(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'products');
