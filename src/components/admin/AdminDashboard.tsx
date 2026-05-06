@@ -14,6 +14,45 @@ interface AdminDashboardProps {
   products: Product[];
 }
 
+function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
+  const stages: OrderStatus[] = ['pending', 'confirmed', 'delivering', 'delivered'];
+  const currentIndex = stages.indexOf(currentStatus);
+
+  return (
+    <div className="w-full py-6">
+      <div className="flex justify-between relative px-2">
+        {/* Progress Line */}
+        <div className="absolute top-2 left-0 w-full h-0.5 bg-white/10" />
+        <div 
+          className="absolute top-2 left-0 h-0.5 bg-blue-500 transition-all duration-1000" 
+          style={{ width: `${(currentIndex / (stages.length - 1)) * 100}%` }}
+        />
+        
+        {stages.map((stage, i) => {
+          const isCompleted = i <= currentIndex;
+          const isCurrent = i === currentIndex;
+          
+          return (
+            <div key={stage} className="relative z-10 flex flex-col items-center">
+              <div className={cn(
+                "w-4 h-4 rounded-full border-2 transition-all duration-500",
+                isCompleted ? "bg-blue-500 border-blue-500 scale-110" : "bg-gray-900 border-white/20",
+                isCurrent && "shadow-[0_0_12px_rgba(59,130,246,0.6)] border-white"
+              )} />
+              <span className={cn(
+                "text-[8px] font-black uppercase tracking-widest mt-3 transition-colors",
+                isCompleted ? "text-blue-400" : "text-gray-600"
+              )}>
+                {stage}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function AdminDashboard({ products }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);
@@ -65,6 +104,30 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
     } catch (e) {
       handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
     }
+  };
+
+  const shareReceiptToCustomer = (order: Order) => {
+    const cartSummary = order.items.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
+    const receiptTemplate = `
+🧾 *SOLO ELECTRONICS - DIGITAL RECEIPT*
+---------------------------------------
+*Order ID:* ${order.id}
+*Customer:* ${order.customerName}
+
+*ITEMS:*
+${cartSummary}
+
+---------------------------------------
+*TOTAL:* UGX ${order.total.toLocaleString()}
+
+*DELIVERY TO:*
+${order.district}, ${order.deliveryAddress}
+
+_Thank you for choosing Solo Electronics!_
+    `.trim();
+    
+    const whatsappUrl = `https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(receiptTemplate)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -285,7 +348,11 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
                         <span className="text-gray-500 text-xs font-bold">{format(order.createdAt?.toDate ? order.createdAt.toDate() : new Date(), 'MMM dd, HH:mm')}</span>
                       </div>
                       <h4 className="text-lg font-bold text-white uppercase">{order.deliveryAddress}</h4>
-                      <p className="text-blue-500 font-mono text-sm">{order.phone}</p>
+                      <p className="text-blue-500 font-mono text-sm">{order.customerPhone}</p>
+                    </div>
+                    <div className="w-full lg:w-96 bg-black/20 rounded-2xl p-4 border border-white/5">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2">Transit Lifecycle</p>
+                      <StatusProgress currentStatus={order.status} />
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {(['pending', 'confirmed', 'delivering', 'delivered'] as OrderStatus[]).map((status) => {
@@ -318,9 +385,15 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
                         </div>
                       </div>
                     ))}
-                    <div className="lg:col-start-4 text-right">
+                    <div className="lg:col-start-4 text-right flex flex-col items-end">
                        <p className="text-[10px] text-gray-500 font-black uppercase mb-1">Total Payload</p>
-                       <p className="text-white font-black text-xl italic tracking-tighter">UGX {order.total.toLocaleString()}</p>
+                       <p className="text-white font-black text-xl italic tracking-tighter mb-4">UGX {order.total.toLocaleString()}</p>
+                       <button 
+                         onClick={() => shareReceiptToCustomer(order)}
+                         className="flex items-center gap-2 px-6 py-2 bg-green-600/10 hover:bg-green-600/20 text-green-500 text-[9px] font-black uppercase tracking-widest rounded-xl border border-green-500/20 transition-all"
+                       >
+                         <ShoppingBag size={12} /> Send WhatsApp Receipt
+                       </button>
                     </div>
                   </div>
                 </div>

@@ -57,16 +57,17 @@ export default function App() {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty && products.length === INITIAL_PRODUCTS.length) {
-        // Keep initial products if DB is empty to maintain demo feel
-        setLoadingProducts(false);
-        return;
-      }
       const fetchedProducts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Product[];
-      setProducts(fetchedProducts.length > 0 ? fetchedProducts : INITIAL_PRODUCTS);
+      
+      // If DB has products, use them. Otherwise fallback to INITIAL_PRODUCTS for demo feel.
+      if (fetchedProducts.length > 0) {
+        setProducts(fetchedProducts);
+      } else {
+        setProducts(INITIAL_PRODUCTS);
+      }
       setLoadingProducts(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'products');
@@ -139,14 +140,15 @@ export default function App() {
 
   const handleCheckout = async (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string, customerName: string) => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const orderId = `SOLO-ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    const total = subtotal + deliveryFee;
+    const orderId = `SOLO-ORD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
     const orderData: Omit<Order, 'id'> = {
       userId: 'guest',
       customerName,
       customerPhone: phone,
       items: cart,
-      total: subtotal + deliveryFee,
+      total: total,
       status: 'pending',
       createdAt: serverTimestamp() as any,
       deliveryAddress: address,
@@ -157,10 +159,34 @@ export default function App() {
     try {
       await addDoc(collection(db, 'orders'), orderData);
       
-      const cartSummary = cart.map(i => `- ${i.name} (x${i.quantity})`).join('\n');
-      const whatsappMessage = `*New Order: ${orderId}*\n\n*Customer:* ${customerName}\n*Items:*\n${cartSummary}\n\n*Total:* UGX ${(subtotal + deliveryFee).toLocaleString()}\n*Delivery:* ${district}, ${address}\n*Contact:* ${phone}\n\n_Hardware Order via Solo App._`;
+      const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+      const receiptTemplate = `
+🧾 *SOLO ELECTRONICS - DIGITAL RECEIPT*
+---------------------------------------
+*Order ID:* ${orderId}
+*Date:* ${new Date().toLocaleDateString()}
+*Customer:* ${customerName}
+
+*ITEMS:*
+${cartSummary}
+
+---------------------------------------
+*Subtotal:* UGX ${subtotal.toLocaleString()}
+*Delivery:* UGX ${deliveryFee.toLocaleString()}
+*TOTAL:* UGX ${total.toLocaleString()}
+
+*DELIVERY TO:*
+${district}, ${address}
+*PHONE:* ${phone}
+
+_Thank you for choosing Solo Electronics!_
+_Your order is now being processed._
+      `.trim();
+      
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(receiptTemplate)}`;
+      window.open(whatsappUrl, '_blank');
+      
       setCart([]);
       setCartOpen(false);
       setView('shop');
