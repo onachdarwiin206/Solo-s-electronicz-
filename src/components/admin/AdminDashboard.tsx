@@ -9,9 +9,10 @@ import { Tooltip } from '../ui/Tooltip';
 interface AdminDashboardProps {
   products: Product[];
   onProductAdded: (product: Product) => void;
+  onProductRemoved: (id: string) => void;
 }
 
-export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps) {
+export function AdminDashboard({ products, onProductAdded, onProductRemoved }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -105,8 +106,26 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
               <input placeholder="Product Name" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-blue-500 font-bold" />
               <textarea placeholder="Technical Specifications" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} rows={4} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-blue-500 text-sm no-scrollbar" />
               <div className="grid grid-cols-2 gap-4">
-                <input type="number" placeholder="Price (UGX)" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })} className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" />
-                <input type="number" placeholder="Stock" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) })} className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" />
+                <input 
+                  type="number" 
+                  placeholder="Price (UGX)" 
+                  value={isNaN(newProduct.price as number) ? '' : newProduct.price} 
+                  onChange={e => {
+                    const val = parseFloat(e.target.value);
+                    setNewProduct({ ...newProduct, price: isNaN(val) ? 0 : val });
+                  }} 
+                  className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" 
+                />
+                <input 
+                  type="number" 
+                  placeholder="Stock" 
+                  value={isNaN(newProduct.stock as number) ? '' : newProduct.stock} 
+                  onChange={e => {
+                    const val = parseInt(e.target.value);
+                    setNewProduct({ ...newProduct, stock: isNaN(val) ? 0 : val });
+                  }} 
+                  className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" 
+                />
               </div>
               <select value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value as Category })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white">
                 <option value="Phones">Phones</option>
@@ -163,7 +182,7 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
                 </div>
               </div>
                 <Tooltip content="Remove (Local)" position="left">
-                  <button onClick={() => alert("Note: Changes are local and temporary.")} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => onProductRemoved(p.id)} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 size={14} className="text-red-500/50 hover:text-red-500" />
                   </button>
                 </Tooltip>

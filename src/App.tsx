@@ -214,7 +214,17 @@ export default function App() {
             {view === 'marketing' && <MarketingPortal />}
             {view === 'admin' && (
               <ProtectedRoute requireAdmin>
-                <AdminDashboard products={products} onProductAdded={(p) => setProducts(prev => [p, ...prev])} />
+                <AdminDashboard 
+                  products={products} 
+                  onProductAdded={(p) => setProducts(prev => {
+                    const exists = prev.find(item => item.id === p.id);
+                    if (exists) {
+                      return prev.map(item => item.id === p.id ? p : item);
+                    }
+                    return [p, ...prev];
+                  })} 
+                  onProductRemoved={(id) => setProducts(prev => prev.filter(p => p.id !== id))}
+                />
               </ProtectedRoute>
             )}
             
