@@ -51,3 +51,13 @@ export interface Order {
 }
 
 export type PaymentMethod = 'cod' | 'mobile_money';
+
+export interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: any;
+}

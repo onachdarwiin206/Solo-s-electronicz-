@@ -1,5 +1,5 @@
-import { useState, ChangeEvent } from 'react';
-import { Menu, X, ShoppingCart, User, Search, Package, Globe } from 'lucide-react';
+import { useState, ChangeEvent, useRef, useEffect } from 'react';
+import { Menu, X, ShoppingCart, Search, Package, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
@@ -9,10 +9,9 @@ interface NavbarProps {
   onSearch: (query: string) => void;
   cartCount: number;
   onCartClick: () => void;
-  onProfileClick: () => void;
   onTrackingClick: () => void;
   onMarketingClick: () => void;
-  user?: { name: string; role: string } | null;
+  isAdmin: boolean;
   currentLanguage: Language;
   onLanguageChange: (lang: Language) => void;
   t: any;
@@ -23,10 +22,9 @@ export function Navbar({
   onSearch,
   cartCount, 
   onCartClick, 
-  onProfileClick, 
   onTrackingClick,
   onMarketingClick,
-  user,
+  isAdmin,
   currentLanguage,
   onLanguageChange,
   t
@@ -35,6 +33,27 @@ export function Navbar({
   const [showSearch, setShowSearch] = useState(false);
   const [showLang, setShowLang] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pressTimerActive, setPressTimerActive] = useState(false);
+  const pressTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const startPressTimer = () => {
+    setPressTimerActive(true);
+    pressTimeout.current = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('openAdmin'));
+      setPressTimerActive(false);
+    }, 3000); // 3 seconds
+  };
+
+  const cancelPressTimer = () => {
+    if (pressTimeout.current) clearTimeout(pressTimeout.current);
+    setPressTimerActive(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (pressTimeout.current) clearTimeout(pressTimeout.current);
+    };
+  }, []);
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -67,7 +86,15 @@ export function Navbar({
           <div className="flex items-center gap-4 lg:gap-8 flex-1">
             <button 
               onClick={() => onCategorySelect(null)}
-              className="text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-colors shrink-0 italic"
+              onMouseDown={startPressTimer}
+              onMouseUp={cancelPressTimer}
+              onMouseLeave={cancelPressTimer}
+              onTouchStart={startPressTimer}
+              onTouchEnd={cancelPressTimer}
+              className={cn(
+                "text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all shrink-0 italic select-none outline-none",
+                pressTimerActive && "scale-90 opacity-70"
+              )}
             >
               SOLO'S
             </button>
@@ -174,15 +201,15 @@ export function Navbar({
               )}
             </button>
             
-            <button 
-              onClick={onProfileClick}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white text-black hover:bg-gray-200 rounded-full transition-all shadow-lg"
-            >
-              <User size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">
-                {user ? user.name.split(' ')[0] : t.login}
-              </span>
-            </button>
+            {isAdmin && (
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'admin' }))}
+                className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-500 rounded-full transition-all"
+              >
+                <Package size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Dash</span>
+              </button>
+            )}
 
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -243,15 +270,6 @@ export function Navbar({
             className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10"
           >
             Track Order
-          </button>
-          <button
-            onClick={() => {
-              onProfileClick();
-              setIsOpen(false);
-            }}
-            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10"
-          >
-            {user ? `Account (${user.name.split(' ')[0]})` : 'Login / Register'}
           </button>
           <div className="px-3 py-4 border-t border-white/5 mt-4">
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Select Region / Language</p>

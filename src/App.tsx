@@ -12,7 +12,7 @@ import { MarketingPortal } from './components/marketing/MarketingPortal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AccountDashboard } from './components/profile/AccountDashboard';
 import { ProductDetail } from './components/shop/ProductDetail';
-import { LoginModal } from './components/auth/LoginModal';
+import { AdminLoginModal } from './components/auth/LoginModal';
 import { INITIAL_PRODUCTS } from './constants';
 import { Product, CartItem, Order, UserProfile, PaymentMethod } from './types';
 import { db } from './firebase';
@@ -21,48 +21,36 @@ import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { doc, setDoc, serverTimestamp, collection, getDocs, updateDoc } from 'firebase/firestore';
 import { Language, translations } from './translations';
-import { ShieldCheck, ChevronRight, X, UserCog } from 'lucide-react';
+import { ShieldCheck, ChevronRight, X, UserCog, Loader2 } from 'lucide-react';
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
 
 const WHATSAPP_NUMBER = "256793405517";
 
 export default function App() {
-  const { user, fbUser, loading: authResolving, isAdmin, logout } = useAuth();
-
-  useEffect(() => {
-    if (!authResolving) {
-      console.log("Current user console sync:", user);
-      console.log("Firebase user console sync:", fbUser);
-    }
-  }, [user, fbUser, authResolving]);
-
-  if (authResolving) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-        <BackgroundSlideshow />
-        <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin z-10" />
-        <p className="mt-4 text-white font-black tracking-widest uppercase italic animate-pulse">Syncing Hardware Feed...</p>
-      </div>
-    );
-  }
+  const { isAdmin, loading: authResolving, logout } = useAuth();
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const [view, setView] = useState<View>('shop');
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
 
-  // Handle protected views and login trigger
+  // Handle admin login trigger
   useEffect(() => {
-    const handleOpenLogin = () => setLoginModalOpen(true);
-    window.addEventListener('openLogin', handleOpenLogin);
-    return () => window.removeEventListener('openLogin', handleOpenLogin);
+    const handleOpenAdmin = () => setIsAdminModalOpen(true);
+    window.addEventListener('openAdmin', handleOpenAdmin);
+    window.addEventListener('openLogin', handleOpenAdmin); // Redirect customer login requests to admin PIN for now or just ignore
+    return () => {
+      window.removeEventListener('openAdmin', handleOpenAdmin);
+      window.removeEventListener('openLogin', handleOpenAdmin);
+    };
   }, []);
 
   useEffect(() => {
@@ -86,6 +74,7 @@ export default function App() {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoadingProducts(true);
       try {
         const snap = await getDocs(collection(db, 'products'));
         const dbProducts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
@@ -93,17 +82,42 @@ export default function App() {
           setProducts(prev => {
             const combined = [...prev];
             dbProducts.forEach(dbp => {
-              if (!combined.find(p => p.id === dbp.id)) combined.push(dbp);
+              const idx = combined.findIndex(p => p.id === dbp.id);
+              if (idx === -1) combined.push(dbp);
+              else combined[idx] = dbp;
             });
             return combined;
           });
         }
       } catch (e) {
         console.warn("Using default products fallback");
+      } finally {
+        setLoadingProducts(false);
       }
     };
     fetchProducts();
   }, []);
+
+  const [wishlist, setWishlist] = useState<string[]>(() => JSON.parse(localStorage.getItem('wishlist') || '[]'));
+  const [likes, setLikes] = useState<string[]>(() => JSON.parse(localStorage.getItem('likes') || '[]'));
+
+  useEffect(() => {
+    localStorage.setItem('wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
+
+  useEffect(() => {
+    localStorage.setItem('likes', JSON.stringify(likes));
+  }, [likes]);
+
+  if (authResolving) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+        <BackgroundSlideshow />
+        <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin z-10" />
+        <p className="mt-4 text-white font-black tracking-widest uppercase italic animate-pulse">Syncing Hardware Feed...</p>
+      </div>
+    );
+  }
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -117,20 +131,18 @@ export default function App() {
     setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item).filter(i => i.quantity > 0));
   };
 
-  const handleCheckout = async (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string) => {
-    if (!user) { setLoginModalOpen(true); return; }
-    
+  const handleCheckout = async (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string, customerName: string) => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const orderId = `SOLO-ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     const cartSummary = cart.map(i => `- ${i.name} (x${i.quantity})`).join('\n');
-    const whatsappMessage = `*New Order: ${orderId}*\n\n*Items:*\n${cartSummary}\n\n*Total:* UGX ${(subtotal + deliveryFee).toLocaleString()}\n*Delivery:* ${district}, ${address}\n*Contact:* ${phone}\n\n_Please confirm stock and delivery time._`;
+    const whatsappMessage = `*New Order: ${orderId}*\n\n*Customer:* ${customerName}\n*Items:*\n${cartSummary}\n\n*Total:* UGX ${(subtotal + deliveryFee).toLocaleString()}\n*Delivery:* ${district}, ${address}\n*Contact:* ${phone}\n\n_Please confirm stock and delivery time._`;
     
     try {
       await setDoc(doc(db, 'orders', orderId), {
         id: orderId,
-        userId: user.id,
-        customerName: user.name,
+        userId: 'guest',
+        customerName: customerName,
         customerPhone: phone,
         items: cart,
         total: subtotal + deliveryFee,
@@ -139,8 +151,6 @@ export default function App() {
         createdAt: serverTimestamp()
       });
       
-      if (!user.phone) await updateDoc(doc(db, 'users', user.id), { phone, address, district });
-
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
       setCart([]);
       setCartOpen(false);
@@ -150,37 +160,12 @@ export default function App() {
     }
   };
 
-  const toggleWishlist = async (productId: string) => {
-    if (!user) { setLoginModalOpen(true); return; }
-    
-    const userRef = doc(db, 'users', user.id);
-    const isWishlisted = user.wishlist?.includes(productId);
-    const newWishlist = isWishlisted 
-      ? user.wishlist?.filter(id => id !== productId) 
-      : [...(user.wishlist || []), productId];
-    
-    try {
-      await updateDoc(userRef, { wishlist: newWishlist });
-      // The AuthContext will pick up the change or we can refresh it
-    } catch (e) {
-      console.error("Wishlist sync error:", e);
-    }
+  const toggleWishlist = (productId: string) => {
+    setWishlist(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
   };
 
-  const toggleLike = async (productId: string) => {
-    if (!user) { setLoginModalOpen(true); return; }
-    
-    const userRef = doc(db, 'users', user.id);
-    const isLiked = user.likes?.includes(productId);
-    const newLikes = isLiked 
-      ? user.likes?.filter(id => id !== productId) 
-      : [...(user.likes || []), productId];
-    
-    try {
-      await updateDoc(userRef, { likes: newLikes });
-    } catch (e) {
-      console.error("Like sync error:", e);
-    }
+  const toggleLike = (productId: string) => {
+    setLikes(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
   };
 
   const t = translations[language];
@@ -200,10 +185,9 @@ export default function App() {
         onSearch={setSearchQuery}
         cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
         onCartClick={() => setCartOpen(true)}
-        onProfileClick={() => user ? setView('profile') : setLoginModalOpen(true)}
         onTrackingClick={() => setView('tracking')}
         onMarketingClick={() => setView('marketing')}
-        user={user}
+        isAdmin={isAdmin}
         currentLanguage={language}
         onLanguageChange={setLanguage}
         t={t}
@@ -221,26 +205,42 @@ export default function App() {
             {view === 'shop' && (
               <>
                 {!category && (
-                  <Hero user={user} onLogin={() => setLoginModalOpen(true)} onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
+                  <Hero onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
                 )}
                 <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex justify-between items-end mb-12">
                      <h2 className="text-4xl font-black tracking-tighter uppercase italic">{category || 'Hardware Feed'}</h2>
-                     <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filteredProducts.length} Results</span>
+                     <div className="flex items-center gap-4">
+                        {loadingProducts && <Loader2 size={16} className="animate-spin text-blue-500" />}
+                        <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filteredProducts.length} Results</span>
+                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {filteredProducts.map(product => (
-                      <ProductCard 
-                        key={product.id} 
-                        product={product} 
-                        onAddToCart={addToCart} 
-                        onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
-                        isWishlisted={user?.wishlist?.includes(product.id)}
-                        onToggleWishlist={toggleWishlist}
-                        isLiked={user?.likes?.includes(product.id)}
-                        onToggleLike={toggleLike}
-                      />
-                    ))}
+                    {loadingProducts ? (
+                      [...Array(6)].map((_, i) => (
+                        <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
+                           <div className="aspect-square bg-white/5" />
+                           <div className="p-6 space-y-4">
+                              <div className="h-6 bg-white/5 rounded-full w-3/4" />
+                              <div className="h-4 bg-white/5 rounded-full w-1/4" />
+                              <div className="h-12 bg-white/5 rounded-2xl w-full" />
+                           </div>
+                        </div>
+                      ))
+                    ) : (
+                      filteredProducts.map(product => (
+                        <ProductCard 
+                          key={product.id} 
+                          product={product} 
+                          onAddToCart={addToCart} 
+                          onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
+                          isWishlisted={wishlist.includes(product.id)}
+                          onToggleWishlist={toggleWishlist}
+                          isLiked={likes.includes(product.id)}
+                          onToggleLike={toggleLike}
+                        />
+                      ))
+                    )}
                   </div>
                 </section>
               </>
@@ -262,11 +262,6 @@ export default function App() {
               </ProtectedRoute>
             )}
             
-            {view === 'profile' && user && (
-              <ProtectedRoute>
-                <AccountDashboard user={user} products={products} onTrackOrder={() => setView('tracking')} onViewProduct={() => setView('shop')} />
-              </ProtectedRoute>
-            )}
           </motion.div>
         </AnimatePresence>
 
@@ -284,9 +279,9 @@ export default function App() {
         </div>
       </main>
 
-      <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setLoginModalOpen(true)} />
+      <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
       <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
-      <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} onSuccess={() => {}} />
+      <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
 
       <AnimatePresence>
         {showTerms && (

@@ -1,115 +1,109 @@
-import { createContext, useEffect, useState, useContext, ReactNode } from "react";
-import { onAuthStateChanged, User, signInWithPopup, signOut } from "firebase/auth";
-import { auth, db, googleProvider } from "./firebase";
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
+import { db } from "./firebase";
+import { doc, getDoc } from 'firebase/firestore';
 import { UserProfile } from './types';
 
 type AuthType = {
   user: UserProfile | null;
-  fbUser: User | null;
   loading: boolean;
   isAdmin: boolean;
-  signInWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
+  loginAsAdmin: (pin: string) => Promise<boolean>;
+  logout: () => void;
 };
 
 const AuthContext = createContext<AuthType>({
   user: null,
-  fbUser: null,
   loading: true,
   isAdmin: false,
-  signInWithGoogle: async () => {},
-  logout: async () => {}
+  loginAsAdmin: async () => false,
+  logout: () => {}
 });
 
-const ADMIN_EMAIL = 'onachdarwiin@gmail.com';
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [fbUser, setFbUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchProfile = async (firebaseUser: User) => {
-    try {
-      const userRef = doc(db, 'users', firebaseUser.uid);
-      const userDoc = await getDoc(userRef);
-      
-      const isAdminUser = firebaseUser.email === ADMIN_EMAIL;
-      
-      if (userDoc.exists()) {
-        const data = userDoc.data() as UserProfile;
-        const updates: any = { lastLogin: serverTimestamp() };
-        if (isAdminUser && data.role !== 'admin') {
-          updates.role = 'admin';
-          data.role = 'admin';
-        }
-        await updateDoc(userRef, updates);
-        setUser({ ...data, id: firebaseUser.uid });
-      } else {
-        const newProfile: UserProfile = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'Client',
-          email: firebaseUser.email || '',
-          phone: firebaseUser.phoneNumber || '',
-          role: isAdminUser ? 'admin' : 'customer',
-          createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
-        };
-        await setDoc(userRef, newProfile);
-        setUser(newProfile);
-      }
-    } catch (error) {
-      console.error("AuthProvider Profile Fetch Error:", error);
+  const resetInactivityTimer = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (isAdmin) {
+      timeoutRef.current = setTimeout(() => {
+        console.log("Admin session expired due to inactivity.");
+        logout();
+      }, INACTIVITY_TIMEOUT);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      try {
-        if (firebaseUser) {
-          setFbUser(firebaseUser);
-          await fetchProfile(firebaseUser);
-        } else {
-          setFbUser(null);
-          setUser(null);
-        }
-      } catch (err) {
-        console.error("Auth state change error:", err);
-      } finally {
-        setLoading(false);
+    // Check session storage for existing admin session
+    const adminSession = sessionStorage.getItem('admin_auth');
+    const lastActive = sessionStorage.getItem('admin_last_active');
+    
+    if (adminSession === 'true' && lastActive) {
+      const now = Date.now();
+      if (now - parseInt(lastActive) < INACTIVITY_TIMEOUT) {
+        setIsAdmin(true);
+      } else {
+        sessionStorage.removeItem('admin_auth');
+        sessionStorage.removeItem('admin_last_active');
       }
-    });
+    }
+    setLoading(false);
 
-    return unsubscribe;
+    // Activity listeners
+    const handleActivity = () => resetInactivityTimer();
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+
+    return () => {
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, []);
 
-  const signInWithGoogle = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error("Google Sign In Error:", error);
-      throw error;
+  useEffect(() => {
+    if (isAdmin) {
+      resetInactivityTimer();
+      sessionStorage.setItem('admin_last_active', Date.now().toString());
     }
+  }, [isAdmin]);
+
+  const loginAsAdmin = async (pin: string) => {
+    try {
+      const adminDoc = await getDoc(doc(db, 'system', 'admin'));
+      if (adminDoc.exists()) {
+        const data = adminDoc.data();
+        if (data.pin === pin) {
+          setIsAdmin(true);
+          sessionStorage.setItem('admin_auth', 'true');
+          sessionStorage.setItem('admin_last_active', Date.now().toString());
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error("Admin verification error:", error);
+    }
+    return false;
   };
 
-  const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Logout Error:", error);
-    }
+  const logout = () => {
+    setIsAdmin(false);
+    sessionStorage.removeItem('admin_auth');
+    sessionStorage.removeItem('admin_last_active');
   };
-
-  const isAdmin = user?.role === 'admin';
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        fbUser,
+        user: null,
         loading,
         isAdmin,
-        signInWithGoogle,
+        loginAsAdmin,
         logout
       }}
     >

@@ -22,6 +22,7 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [videoUploading, setVideoUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     description: '',
@@ -99,6 +100,7 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
 
   const handleSave = async () => {
     if (!newProduct.name || !newProduct.price || !newProduct.image) return;
+    setSubmitting(true);
     try {
       const data = { ...newProduct, updatedAt: serverTimestamp() };
       if (editingId) {
@@ -110,6 +112,7 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
       }
       resetForm();
     } catch (e) { handleFirestoreError(e, OperationType.WRITE, 'products'); }
+    finally { setSubmitting(false); }
   };
 
   const resetForm = () => {
@@ -181,7 +184,14 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
                   <span className="text-[10px] font-black uppercase text-gray-400">{videoUploading ? 'Analysing...' : '30s Demo Clip'}</span>
                 </label>
               </div>
-              <button onClick={handleSave} className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-xl italic uppercase">Commit to Inventory</button>
+              <button 
+                onClick={handleSave} 
+                disabled={submitting || uploading || videoUploading}
+                className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-xl italic uppercase flex items-center justify-center gap-2"
+              >
+                {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
+                {editingId ? 'Modify Strategy' : 'Commit to Inventory'}
+              </button>
             </div>
           </div>
         </motion.div>

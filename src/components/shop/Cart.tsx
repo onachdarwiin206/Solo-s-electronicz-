@@ -10,7 +10,7 @@ interface CartProps {
   items: CartItem[];
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
-  onCheckout: (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string) => void;
+  onCheckout: (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string, customerName: string) => void;
   orderResult: any; // Simplified for MVP
   t: any;
 }
@@ -26,6 +26,7 @@ const DISTRICTS = [
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, t }: CartProps) {
   const [district, setDistrict] = useState(DISTRICTS[0].name);
   const [deliveryFee, setDeliveryFee] = useState(DISTRICTS[0].fee);
+  const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -39,14 +40,14 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
   }, [district]);
 
   const handleWhatsAppCheckout = () => {
-    if (!customerPhone || !customerAddress) {
-      alert("Please enter your phone and delivery address to continue.");
+    if (!customerName || !customerPhone || !customerAddress) {
+      alert("Please enter all details to continue.");
       return;
     }
     setIsProcessing(true);
     // Simulate a brief generation delay for UX
     setTimeout(() => {
-      onCheckout('cod', district, deliveryFee, customerPhone, customerAddress);
+      onCheckout('cod', district, deliveryFee, customerPhone, customerAddress, customerName);
       setIsProcessing(false);
     }, 1000);
   };
@@ -102,6 +103,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                       ))}
                     </div>
                     <div className="space-y-3">
+                      <input type="text" placeholder="Full Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500" />
                       <input type="tel" placeholder="Active Mobile Number (WhatsApp preferred)" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500" />
                       <textarea placeholder="Specific landmarks, street, or house number" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500 h-24 no-scrollbar" />
                     </div>

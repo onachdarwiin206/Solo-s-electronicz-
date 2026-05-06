@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = false, fallback }: ProtectedRouteProps) {
-  const { user, loading, isAdmin } = useAuth();
+  const { loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -20,33 +20,17 @@ export function ProtectedRoute({ children, requireAdmin = false, fallback }: Pro
     );
   }
 
-  if (!user) {
+  if (requireAdmin && !isAdmin) {
     return fallback || (
       <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-white/5 rounded-[2.5rem] border border-white/10">
         <ShieldAlert className="w-12 h-12 text-red-500 mb-4" />
         <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-2">Access Restricted</h3>
-        <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">This resource requires an active security clearance. Please sign in to proceed.</p>
+        <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">This resource requires admin security clearance (PIN). Please authenticate to proceed.</p>
         <button 
-          onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
+          onClick={() => window.dispatchEvent(new CustomEvent('openAdmin'))}
           className="px-8 py-4 bg-white text-black font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-gray-200 transition-all"
         >
-          Authenticate Now
-        </button>
-      </div>
-    );
-  }
-
-  if (requireAdmin && !isAdmin) {
-    return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-white/5 rounded-[2.5rem] border border-white/10">
-        <ShieldAlert className="w-12 h-12 text-red-500 mb-4" />
-        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-2">Command Denied</h3>
-        <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Your account does not have administrator privileges required for this sector.</p>
-        <button 
-          onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))}
-          className="px-8 py-4 bg-blue-600 text-white font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-blue-500 transition-all"
-        >
-          Return to Shop
+          Enter Pin
         </button>
       </div>
     );

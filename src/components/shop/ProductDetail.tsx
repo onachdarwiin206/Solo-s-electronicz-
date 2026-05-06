@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { ArrowLeft, ShoppingCart, MessageCircle, BadgeCheck, Star, Shield, Zap, Truck } from 'lucide-react';
 import { Product } from '../../types';
+import { ReviewSystem } from '../reviews/ReviewSystem';
 
 interface ProductDetailProps {
   product: Product;
@@ -24,7 +25,7 @@ export function ProductDetail({ product, onBack, onAddToCart }: ProductDetailPro
         Back to Tech Feed
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-20">
         <div className="space-y-6">
           <div className="aspect-square rounded-[2rem] overflow-hidden bg-white/5 border border-white/10 relative group">
             {product.videoUrl ? (
@@ -90,6 +91,10 @@ export function ProductDetail({ product, onBack, onAddToCart }: ProductDetailPro
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="pt-20 border-t border-white/10">
+        <ReviewSystem product={product} />
       </div>
     </motion.div>
   );
