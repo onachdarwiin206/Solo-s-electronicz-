@@ -13,6 +13,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AccountDashboard } from './components/profile/AccountDashboard';
 import { ProductDetail } from './components/shop/ProductDetail';
 import { AdminLoginModal } from './components/auth/LoginModal';
+import { QuickViewModal } from './components/shop/QuickViewModal';
 import { INITIAL_PRODUCTS } from './constants';
 import { Product, CartItem, Order, UserProfile, PaymentMethod } from './types';
 import { db } from './firebase';
@@ -37,6 +38,7 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -234,6 +236,7 @@ export default function App() {
                           product={product} 
                           onAddToCart={addToCart} 
                           onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
+                          onQuickView={(p) => setQuickViewProduct(p)}
                           isWishlisted={wishlist.includes(product.id)}
                           onToggleWishlist={toggleWishlist}
                           isLiked={likes.includes(product.id)}
@@ -282,6 +285,7 @@ export default function App() {
       <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
       <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
       <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
+      <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
 
       <AnimatePresence>
         {showTerms && (

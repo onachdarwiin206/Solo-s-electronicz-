@@ -3,6 +3,7 @@ import { Menu, X, ShoppingCart, Search, Package, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
+import { Tooltip } from '../ui/Tooltip';
 
 interface NavbarProps {
   onCategorySelect: (category: string | null) => void;
@@ -129,21 +130,23 @@ export function Navbar({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
-            {/* Mobile Search Toggle */}
-            <button 
-              onClick={() => setShowSearch(!showSearch)}
-              className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <Search size={20} />
-            </button>
+            <Tooltip content="Search Database">
+              <button 
+                onClick={() => setShowSearch(!showSearch)}
+                className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <Search size={20} />
+              </button>
+            </Tooltip>
 
-            <button 
-              onClick={onTrackingClick}
-              className="hidden sm:block p-2 text-gray-400 hover:text-white transition-colors"
-              title="Track Order"
-            >
-              <Package size={20} />
-            </button>
+            <Tooltip content="Track Hardware">
+              <button 
+                onClick={onTrackingClick}
+                className="hidden sm:block p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <Package size={20} />
+              </button>
+            </Tooltip>
 
             {/* Language Selector Dropdown */}
             <div className="relative">
@@ -189,17 +192,19 @@ export function Navbar({
               )}
             </div>
 
-            <button 
-              onClick={onCartClick}
-              className="relative p-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ShoppingCart size={20} />
-              {cartCount > 0 && (
-                <span className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-black">
-                  {cartCount}
-                </span>
-              )}
-            </button>
+            <Tooltip content="View Basket">
+              <button 
+                onClick={onCartClick}
+                className="relative p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <ShoppingCart size={20} />
+                {cartCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-black">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            </Tooltip>
             
             {isAdmin && (
               <button 

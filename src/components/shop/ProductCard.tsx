@@ -1,8 +1,9 @@
 import { motion } from 'motion/react';
-import { ShoppingCart, Plus, Loader2, Heart, Star, Bookmark, MessageCircle, BadgeCheck } from 'lucide-react';
+import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye } from 'lucide-react';
 import { Product } from '../../types';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
+import { Tooltip } from '../ui/Tooltip';
 
 interface ProductCardProps {
   product: Product;
@@ -12,6 +13,7 @@ interface ProductCardProps {
   isLiked?: boolean;
   onToggleLike?: (id: string) => void;
   onClick?: () => void;
+  onQuickView?: (product: Product) => void;
   key?: string | number;
 }
 
@@ -24,20 +26,28 @@ export function ProductCard({
   onToggleWishlist,
   isLiked = false,
   onToggleLike,
-  onClick
+  onClick,
+  onQuickView
 }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
-  const handleWhatsAppBuy = () => {
+  const handleWhatsAppBuy = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const message = `Hello Solos Engineering, I want to buy ${product.name} at UGX ${product.price.toLocaleString()}. Is it available?`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
-  const handleAdd = () => {
+  const handleAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsAdding(true);
     onAddToCart(product);
     setTimeout(() => setIsAdding(false), 800);
+  };
+
+  const handleQuickView = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onQuickView?.(product);
   };
 
   return (
@@ -70,40 +80,51 @@ export function ProductCard({
         
         {/* Interaction Buttons */}
         <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleWishlist?.(product.id);
-            }}
-            className={cn(
-              "p-3 rounded-2xl backdrop-blur-md transition-all border",
-              isWishlisted 
-                ? "bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-900/40" 
-                : "bg-black/40 border-white/10 text-white hover:bg-black/60"
-            )}
-            title="Add to Wishlist"
-          >
-            <Bookmark size={18} fill={isWishlisted ? "currentColor" : "none"} />
-          </button>
+          <Tooltip content={isWishlisted ? "Remove from Saved" : "Save for Later"} position="left">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWishlist?.(product.id);
+              }}
+              className={cn(
+                "p-3 rounded-2xl backdrop-blur-md transition-all border",
+                isWishlisted 
+                  ? "bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-900/40" 
+                  : "bg-black/40 border-white/10 text-white hover:bg-black/60"
+              )}
+            >
+              <Bookmark size={18} fill={isWishlisted ? "currentColor" : "none"} />
+            </button>
+          </Tooltip>
 
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleLike?.(product.id);
-            }}
-            className={cn(
-              "p-3 rounded-2xl backdrop-blur-md transition-all border flex flex-col items-center gap-0.5",
-              isLiked 
-                ? "bg-pink-600 border-pink-400 text-white shadow-xl shadow-pink-900/40" 
-                : "bg-black/40 border-white/10 text-white hover:bg-black/60"
-            )}
-            title="Like Product"
-          >
-            <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
-            {product.likesCount !== undefined && (
-               <span className="text-[8px] font-black">{product.likesCount}</span>
-            )}
-          </button>
+          <Tooltip content="Quick Look" position="left">
+            <button 
+              onClick={handleQuickView}
+              className="p-3 bg-black/40 border border-white/10 text-white rounded-2xl backdrop-blur-md hover:bg-black/60 transition-all"
+            >
+              <Eye size={18} />
+            </button>
+          </Tooltip>
+
+          <Tooltip content={isLiked ? "Unlike" : "Like"} position="left">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleLike?.(product.id);
+              }}
+              className={cn(
+                "p-3 rounded-2xl backdrop-blur-md transition-all border flex flex-col items-center gap-0.5",
+                isLiked 
+                  ? "bg-pink-600 border-pink-400 text-white shadow-xl shadow-pink-900/40" 
+                  : "bg-black/40 border-white/10 text-white hover:bg-black/60"
+              )}
+            >
+              <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+              {product.likesCount !== undefined && (
+                <span className="text-[8px] font-black">{product.likesCount}</span>
+              )}
+            </button>
+          </Tooltip>
         </div>
 
         {product.isVerified && (

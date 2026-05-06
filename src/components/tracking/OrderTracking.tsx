@@ -38,6 +38,26 @@ export function OrderTracking() {
   
   const currentStepIndex = trackingData ? statusList.indexOf(trackingData.status) : -1;
 
+  const getEstimatedDelivery = () => {
+    if (!trackingData) return null;
+    const baseDate = trackingData.createdAt?.toDate() || new Date();
+    
+    switch (trackingData.status) {
+      case 'pending':
+        return "Approximately 2-3 business days";
+      case 'confirmed':
+        return "Dispatched within 24 hours";
+      case 'delivering':
+        return "In Transit: Expected in 2-6 hours";
+      case 'delivered':
+        return "Handover Completed Successfully";
+      default:
+        return "Estimating Logistics...";
+    }
+  };
+
+  const estDelivery = getEstimatedDelivery();
+
   return (
     <div className="max-w-3xl mx-auto py-20 px-4">
       <button onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))} className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest group">
@@ -92,6 +112,13 @@ export function OrderTracking() {
                 <div>
                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Shipping Target</h4>
                    <p className="text-xs font-bold text-gray-200">{trackingData.deliveryAddress}</p>
+                </div>
+              </div>
+              <div className="p-6 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-4">
+                <Truck className="text-blue-500 mt-1" size={18} />
+                <div>
+                   <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Estimated Arrival</h4>
+                   <p className="text-xs font-bold text-gray-200">{estDelivery}</p>
                 </div>
               </div>
               <div className="p-6 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-4">

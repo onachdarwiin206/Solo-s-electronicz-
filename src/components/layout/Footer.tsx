@@ -1,5 +1,6 @@
 import { Facebook, Instagram, Twitter, Mail, MapPin, Phone, Github, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Tooltip } from '../ui/Tooltip';
 
 interface FooterProps {
   t: any;
@@ -18,10 +19,17 @@ export function Footer({ t, onCategorySelect, onAdminPanelClick }: FooterProps) 
               Premium electronics platform designed for those who demand excellence in technology. Built with passion by Solo.
             </p>
             <div className="flex gap-4">
-              {[Facebook, Instagram, Twitter, Github].map((Icon, i) => (
-                <a key={i} href="#" className="p-2 bg-white/5 rounded-full hover:bg-blue-600 transition-all hover:scale-110">
-                  <Icon size={18} />
-                </a>
+              {[
+                { Icon: Facebook, name: 'Facebook' },
+                { Icon: Instagram, name: 'Instagram' },
+                { Icon: Twitter, name: 'X / Twitter' },
+                { Icon: Github, name: 'GitHub' }
+              ].map(({ Icon, name }, i) => (
+                <Tooltip key={i} content={name}>
+                  <a href="#" className="p-2 bg-white/5 rounded-full hover:bg-blue-600 transition-all hover:scale-110 flex items-center justify-center">
+                    <Icon size={18} />
+                  </a>
+                </Tooltip>
               ))}
             </div>
           </div>

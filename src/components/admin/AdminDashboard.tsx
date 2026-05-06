@@ -8,6 +8,7 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDocs
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
+import { Tooltip } from '../ui/Tooltip';
 
 interface AdminDashboardProps {
   products: Product[];
@@ -207,14 +208,22 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
                 <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
                 <div className="flex items-center gap-4 mt-2">
                    <div className="flex items-center bg-black/40 rounded-lg px-2 border border-white/10">
-                      <button onClick={async () => await updateDoc(doc(db, 'products', p.id), { stock: increment(-1) })} className="px-2 py-1 text-gray-500">-</button>
+                      <Tooltip content="Decrease Inventory">
+                        <button onClick={async () => await updateDoc(doc(db, 'products', p.id), { stock: increment(-1) })} className="px-2 py-1 text-gray-500 hover:text-white">-</button>
+                      </Tooltip>
                       <span className="px-2 font-mono text-xs text-white">{p.stock}</span>
-                      <button onClick={async () => await updateDoc(doc(db, 'products', p.id), { stock: increment(1) })} className="px-2 py-1 text-gray-500">+</button>
+                      <Tooltip content="Increase Inventory">
+                        <button onClick={async () => await updateDoc(doc(db, 'products', p.id), { stock: increment(1) })} className="px-2 py-1 text-gray-500 hover:text-white">+</button>
+                      </Tooltip>
                    </div>
                    <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase">Modify</button>
                 </div>
               </div>
-              <button onClick={async () => { if(confirm("Delist asset?")) await deleteDoc(doc(db, 'products', p.id)); }} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} className="text-red-500/50 hover:text-red-500" /></button>
+                <Tooltip content="Purge from Inventory" position="left">
+                  <button onClick={async () => { if(confirm("Delist asset?")) await deleteDoc(doc(db, 'products', p.id)); }} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 size={14} className="text-red-500/50 hover:text-red-500" />
+                  </button>
+                </Tooltip>
             </div>
           ))}
         </div>

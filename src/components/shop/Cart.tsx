@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, Plus, Minus, ShoppingCart, ArrowRight, MapPin, MessageCircle } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingCart, ArrowRight, MessageCircle } from 'lucide-react';
 import { CartItem, PaymentMethod } from '../../types';
 import { useState, useEffect } from 'react';
 import { cn } from '../../lib/utils';
+import { Tooltip } from '../ui/Tooltip';
 
 interface CartProps {
   isOpen: boolean;
@@ -71,25 +72,40 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 <>
                   <div className="space-y-4">
                     <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Hardware Selection</h3>
-                    {items.map((item) => (
-                      <div key={item.id} className="flex gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
-                        <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover" />
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-bold text-white text-sm leading-tight">{item.name}</h4>
-                            <button onClick={() => onRemove(item.id)} className="text-gray-600 hover:text-red-500"><Trash2 size={14} /></button>
-                          </div>
-                          <div className="flex justify-between items-center mt-2">
-                            <p className="text-blue-500 font-mono text-xs font-bold">UGX {(item.price * item.quantity).toLocaleString()}</p>
-                            <div className="flex items-center gap-3">
-                              <button onClick={() => onUpdateQuantity(item.id, -1)} className="p-1 hover:bg-white/10 text-white"><Minus size={12} /></button>
-                              <span className="text-white text-xs font-black">{item.quantity}</span>
-                              <button onClick={() => onUpdateQuantity(item.id, 1)} className="p-1 hover:bg-white/10 text-white"><Plus size={12} /></button>
+                    <div className="space-y-4">
+                      <AnimatePresence initial={false}>
+                        {items.map((item) => (
+                          <motion.div 
+                            key={item.id}
+                            initial={{ opacity: 0, x: 20, height: 0 }}
+                            animate={{ opacity: 1, x: 0, height: 'auto' }}
+                            exit={{ opacity: 0, x: -100, height: 0 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            className="flex gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 overflow-hidden"
+                          >
+                            <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover" />
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-bold text-white text-sm leading-tight">{item.name}</h4>
+                                <Tooltip content="Eliminate Item" position="left">
+                                  <button onClick={() => onRemove(item.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1">
+                                    <Trash2 size={14} />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                              <div className="flex justify-between items-center mt-2">
+                                <p className="text-blue-500 font-mono text-xs font-bold">UGX {(item.price * item.quantity).toLocaleString()}</p>
+                                <div className="flex items-center gap-3">
+                                  <button onClick={() => onUpdateQuantity(item.id, -1)} className="p-1 hover:bg-white/10 text-white transition-all rounded-md"><Minus size={12} /></button>
+                                  <span className="text-white text-xs font-black w-4 text-center">{item.quantity}</span>
+                                  <button onClick={() => onUpdateQuantity(item.id, 1)} className="p-1 hover:bg-white/10 text-white transition-all rounded-md"><Plus size={12} /></button>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
                   </div>
 
                   <div className="space-y-4">
