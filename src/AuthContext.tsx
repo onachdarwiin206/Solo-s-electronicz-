@@ -1,55 +1,5 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
-import { db, auth } from "./firebase";
-import { doc, getDocFromServer } from 'firebase/firestore';
 import { UserProfile } from './types';
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-    tenantId?: string | null;
-    providerInfo?: {
-      providerId?: string | null;
-      email?: string | null;
-    }[];
-  }
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
-        providerId: provider.providerId,
-        email: provider.email,
-      })) || []
-    },
-    operationType,
-    path
-  }
-  const serialized = JSON.stringify(errInfo);
-  console.error('Firestore Error: ', serialized);
-  throw new Error(serialized);
-}
 
 type AuthType = {
   user: UserProfile | null;
@@ -68,6 +18,7 @@ const AuthContext = createContext<AuthType>({
 });
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+const ADMIN_PIN = "8585";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -122,20 +73,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isAdmin]);
 
   const loginAsAdmin = async (pin: string) => {
-    const adminPath = 'system/admin';
-    try {
-      const adminDoc = await getDocFromServer(doc(db, adminPath));
-      if (adminDoc.exists()) {
-        const data = adminDoc.data();
-        if (data.pin === pin) {
-          setIsAdmin(true);
-          sessionStorage.setItem('admin_auth', 'true');
-          sessionStorage.setItem('admin_last_active', Date.now().toString());
-          return true;
-        }
-      }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.GET, adminPath);
+    // Simulated delay
+    await new Promise(r => setTimeout(r, 500));
+    
+    if (pin === ADMIN_PIN) {
+      setIsAdmin(true);
+      sessionStorage.setItem('admin_auth', 'true');
+      sessionStorage.setItem('admin_last_active', Date.now().toString());
+      return true;
     }
     return false;
   };

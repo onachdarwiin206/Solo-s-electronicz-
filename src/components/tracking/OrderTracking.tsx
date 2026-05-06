@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Truck, Search, MapPin, CheckCircle2, Circle, ArrowLeft, Clock } from 'lucide-react';
+import { Truck, Search, MapPin, CheckCircle2, ArrowLeft, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 import { Order, OrderStatus } from '../../types';
 
 export function OrderTracking() {
@@ -17,46 +14,17 @@ export function OrderTracking() {
     if (!orderId) return;
     setLoading(true);
     setError(null);
-    try {
-      const docRef = doc(db, 'orders', orderId.trim());
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setTrackingData({ id: docSnap.id, ...docSnap.data() } as Order);
-      } else {
-        setError("Order ID not found. Verify with your WhatsApp receipt.");
-        setTrackingData(null);
-      }
-    } catch (e: any) {
-      handleFirestoreError(e, OperationType.GET, `orders/${orderId}`);
-      setError("An error occurred. Check your connection.");
-    } finally {
-      setLoading(false);
-    }
+    
+    // Simulated delay
+    await new Promise(r => setTimeout(r, 1000));
+    
+    setError("Logistics Database is currently in offline mode (Local). Please use your WhatsApp confirmation receipt for tracking details.");
+    setLoading(false);
   };
 
   const statusList: OrderStatus[] = ['pending', 'confirmed', 'delivering', 'delivered'];
   
   const currentStepIndex = trackingData ? statusList.indexOf(trackingData.status) : -1;
-
-  const getEstimatedDelivery = () => {
-    if (!trackingData) return null;
-    const baseDate = trackingData.createdAt?.toDate() || new Date();
-    
-    switch (trackingData.status) {
-      case 'pending':
-        return "Approximately 2-3 business days";
-      case 'confirmed':
-        return "Dispatched within 24 hours";
-      case 'delivering':
-        return "In Transit: Expected in 2-6 hours";
-      case 'delivered':
-        return "Handover Completed Successfully";
-      default:
-        return "Estimating Logistics...";
-    }
-  };
-
-  const estDelivery = getEstimatedDelivery();
 
   return (
     <div className="max-w-3xl mx-auto py-20 px-4">
@@ -73,7 +41,7 @@ export function OrderTracking() {
         <div className="text-center mb-12">
           <Truck className="text-blue-500 mx-auto mb-6" size={48} />
           <h2 className="text-4xl font-black tracking-tighter mb-4 italic uppercase">Real-Time Logistics</h2>
-          <p className="text-gray-400 text-sm">Enter the tracking code from your WhatsApp confirmation.</p>
+          <p className="text-gray-400 text-sm">Tracking is temporarily handled directly via WhatsApp for verified hardware orders.</p>
         </div>
 
         <div className="flex gap-4 mb-8">
@@ -87,48 +55,8 @@ export function OrderTracking() {
         {error && <p className="text-red-500 text-[10px] font-black uppercase tracking-widest text-center mb-8 bg-red-500/10 p-4 rounded-xl border border-red-500/20">{error}</p>}
 
         {trackingData && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
-            <div className="relative">
-              <div className="absolute top-5 left-0 w-full h-0.5 bg-white/5" />
-              <div className="relative flex justify-between">
-                {statusList.map((status, idx) => {
-                  const isCompleted = idx <= currentStepIndex;
-                  const isCurrent = idx === currentStepIndex;
-                  return (
-                    <div key={status} className="flex flex-col items-center gap-3">
-                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center z-10 border-4 border-black transition-all", isCompleted ? "bg-blue-500" : "bg-gray-900 border-white/5")}>
-                        {isCompleted ? <CheckCircle2 size={18} /> : <div className="w-2 h-2 rounded-full bg-gray-700" />}
-                      </div>
-                      <span className={cn("text-[9px] uppercase font-black tracking-widest", isCurrent ? "text-blue-500" : isCompleted ? "text-white" : "text-gray-700")}>{status}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-6 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-4">
-                <MapPin className="text-blue-500 mt-1" size={18} />
-                <div>
-                   <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Shipping Target</h4>
-                   <p className="text-xs font-bold text-gray-200">{trackingData.deliveryAddress}</p>
-                </div>
-              </div>
-              <div className="p-6 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-4">
-                <Truck className="text-blue-500 mt-1" size={18} />
-                <div>
-                   <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Estimated Arrival</h4>
-                   <p className="text-xs font-bold text-gray-200">{estDelivery}</p>
-                </div>
-              </div>
-              <div className="p-6 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-4">
-                <Clock className="text-blue-500 mt-1" size={18} />
-                <div>
-                   <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Status Report</h4>
-                   <p className="text-xs font-bold text-blue-400 uppercase italic">{trackingData.status}</p>
-                </div>
-              </div>
-            </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12 text-center text-gray-500 font-bold uppercase text-[10px]">
+             Local View Ready
           </motion.div>
         )}
       </motion.div>

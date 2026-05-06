@@ -10,18 +10,14 @@ import { Footer } from './components/layout/Footer';
 import { OrderTracking } from './components/tracking/OrderTracking';
 import { MarketingPortal } from './components/marketing/MarketingPortal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { AccountDashboard } from './components/profile/AccountDashboard';
 import { ProductDetail } from './components/shop/ProductDetail';
 import { AdminLoginModal } from './components/auth/LoginModal';
 import { QuickViewModal } from './components/shop/QuickViewModal';
 import { INITIAL_PRODUCTS } from './constants';
-import { Product, CartItem, Order, UserProfile, PaymentMethod } from './types';
-import { db } from './firebase';
-import { handleFirestoreError, OperationType } from './lib/error-handler';
+import { Product, CartItem, PaymentMethod } from './types';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { doc, setDoc, serverTimestamp, collection, getDocs, updateDoc } from 'firebase/firestore';
-import { Language, translations } from './translations';
+import { translations, Language } from './translations';
 import { ShieldCheck, ChevronRight, X, UserCog, Loader2 } from 'lucide-react';
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
@@ -29,7 +25,7 @@ type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 
 const WHATSAPP_NUMBER = "256793405517";
 
 export default function App() {
-  const { isAdmin, loading: authResolving, logout } = useAuth();
+  const { isAdmin, loading: authResolving } = useAuth();
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const [view, setView] = useState<View>('shop');
@@ -48,7 +44,7 @@ export default function App() {
   useEffect(() => {
     const handleOpenAdmin = () => setIsAdminModalOpen(true);
     window.addEventListener('openAdmin', handleOpenAdmin);
-    window.addEventListener('openLogin', handleOpenAdmin); // Redirect customer login requests to admin PIN for now or just ignore
+    window.addEventListener('openLogin', handleOpenAdmin);
     return () => {
       window.removeEventListener('openAdmin', handleOpenAdmin);
       window.removeEventListener('openLogin', handleOpenAdmin);
@@ -57,9 +53,7 @@ export default function App() {
 
   useEffect(() => {
     if (authResolving) return;
-    
-    // Redirect logic for specific views if needed
-    if (view === 'admin' && !isAdmin && !authResolving) {
+    if (view === 'admin' && !isAdmin) {
       setView('shop');
     }
   }, [view, isAdmin, authResolving]);
@@ -73,32 +67,6 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view, category]);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoadingProducts(true);
-      try {
-        const snap = await getDocs(collection(db, 'products'));
-        const dbProducts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-        if (dbProducts.length > 0) {
-          setProducts(prev => {
-            const combined = [...prev];
-            dbProducts.forEach(dbp => {
-              const idx = combined.findIndex(p => p.id === dbp.id);
-              if (idx === -1) combined.push(dbp);
-              else combined[idx] = dbp;
-            });
-            return combined;
-          });
-        }
-      } catch (e) {
-        console.warn("Using default products fallback");
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-    fetchProducts();
-  }, []);
 
   const [wishlist, setWishlist] = useState<string[]>(() => JSON.parse(localStorage.getItem('wishlist') || '[]'));
   const [likes, setLikes] = useState<string[]>(() => JSON.parse(localStorage.getItem('likes') || '[]'));
@@ -138,28 +106,13 @@ export default function App() {
     const orderId = `SOLO-ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     const cartSummary = cart.map(i => `- ${i.name} (x${i.quantity})`).join('\n');
-    const whatsappMessage = `*New Order: ${orderId}*\n\n*Customer:* ${customerName}\n*Items:*\n${cartSummary}\n\n*Total:* UGX ${(subtotal + deliveryFee).toLocaleString()}\n*Delivery:* ${district}, ${address}\n*Contact:* ${phone}\n\n_Please confirm stock and delivery time._`;
+    const whatsappMessage = `*New Order: ${orderId}*\n\n*Customer:* ${customerName}\n*Items:*\n${cartSummary}\n\n*Total:* UGX ${(subtotal + deliveryFee).toLocaleString()}\n*Delivery:* ${district}, ${address}\n*Contact:* ${phone}\n\n_Hardware Order via Solo App._`;
     
-    try {
-      await setDoc(doc(db, 'orders', orderId), {
-        id: orderId,
-        userId: 'guest',
-        customerName: customerName,
-        customerPhone: phone,
-        items: cart,
-        total: subtotal + deliveryFee,
-        status: 'pending',
-        deliveryAddress: address,
-        createdAt: serverTimestamp()
-      });
-      
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
-      setCart([]);
-      setCartOpen(false);
-      setView('tracking');
-    } catch (e) {
-       handleFirestoreError(e, OperationType.WRITE, `orders/${orderId}`);
-    }
+    // In local mode, we just trigger WhatsApp directly
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+    setCart([]);
+    setCartOpen(false);
+    setView('shop'); // Go back to shop as we don't have DB tracking for guests anymore
   };
 
   const toggleWishlist = (productId: string) => {

@@ -1,11 +1,7 @@
-import { useState, ChangeEvent, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { Product, Category, Order, OrderStatus } from '../../types';
-import { db, storage } from '../../firebase';
-import { handleFirestoreError, OperationType } from '../../lib/error-handler';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDocs, orderBy, query, increment } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
@@ -21,8 +17,6 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [videoUploading, setVideoUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
@@ -35,85 +29,34 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
     isVerified: true
   });
 
-  useEffect(() => {
-    if (activeTab === 'orders') fetchOrders();
-  }, [activeTab]);
-
-  const fetchOrders = async () => {
-    setLoadingOrders(true);
-    try {
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() }) as Order));
-    } catch (e) {
-      handleFirestoreError(e, OperationType.GET, 'orders');
-    } finally {
-      setLoadingOrders(false);
-    }
+  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
   };
 
-  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
-    try {
-      await updateDoc(doc(db, 'orders', orderId), { status });
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-    } catch (e) {
-      handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
-    }
-  };
-
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // In local mode, we'll use placeholder or local URL
     const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const isVideo = file.type.startsWith('video/');
-    if (isVideo) {
-      setVideoUploading(true);
-      try {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = async () => {
-          const duration = video.duration;
-          if (duration > 31) {
-            alert("Video rejected. Max duration is 30 seconds.");
-            setVideoUploading(false);
-            return;
-          }
-          const storageRef = ref(storage, `videos/${Date.now()}_${file.name}`);
-          const snap = await uploadBytes(storageRef, file);
-          const url = await getDownloadURL(snap.ref);
-          setNewProduct(prev => ({ ...prev, videoUrl: url, videoDuration: Math.round(duration) }));
-          setVideoUploading(false);
-        };
-        video.src = URL.createObjectURL(file);
-      } catch (err) { setVideoUploading(false); }
-      return;
+    if (file) {
+      const url = URL.createObjectURL(file);
+      if (file.type.startsWith('video/')) {
+        setNewProduct(prev => ({ ...prev, videoUrl: url, videoDuration: 30 }));
+      } else {
+        setNewProduct(prev => ({ ...prev, image: url }));
+      }
     }
-
-    setUploading(true);
-    try {
-      const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-      const snap = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(snap.ref);
-      setNewProduct(prev => ({ ...prev, image: url }));
-    } catch (err) { alert("Upload failed."); }
-    finally { setUploading(false); }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!newProduct.name || !newProduct.price || !newProduct.image) return;
     setSubmitting(true);
-    try {
-      const data = { ...newProduct, updatedAt: serverTimestamp() };
-      if (editingId) {
-        await updateDoc(doc(db, 'products', editingId), data);
-        window.location.reload();
-      } else {
-        const docRef = await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() });
-        onProductAdded({ ...data, id: docRef.id } as Product);
-      }
+    
+    // Simulate save
+    setTimeout(() => {
+      const data = { ...newProduct, id: editingId || `LOCAL-${Date.now()}` } as Product;
+      onProductAdded(data);
       resetForm();
-    } catch (e) { handleFirestoreError(e, OperationType.WRITE, 'products'); }
-    finally { setSubmitting(false); }
+      setSubmitting(false);
+    }, 500);
   };
 
   const resetForm = () => {
@@ -175,23 +118,23 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <label className="h-40 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
-                  <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
+                  <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
                   <ImageIcon size={32} className="text-blue-500 mb-2" />
-                  <span className="text-[10px] font-black uppercase text-gray-400">{uploading ? 'Uploading...' : 'Featured Image'}</span>
+                  <span className="text-[10px] font-black uppercase text-gray-400">Featured Image</span>
                 </label>
                 <label className="h-40 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
-                  <input type="file" className="hidden" accept="video/*" onChange={handleFileUpload} disabled={videoUploading} />
+                  <input type="file" className="hidden" accept="video/*" onChange={handleFileUpload} />
                   <Video size={32} className="text-green-500 mb-2" />
-                  <span className="text-[10px] font-black uppercase text-gray-400">{videoUploading ? 'Analysing...' : '30s Demo Clip'}</span>
+                  <span className="text-[10px] font-black uppercase text-gray-400">30s Demo Clip</span>
                 </label>
               </div>
               <button 
                 onClick={handleSave} 
-                disabled={submitting || uploading || videoUploading}
+                disabled={submitting}
                 className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-xl italic uppercase flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
-                {editingId ? 'Modify Strategy' : 'Commit to Inventory'}
+                {editingId ? 'Modify Local Asset' : 'Commit to Local Inventory'}
               </button>
             </div>
           </div>
@@ -208,19 +151,19 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
                 <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
                 <div className="flex items-center gap-4 mt-2">
                    <div className="flex items-center bg-black/40 rounded-lg px-2 border border-white/10">
-                      <Tooltip content="Decrease Inventory">
-                        <button onClick={async () => await updateDoc(doc(db, 'products', p.id), { stock: increment(-1) })} className="px-2 py-1 text-gray-500 hover:text-white">-</button>
+                      <Tooltip content="Stock Control (Local)">
+                        <button className="px-2 py-1 text-gray-500 hover:text-white">-</button>
                       </Tooltip>
                       <span className="px-2 font-mono text-xs text-white">{p.stock}</span>
-                      <Tooltip content="Increase Inventory">
-                        <button onClick={async () => await updateDoc(doc(db, 'products', p.id), { stock: increment(1) })} className="px-2 py-1 text-gray-500 hover:text-white">+</button>
+                      <Tooltip content="Stock Control (Local)">
+                        <button className="px-2 py-1 text-gray-500 hover:text-white">+</button>
                       </Tooltip>
                    </div>
-                   <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase">Modify</button>
+                   <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase">Edit</button>
                 </div>
               </div>
-                <Tooltip content="Purge from Inventory" position="left">
-                  <button onClick={async () => { if(confirm("Delist asset?")) await deleteDoc(doc(db, 'products', p.id)); }} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Tooltip content="Remove (Local)" position="left">
+                  <button onClick={() => alert("Note: Changes are local and temporary.")} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 size={14} className="text-red-500/50 hover:text-red-500" />
                   </button>
                 </Tooltip>
@@ -229,33 +172,9 @@ export function AdminDashboard({ products, onProductAdded }: AdminDashboardProps
         </div>
       ) : (
         <div className="space-y-6">
-          {loadingOrders ? <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-500" /></div> : 
-            orders.map(o => (
-              <div key={o.id} className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem]">
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <span className="text-xs font-mono text-blue-500 font-bold">{o.id}</span>
-                    <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter mt-1">{o.customerName}</h4>
-                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"><Clock size={12} /> {format(o.createdAt, 'MMM dd, HH:mm')} | {o.customerPhone}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-black text-white italic tracking-tighter">UGX {o.total.toLocaleString()}</p>
-                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{o.status}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2 flex-wrap mb-6">
-                  {Object.keys(statusMap).map((s) => (
-                    <button key={s} onClick={() => updateOrderStatus(o.id, s as any)} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all", o.status === s ? "bg-white text-black border-white" : "bg-white/5 text-gray-500 border-white/10")}>{s}</button>
-                  ))}
-                  <a href={`https://wa.me/${o.customerPhone.replace(/\D/g, '')}`} target="_blank" className="ml-auto px-6 py-2 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">WhatsApp Client</a>
-                </div>
-                <div className="space-y-3 bg-black/20 p-4 rounded-2xl border border-white/5">
-                   {o.items.map(i => <div key={i.id} className="flex justify-between text-xs font-bold uppercase"><span className="text-gray-400">{i.quantity} x {i.name}</span><span className="text-white">UGX {(i.price * i.quantity).toLocaleString()}</span></div>)}
-                   <p className="text-[10px] text-gray-500 pt-3 border-t border-white/5 italic">Delivery: {o.deliveryAddress}</p>
-                </div>
-              </div>
-            ))
-          }
+          <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">
+             Logistics Database Offline (Local Mode)
+          </div>
         </div>
       )}
     </div>

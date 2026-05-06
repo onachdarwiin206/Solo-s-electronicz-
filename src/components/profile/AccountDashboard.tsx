@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Clock, Bookmark, ArrowLeft } from 'lucide-react';
+import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
-import { db } from '../../firebase';
 import { useAuth } from '../../AuthContext';
-import { doc, updateDoc, deleteDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../../lib/error-handler';
-import { format } from 'date-fns';
 
 interface AccountDashboardProps {
   user: UserProfile;
@@ -22,23 +18,11 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'likes'>('orders');
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      const path = 'orders';
-      try {
-        const q = query(
-          collection(db, path),
-          where('userId', '==', user.id),
-          orderBy('createdAt', 'desc')
-        );
-        const snap = await getDocs(q);
-        setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
-      } catch (e) {
-        handleFirestoreError(e, OperationType.LIST, path);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrders();
+    // Simulated fetch
+    setTimeout(() => {
+      setLoading(false);
+      setOrders([]);
+    }, 600);
   }, [user.id]);
 
   const wishlistProducts = products.filter(p => user.wishlist?.includes(p.id));
@@ -123,8 +107,8 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                  <History className="text-green-500" size={18} />
                </div>
                <div>
-                  <p className="text-white font-bold text-xs">Customer Since</p>
-                  <p className="text-gray-500 text-[10px]">{format(new Date(user.createdAt?.seconds * 1000 || Date.now()), 'MMMM yyyy')}</p>
+                  <p className="text-white font-bold text-xs">Customer History</p>
+                  <p className="text-gray-500 text-[10px]">Logistics: Offline Mode</p>
                </div>
             </div>
           </div>
@@ -167,7 +151,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                               </div>
                               <div>
                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{order.id}</p>
-                                <p className="text-white font-black text-lg">{format(new Date(order.createdAt?.seconds * 1000 || order.createdAt), 'MMM dd, yyyy')}</p>
+                                <p className="text-white font-black text-lg">{new Date().toLocaleDateString()}</p>
                               </div>
                            </div>
                            <div className="flex items-center gap-8">
@@ -299,8 +283,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                   </div>
                 )}
               </motion.div>
-            )
-}
+            )}
           </AnimatePresence>
         </div>
       </div>

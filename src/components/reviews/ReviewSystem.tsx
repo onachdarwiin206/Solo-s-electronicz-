@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Star, MessageSquare, Send, User, Calendar, Loader2, AlertCircle, Quote } from 'lucide-react';
 import { Review, Product } from '../../types';
-import { db } from '../../firebase';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, updateDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../../AuthContext';
-import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 import { cn } from '../../lib/utils';
 
 interface ReviewSystemProps {
@@ -23,31 +20,12 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
   const [guestName, setGuestName] = useState('');
   const [hoverRating, setHoverRating] = useState(0);
 
-  const fetchReviews = async () => {
-    setLoading(true);
-    try {
-      const q = query(
-        collection(db, 'reviews'),
-        where('productId', '==', product.id),
-        orderBy('createdAt', 'desc')
-      );
-      const snap = await getDocs(q);
-      const fetchedReviews = snap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
-      setReviews(fetchedReviews);
-      
-      if (fetchedReviews.length > 0) {
-        const avg = fetchedReviews.reduce((acc, r) => acc + r.rating, 0) / fetchedReviews.length;
-        onReviewAdded?.(avg);
-      }
-    } catch (e) {
-      console.error("Error fetching reviews:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchReviews();
+    // Simulated fetch
+    setTimeout(() => {
+      setLoading(false);
+      setReviews([]);
+    }, 500);
   }, [product.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,37 +33,28 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
     if (!guestName.trim() || rating < 1 || !comment.trim()) return;
 
     setSubmitting(true);
-    try {
-      const newReview = {
+    // Simulated save
+    setTimeout(() => {
+      const newReview: Review = {
+        id: `LOCAL-REV-${Date.now()}`,
         productId: product.id,
         userId: 'guest',
         userName: guestName.trim(),
         rating,
         comment,
-        createdAt: serverTimestamp()
+        createdAt: new Date()
       };
-      await addDoc(collection(db, 'reviews'), newReview);
+      setReviews(prev => [newReview, ...prev]);
       
-      // Recalculate average rating
-      const q = query(collection(db, 'reviews'), where('productId', '==', product.id));
-      const snap = await getDocs(q);
-      const allReviews = snap.docs.map(d => d.data() as Review);
-      const totalReviews = allReviews.length;
-      const averageRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
-      
-      await updateDoc(doc(db, 'products', product.id), {
-        rating: Math.round(averageRating * 10) / 10
-      });
+      const allReviews = [newReview, ...reviews];
+      const averageRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+      onReviewAdded?.(averageRating);
 
       setComment('');
       setGuestName('');
       setRating(5);
-      await fetchReviews();
-    } catch (e) {
-      handleFirestoreError(e, OperationType.WRITE, 'reviews');
-    } finally {
       setSubmitting(false);
-    }
+    }, 600);
   };
 
   return (
@@ -197,7 +166,7 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
             <div className="p-6 bg-white/5 border border-white/10 rounded-3xl flex items-start gap-4">
                <AlertCircle size={20} className="text-blue-500 mt-1 flex-shrink-0" />
                <p className="text-[11px] text-gray-500 leading-relaxed uppercase font-medium">
-                 Your review will be public and indexed by our system. Please ensure your feedback is technical and constructive.
+                 Reviews are currently local and temporary. Persistence is handled via secure WhatsApp verification in production.
                </p>
             </div>
           </div>
@@ -237,7 +206,7 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
                       <h5 className="font-bold text-white uppercase tracking-tight">{review.userName}</h5>
                       <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase tracking-widest">
                          <Calendar size={12} />
-                         {review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                         {review.createdAt instanceof Date ? review.createdAt.toLocaleDateString() : 'Just now'}
                       </div>
                     </div>
                   </div>
