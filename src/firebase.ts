@@ -4,8 +4,8 @@ import {
   initializeFirestore, 
   doc, 
   getDoc,
-  enableIndexedDbPersistence,
-  CACHE_SIZE_UNLIMITED
+  persistentLocalCache,
+  persistentMultipleTabManager
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -22,24 +22,14 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 
-// Optimized for AI Studio Preview
+// Optimized for AI Studio Preview with Modern Persistence
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
   useFetchStreams: false,
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
 } as any);
-
-// Enable persistence for better offline/local experience
-try {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn("Multiple tabs open, persistence can only be enabled in one tab at a time.");
-    } else if (err.code === 'unimplemented') {
-      console.warn("The current browser does not support all of the features required to enable persistence.");
-    }
-  });
-} catch (e) {
-  console.error("Persistence initialization failed", e);
-}
 
 async function testConnection() {
   // Give the network layer a moment to settle in the proxy environment
