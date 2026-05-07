@@ -1,8 +1,9 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
 import { db, auth } from "./firebase";
-import { doc, getDocFromServer } from 'firebase/firestore';
+import { doc, getDocFromServer, updateDoc } from 'firebase/firestore';
 import { UserProfile } from './types';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
+import { loginWithGoogle } from './auth';
 
 type AuthType = {
   user: UserProfile | null;
@@ -77,9 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithGoogleAdmin = async () => {
     const adminPath = 'system/admin';
     try {
-      const { loginWithGoogle } = await import('./auth');
       const user = await loginWithGoogle();
-      
       if (!user || !user.email) return false;
 
       const adminDoc = await getDocFromServer(doc(db, adminPath));
@@ -89,7 +88,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Bootstrap: If list is empty, the first person to try is whitelisted
         if (allowedEmails.length === 0) {
-          const { updateDoc } = await import('firebase/firestore');
           await updateDoc(doc(db, adminPath), { allowedEmails: [user.email] });
           allowedEmails = [user.email];
         }

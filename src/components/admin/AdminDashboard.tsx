@@ -161,9 +161,21 @@ _Thank you for choosing Solo Electronics!_
 
     setSubmitting(true);
     try {
-      const storageRef = ref(storage, `products/${Date.now()}-${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      // Use multipart/form-data by passing file in FormData
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed via multipart terminal');
+      }
+
+      const result = await response.json();
+      const url = result.url;
       
       if (file.type.startsWith('video/')) {
         setNewProduct(prev => ({ ...prev, videoUrl: url, videoDuration: 30 }));
@@ -171,6 +183,7 @@ _Thank you for choosing Solo Electronics!_
         setNewProduct(prev => ({ ...prev, image: url }));
       }
     } catch (e) {
+      console.error("[Multipart Upload Error]", e);
       handleFirestoreError(e, OperationType.WRITE, 'storage');
     } finally {
       setSubmitting(false);
@@ -178,7 +191,7 @@ _Thank you for choosing Solo Electronics!_
   };
 
   const handleSave = async () => {
-    if (!newProduct.name || !newProduct.price || !newProduct.image) return;
+    if (!newProduct.name || !newProduct.price || (!newProduct.image && !newProduct.videoUrl)) return;
     setSubmitting(true);
     
     try {

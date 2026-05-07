@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
 import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
@@ -40,8 +40,8 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [showTerms, setShowTerms] = useState(false);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [language, setLanguage] = useState<Language>('en');
 
   // Prefetch Admin Dashboard when modal is opened for instant switch
@@ -53,7 +53,7 @@ export default function App() {
   }, [isAdminModalOpen]);
 
   useEffect(() => {
-    setLoadingProducts(true);
+    // We keep loadingProducts true until we get a real answer from Firestore
     console.log("[Firestore] Subscribing to products collection...");
     const q = collection(db, 'products');
     
@@ -64,22 +64,34 @@ export default function App() {
         ...doc.data({ serverTimestamps: 'estimate' })
       })) as Product[];
       
+      // Sort real products first by date
+      fetchedProducts.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis?.() || a.updatedAt?.toMillis?.() || Date.now();
+        const timeB = b.createdAt?.toMillis?.() || b.updatedAt?.toMillis?.() || Date.now();
+        return timeB - timeA;
+      });
+
+      // Logic: Always show real products if they exist.
+      // If we have very few real products (e.g. < 4), we append some demo products to keep the UI looking full.
       if (fetchedProducts.length > 0) {
-        fetchedProducts.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis?.() || a.updatedAt?.toMillis?.() || Date.now();
-          const timeB = b.createdAt?.toMillis?.() || b.updatedAt?.toMillis?.() || Date.now();
-          return timeB - timeA;
-        });
-        console.log("[Firestore] Updating products state with fetched data");
-        setProducts(fetchedProducts);
+        if (fetchedProducts.length < 4) {
+          // Add some unique demo products that don't clash with uploaded ones (simple name check)
+          const extraDemo = INITIAL_PRODUCTS.filter(dp => !fetchedProducts.some(fp => fp.name === dp.name)).slice(0, 4 - fetchedProducts.length);
+          setProducts([...fetchedProducts, ...extraDemo]);
+        } else {
+          setProducts(fetchedProducts);
+        }
       } else {
-        console.log("[Firestore] Collection empty, persisting initial products");
+        console.log("[Firestore] Collection empty, using demo data");
+        setProducts(INITIAL_PRODUCTS);
       }
       setLoadingProducts(false);
     }, (error) => {
       console.error("[Firestore] Subscription error:", error);
       handleFirestoreError(error, OperationType.LIST, 'products');
       setLoadingProducts(false);
+      // Fallback on error to ensure user sees something
+      if (products.length === 0) setProducts(INITIAL_PRODUCTS);
     });
 
     return () => unsubscribe();
@@ -123,6 +135,15 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('likes', JSON.stringify(likes));
   }, [likes]);
+
+  const t = translations[language];
+
+  const filteredProducts = useMemo(() => products.filter(p => {
+    const matchesCategory = category ? p.category === category : true;
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  }), [products, category, searchQuery]);
 
   if (authResolving) {
     return (
@@ -210,15 +231,6 @@ _Your order is now being processed._
   const toggleLike = (productId: string) => {
     setLikes(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
   };
-
-  const t = translations[language];
-
-  const filteredProducts = products.filter(p => {
-    const matchesCategory = category ? p.category === category : true;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         p.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
 
   return (
     <div className="min-h-screen">

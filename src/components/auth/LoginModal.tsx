@@ -34,12 +34,12 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/95 backdrop-blur-2xl"
+            className="absolute inset-0 bg-black/90 backdrop-blur-xl"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
             className="relative w-full max-w-sm z-[210]"
           >
             <div className="bg-neutral-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
@@ -80,9 +80,11 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
                   </motion.div>
                 )}
 
-                <button 
+                <motion.button 
                   onClick={handleGoogleLogin}
                   disabled={loading}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   className="w-full py-8 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-[2rem] transition-all shadow-xl shadow-blue-500/20 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-4 disabled:opacity-50"
                 >
                   {loading ? <Loader2 className="animate-spin" size={20} /> : (
@@ -91,7 +93,7 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
                       Whitelisted Google Login
                     </>
                   )}
-                </button>
+                </motion.button>
 
                 <div className="mt-12 text-center">
                   <p className="text-[8px] text-gray-600 font-bold uppercase tracking-[0.2em] leading-loose max-w-[240px] mx-auto">
