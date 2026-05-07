@@ -87,11 +87,16 @@ export default function App() {
       }
       setLoadingProducts(false);
     }, (error) => {
-      console.error("[Firestore] Subscription error:", error);
-      handleFirestoreError(error, OperationType.LIST, 'products');
-      setLoadingProducts(false);
-      // Fallback on error to ensure user sees something
-      if (products.length === 0) setProducts(INITIAL_PRODUCTS);
+      // Offline errors are common in proxy/sandboxed environments, handle gracefully
+      if (error.message.includes('offline')) {
+        console.warn("[Firestore] Subscription offline, keeping current state or showing demo data.");
+        if (products.length === 0) setProducts(INITIAL_PRODUCTS);
+        setLoadingProducts(false);
+      } else {
+        console.error("[Firestore] Subscription error:", error);
+        handleFirestoreError(error, OperationType.LIST, 'products');
+        setLoadingProducts(false);
+      }
     });
 
     return () => unsubscribe();

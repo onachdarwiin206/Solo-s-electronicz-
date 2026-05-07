@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
 import { db, storage } from '../../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, onSnapshot, getDocFromServer } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, onSnapshot, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
 
@@ -67,7 +67,7 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
   useEffect(() => {
     const checkSync = async () => {
       try {
-        const adminDoc = await getDocFromServer(doc(db, 'system', 'admin'));
+        const adminDoc = await getDoc(doc(db, 'system', 'admin'));
         if (adminDoc.exists()) {
           setAllowedEmails(adminDoc.data().allowedEmails || []);
         }

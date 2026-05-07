@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
 import { db, auth } from "./firebase";
-import { doc, getDocFromServer, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { UserProfile } from './types';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
 import { loginWithGoogle } from './auth';
@@ -81,15 +81,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const user = await loginWithGoogle();
       if (!user || !user.email) return false;
 
-      const adminDoc = await getDocFromServer(doc(db, adminPath));
-      if (adminDoc.exists()) {
+      // Use getDoc with a faster retry and silent fallback for "offline"
+      let adminDoc;
+      try {
+        adminDoc = await getDoc(doc(db, adminPath));
+      } catch (firstError: any) {
+        if (firstError.message?.includes('offline')) {
+          // Retry once quickly
+          await new Promise(resolve => setTimeout(resolve, 300));
+          adminDoc = await getDoc(doc(db, adminPath));
+        } else {
+          throw firstError;
+        }
+      }
+      
+      if (adminDoc && adminDoc.exists()) {
         const data = adminDoc.data();
         let allowedEmails = data.allowedEmails || [];
         
         // Bootstrap: If list is empty, the first person to try is whitelisted
         if (allowedEmails.length === 0) {
-          await updateDoc(doc(db, adminPath), { allowedEmails: [user.email] });
-          allowedEmails = [user.email];
+          try {
+            await updateDoc(doc(db, adminPath), { allowedEmails: [user.email] });
+            allowedEmails = [user.email];
+          } catch (e) { console.error("Initial Whitelist Error:", e); }
         }
 
         if (allowedEmails.includes(user.email)) {
@@ -100,7 +115,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, adminPath);
+      // If it's still offline, we can't verify, but we don't want a hard crash
+      if (String(error).includes('offline')) {
+         console.warn("[Auth] Verification failed due to offline state. Check network.");
+      } else {
+         handleFirestoreError(error, OperationType.GET, adminPath);
+      }
     }
     return false;
   };
