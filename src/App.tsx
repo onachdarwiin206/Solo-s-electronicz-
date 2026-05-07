@@ -9,7 +9,7 @@ import { Cart } from './components/shop/Cart';
 import { Footer } from './components/layout/Footer';
 import { INITIAL_PRODUCTS } from './constants';
 import { db } from './firebase';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, limit } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
 import { Product, CartItem, PaymentMethod, Order } from './types';
 import { useAuth } from './AuthContext';
@@ -55,7 +55,8 @@ export default function App() {
   useEffect(() => {
     // We keep loadingProducts true until we get a real answer from Firestore
     console.log("[Firestore] Subscribing to products collection...");
-    const q = collection(db, 'products');
+    // We fetch with an explicit order to offload work from the bundle
+    const q = query(collection(db, 'products'), orderBy('clientCreatedAt', 'desc'), limit(50));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log(`[Firestore] Snapshot received. Metadata: ${snapshot.metadata.fromCache ? 'CACHE' : 'SERVER'}. Size: ${snapshot.size}`);
@@ -68,19 +69,18 @@ export default function App() {
       // Filter out invalid items if any
       fetchedProducts = fetchedProducts.filter(p => p.name && p.price);
 
-      // Sort: Real products first by date (newest first)
+      // Robust Sorting: 
+      // 1. Use clientCreatedAt if server-side createdAt is still pending (null)
+      // 2. This prevents the "Flicker to the bottom" bug
       fetchedProducts.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis?.() || a.updatedAt?.toMillis?.() || Date.now();
-        const timeB = b.createdAt?.toMillis?.() || b.updatedAt?.toMillis?.() || Date.now();
+        const timeA = a.createdAt?.toMillis?.() || a.clientCreatedAt || Date.now();
+        const timeB = b.createdAt?.toMillis?.() || b.clientCreatedAt || Date.now();
         return timeB - timeA;
       });
 
-      // Logic: If we have real products, use them.
-      // We only append demo products if explicitly needed or if absolutely empty and not coming from a failed cache
       if (fetchedProducts.length > 0) {
         setProducts(fetchedProducts);
       } else if (!snapshot.metadata.fromCache) {
-        // Only if verified empty from server do we show demo data
         console.log("[Firestore] Collection definitively empty, using demo data");
         setProducts(INITIAL_PRODUCTS);
       }

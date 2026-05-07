@@ -157,98 +157,102 @@ _Thank you for choosing Solo Electronics!_
     window.open(whatsappUrl, '_blank');
   };
 
-  const [uploadingMedia, setUploadingMedia] = useState<{ id: string; type: 'image' | 'video'; progress: number; url?: string }[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState<{ id: string; type: 'image' | 'video'; file: File; status: 'queued' | 'uploading' | 'done' | 'error'; url?: string }[]>([]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Convert FileList to Array and process each
-    Array.from(files).forEach(async (file: any) => {
-      const uploadId = Math.random().toString(36).substr(2, 9);
-      
-      setUploadingMedia(prev => [...prev, { id: uploadId, type, progress: 0 }]);
+    const newUploads = Array.from(files).map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      file,
+      status: 'uploading' as const
+    }));
 
+    setUploadingMedia(prev => [...prev, ...newUploads]);
+
+    // Process each upload in parallel but track them individually
+    newUploads.forEach(async (upload) => {
       try {
-        const fileName = `${Date.now()}-${file.name}`;
+        const fileName = `${Date.now()}-${upload.file.name}`;
         const storageRef = ref(storage, `products/${fileName}`);
         
-        console.log(`[Storage] Starting upload for ${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
+        const snapshot = await uploadBytes(storageRef, upload.file);
         const url = await getDownloadURL(snapshot.ref);
         
-        console.log(`[Storage] Upload complete: ${url}`);
-        setUploadingMedia(prev => prev.map(item => item.id === uploadId ? { ...item, progress: 100, url } : item));
-
-        if (type === 'video') {
-          setNewProduct(prev => ({
-            ...prev,
-            videoUrl: prev.videoUrl || url, // First one is primary
-            videos: [...(prev.videos || []), url]
-          }));
-        } else {
-          setNewProduct(prev => ({
-            ...prev,
-            image: prev.image || url, // First one is primary
-            images: [...(prev.images || []), url]
-          }));
-        }
+        setUploadingMedia(prev => prev.map(item => 
+          item.id === upload.id ? { ...item, status: 'done' as const, url } : item
+        ));
       } catch (err: any) {
         console.error("Upload error:", err);
-        setUploadingMedia(prev => prev.filter(item => item.id !== uploadId));
-        if (err.code === 'storage/unauthorized') {
-          alert("PERMISSION DENIED: You must be signed in as an admin to upload assets.");
-        } else {
-          alert(`UPLOAD FAILED: ${err.message}`);
-        }
+        setUploadingMedia(prev => prev.map(item => 
+          item.id === upload.id ? { ...item, status: 'error' as const } : item
+        ));
       }
     });
   };
 
-  const removeMedia = (url: string, type: 'image' | 'video') => {
-    if (type === 'video') {
-      setNewProduct(prev => {
-        const filtered = (prev.videos || []).filter(v => v !== url);
-        return {
-          ...prev,
-          videos: filtered,
-          videoUrl: prev.videoUrl === url ? (filtered[0] || '') : prev.videoUrl
-        };
-      });
-    } else {
-      setNewProduct(prev => {
-        const filtered = (prev.images || []).filter(i => i !== url);
-        return {
-          ...prev,
-          images: filtered,
-          image: prev.image === url ? (filtered[0] || '') : prev.image
-        };
-      });
+  const removeMedia = (url: string | undefined, id: string) => {
+    setUploadingMedia(prev => prev.filter(item => item.id !== id));
+    
+    // Also clean up from newProduct if it was already committed there
+    if (url) {
+      setNewProduct(prev => ({
+        ...prev,
+        images: prev.images?.filter(i => i !== url),
+        videos: prev.videos?.filter(v => v !== url),
+        image: prev.image === url ? (prev.images?.[0] || '') : prev.image,
+        videoUrl: prev.videoUrl === url ? (prev.videos?.[0] || '') : prev.videoUrl
+      }));
     }
-    setUploadingMedia(prev => prev.filter(item => item.url !== url));
   };
+
   const handleSave = async () => {
-    if (!newProduct.name || !newProduct.price || (!newProduct.image && !newProduct.videoUrl)) return;
+    if (!newProduct.name || !newProduct.price) return;
+    
+    // Check if any uploads are still in progress
+    const pending = uploadingMedia.filter(m => m.status === 'uploading');
+    if (pending.length > 0) {
+      alert(`Waiting for ${pending.length} assets to finish syncing...`);
+      return;
+    }
+
+    const completedImages = uploadingMedia.filter(m => m.type === 'image' && m.status === 'done').map(m => m.url!);
+    const completedVideos = uploadingMedia.filter(m => m.type === 'video' && m.status === 'done').map(m => m.url!);
+
+    if (completedImages.length === 0 && completedVideos.length === 0 && !newProduct.image && !newProduct.videoUrl) {
+      alert("At least one image or video is required.");
+      return;
+    }
+
     setSubmitting(true);
     
     try {
+      const finalImages = [...(newProduct.images || []), ...completedImages];
+      const finalVideos = [...(newProduct.videos || []), ...completedVideos];
+
       const data = {
         ...newProduct,
-        updatedAt: serverTimestamp()
+        image: newProduct.image || finalImages[0] || '',
+        videoUrl: newProduct.videoUrl || finalVideos[0] || '',
+        images: finalImages,
+        videos: finalVideos,
+        updatedAt: serverTimestamp(),
+        // Client-side timestamp for instant sorting (prevent flicker)
+        clientUpdatedAt: Date.now()
       };
 
       if (editingId) {
-        console.log(`[Admin] Updating product: ${editingId}`, data);
         await updateDoc(doc(db, 'products', editingId), data);
       } else {
-        console.log("[Admin] Adding new product", data);
         await addDoc(collection(db, 'products'), {
           ...data,
           createdAt: serverTimestamp(),
+          clientCreatedAt: Date.now(),
           rating: 5
         });
       }
-      console.log("[Admin] Product operation successful");
       resetForm();
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, 'products');
@@ -398,12 +402,17 @@ _Thank you for choosing Solo Electronics!_
                           </div>
                         )}
                         <button 
-                          onClick={() => removeMedia(item.url!, item.type)}
+                          onClick={() => removeMedia(item.url, item.id)}
                           className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500"
                         >
                           <X size={10} />
                         </button>
                       </>
+                    ) : item.status === 'error' ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-red-500/20">
+                         <AlertCircle className="text-red-500" size={16} />
+                         <button onClick={() => removeMedia(undefined, item.id)} className="mt-1 text-[8px] uppercase font-black">Clear</button>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Loader2 className="animate-spin text-blue-500" size={16} />
@@ -415,7 +424,7 @@ _Thank you for choosing Solo Electronics!_
 
               <button 
                 onClick={handleSave} 
-                disabled={submitting || uploadingMedia.some(m => !m.url)}
+                disabled={submitting || uploadingMedia.some(m => m.status === 'uploading')}
                 className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-xl italic uppercase flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
