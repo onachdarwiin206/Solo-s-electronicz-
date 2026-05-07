@@ -23,14 +23,16 @@ const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard').th
 const ProductDetail = lazy(() => import('./components/shop/ProductDetail').then(module => ({ default: module.ProductDetail })));
 const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal').then(module => ({ default: module.QuickViewModal })));
 const AdminLoginModal = lazy(() => import('./components/auth/LoginModal').then(module => ({ default: module.AdminLoginModal })));
+const UserAuthModal = lazy(() => import('./components/auth/UserAuthModal').then(module => ({ default: module.UserAuthModal })));
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
 
 const WHATSAPP_NUMBER = "256793405517";
 
 export default function App() {
-  const { isAdmin, loading: authResolving } = useAuth();
+  const { user, isAdmin, loading: authResolving } = useAuth();
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const [view, setView] = useState<View>('shop');
   const [category, setCategory] = useState<string | null>(null);
@@ -86,7 +88,7 @@ export default function App() {
       }
       setLoadingProducts(false);
     }, (error) => {
-      console.error("[Firestore] Subscription error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'products');
       // Only fallback to demo if we have nothing at all
       if (products.length === 0) {
         setProducts(INITIAL_PRODUCTS);
@@ -113,7 +115,10 @@ export default function App() {
     if (view === 'admin' && !isAdmin) {
       setView('shop');
     }
-  }, [view, isAdmin, authResolving]);
+    if ((view === 'tracking' || view === 'profile') && !user) {
+      setIsAuthModalOpen(true);
+    }
+  }, [view, isAdmin, user, authResolving]);
 
   useEffect(() => {
     const handleNav = (e: any) => { if (e.detail) setView(e.detail); };
@@ -246,6 +251,7 @@ _Your order is now being processed._
         isAdmin={isAdmin}
         currentLanguage={language}
         onLanguageChange={setLanguage}
+        onAuthClick={() => setIsAuthModalOpen(true)}
         t={t}
       />
 
@@ -342,6 +348,7 @@ _Your order is now being processed._
       
       <Suspense fallback={null}>
         <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
+        <UserAuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
       </Suspense>
 

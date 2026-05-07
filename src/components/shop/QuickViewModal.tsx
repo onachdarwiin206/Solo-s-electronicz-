@@ -71,6 +71,7 @@ export function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModal
                       src={currentMedia} 
                       className="w-full h-full object-contain" 
                       alt={product.name} 
+                      loading="lazy"
                     />
                   )}
 

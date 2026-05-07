@@ -18,6 +18,8 @@ export interface Product {
   likesCount?: number;
   createdAt?: any;
   updatedAt?: any;
+  clientCreatedAt?: number;
+  clientUpdatedAt?: number;
 }
 
 export type Category = 'Phones' | 'Computers' | 'Electronics' | 'Accessories';

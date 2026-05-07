@@ -1,9 +1,10 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
 import { db, auth } from "./firebase";
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { UserProfile } from './types';
 import { handleFirestoreError, OperationType } from './lib/error-handler';
-import { loginWithGoogle } from './auth';
+import { loginWithGoogle, logoutUser } from './auth';
 
 type AuthType = {
   user: UserProfile | null;
@@ -11,7 +12,7 @@ type AuthType = {
   isAdmin: boolean;
   loginWithGoogleAdmin: () => Promise<boolean>;
   loginWithPin: (pin: string) => boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthType>({
@@ -20,15 +21,54 @@ const AuthContext = createContext<AuthType>({
   isAdmin: false,
   loginWithGoogleAdmin: async () => false,
   loginWithPin: () => false,
-  logout: () => {}
+  logout: async () => {}
 });
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Standard User Auth Listener
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
+      if (firebaseUser) {
+        // Sync/Fetch user profile
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        try {
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists()) {
+            setUser({ id: firebaseUser.uid, ...userDoc.data() } as UserProfile);
+          } else {
+            // Create profile if missing (e.g. first time login)
+            const newProfile: Omit<UserProfile, 'id'> = {
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              email: firebaseUser.email || '',
+              phone: firebaseUser.phoneNumber || '',
+              createdAt: serverTimestamp(),
+              role: 'customer',
+              wishlist: [],
+              likes: []
+            };
+            await setDoc(userRef, newProfile);
+            setUser({ id: firebaseUser.uid, ...newProfile } as UserProfile);
+          }
+        } catch (e) {
+          console.error("Profile Fetch Error:", e);
+        }
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const resetInactivityTimer = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -54,7 +94,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         sessionStorage.removeItem('admin_last_active');
       }
     }
-    setLoading(false);
 
     // Activity listeners
     const handleActivity = () => resetInactivityTimer();
@@ -80,8 +119,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithGoogleAdmin = async () => {
     const adminPath = 'system/admin';
     try {
-      const user = await loginWithGoogle();
-      if (!user || !user.email) return false;
+      const userResult = await loginWithGoogle();
+      if (!userResult || !userResult.email) return false;
 
       // Use getDoc with a faster retry and silent fallback for "offline"
       let adminDoc;
@@ -104,12 +143,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Bootstrap: If list is empty, the first person to try is whitelisted
         if (allowedEmails.length === 0) {
           try {
-            await updateDoc(doc(db, adminPath), { allowedEmails: [user.email] });
-            allowedEmails = [user.email];
+            await updateDoc(doc(db, adminPath), { allowedEmails: [userResult.email] });
+            allowedEmails = [userResult.email];
           } catch (e) { console.error("Initial Whitelist Error:", e); }
         }
 
-        if (allowedEmails.includes(user.email)) {
+        if (allowedEmails.includes(userResult.email)) {
           setIsAdmin(true);
           sessionStorage.setItem('admin_auth', 'true');
           sessionStorage.setItem('admin_last_active', Date.now().toString());
@@ -137,7 +176,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await logoutUser();
     setIsAdmin(false);
     sessionStorage.removeItem('admin_auth');
     sessionStorage.removeItem('admin_last_active');
@@ -146,7 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider
       value={{
-        user: null,
+        user,
         loading,
         isAdmin,
         loginWithGoogleAdmin,

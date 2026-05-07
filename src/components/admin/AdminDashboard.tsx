@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import imageCompression from 'browser-image-compression';
 import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
 import { Product, Category, Order, OrderStatus } from '../../types';
 import { cn } from '../../lib/utils';
@@ -157,7 +158,87 @@ _Thank you for choosing Solo Electronics!_
     window.open(whatsappUrl, '_blank');
   };
 
-  const [uploadingMedia, setUploadingMedia] = useState<{ id: string; type: 'image' | 'video'; file: File; status: 'queued' | 'uploading' | 'done' | 'error'; url?: string }[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState<{ id: string; type: 'image' | 'video'; file: File; status: 'queued' | 'uploading' | 'done' | 'error'; progress: number; url?: string }[]>([]);
+
+  // Throttled progress update helper to reduce rerenders
+  const updateProgress = (id: string, progress: number, status?: 'uploading' | 'done' | 'error', url?: string) => {
+    setUploadingMedia(prev => {
+      const item = prev.find(i => i.id === id);
+      if (!item) return prev;
+      
+      // Only update if status changed or progress jumped by at least 5%
+      if (item.status === status && Math.abs(item.progress - progress) < 5 && !url) {
+        return prev;
+      }
+
+      return prev.map(i => i.id === id ? { 
+        ...i, 
+        progress, 
+        status: status || i.status,
+        url: url || i.url
+      } : i);
+    });
+  };
+
+  const processQueue = async () => {
+    const active = uploadingMedia.filter(m => m.status === 'uploading').length;
+    const queued = uploadingMedia.filter(m => m.status === 'queued');
+
+    if (active >= 2 || queued.length === 0) return;
+
+    const next = queued[0];
+    
+    // Mark as uploading immediately
+    setUploadingMedia(prev => prev.map(i => i.id === next.id ? { ...i, status: 'uploading' } : i));
+
+    try {
+      let fileToUpload: Blob | File = next.file;
+      console.log(`[Storage] Preparing: ${next.file.name} (Original: ${(next.file.size / 1024 / 1024).toFixed(2)}MB)`);
+
+      if (next.type === 'image') {
+        try {
+          fileToUpload = await imageCompression(next.file, {
+            maxSizeMB: 0.5,
+            maxWidthOrHeight: 1600,
+            useWebWorker: true
+          });
+          console.log(`[Storage] Compressed: ${(fileToUpload.size / 1024).toFixed(1)}KB`);
+        } catch (e) { 
+          console.warn("[Storage] Compression failed, using original:", e);
+        }
+      }
+
+      const storageRef = ref(storage, `products/${Date.now()}-${next.file.name}`);
+      console.log(`[Storage] Attempting upload to: ${storageRef.fullPath}`);
+      
+      const snapshot = await uploadBytes(storageRef, fileToUpload);
+      const url = await getDownloadURL(snapshot.ref);
+      
+      console.log(`[Storage] Success: ${url}`);
+      updateProgress(next.id, 100, 'done', url);
+      processQueue();
+    } catch (err: any) {
+      console.error("[Storage] Critical Upload Failure:", err);
+      
+      let errorMessage = "Network link interrupted.";
+      if (err.code === 'storage/retry-limit-exceeded') {
+        errorMessage = "TIMED OUT: The server stopped responding. This usually happens on slow connections. Try uploading one image at a time.";
+      } else if (err.code === 'storage/unauthorized') {
+        errorMessage = "SECURITY REJECTION: You do not have permission to write to this bucket. Check security rules.";
+      } else if (err.code === 'storage/invalid-argument') {
+        errorMessage = "INVALID DATA: The file format is not supported.";
+      }
+
+      console.warn(`[Storage] Error ${err.code}: ${errorMessage}`);
+      updateProgress(next.id, 0, 'error');
+      processQueue();
+    }
+  };
+
+  // Trigger queue check wheneverUploadingMedia changes to 'queued'
+  useEffect(() => {
+    processQueue();
+  }, [uploadingMedia]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = e.target.files;
@@ -167,30 +248,11 @@ _Thank you for choosing Solo Electronics!_
       id: Math.random().toString(36).substr(2, 9),
       type,
       file,
-      status: 'uploading' as const
+      status: 'queued' as const,
+      progress: 0
     }));
 
     setUploadingMedia(prev => [...prev, ...newUploads]);
-
-    // Process each upload in parallel but track them individually
-    newUploads.forEach(async (upload) => {
-      try {
-        const fileName = `${Date.now()}-${upload.file.name}`;
-        const storageRef = ref(storage, `products/${fileName}`);
-        
-        const snapshot = await uploadBytes(storageRef, upload.file);
-        const url = await getDownloadURL(snapshot.ref);
-        
-        setUploadingMedia(prev => prev.map(item => 
-          item.id === upload.id ? { ...item, status: 'done' as const, url } : item
-        ));
-      } catch (err: any) {
-        console.error("Upload error:", err);
-        setUploadingMedia(prev => prev.map(item => 
-          item.id === upload.id ? { ...item, status: 'error' as const } : item
-        ));
-      }
-    });
   };
 
   const removeMedia = (url: string | undefined, id: string) => {
@@ -209,12 +271,22 @@ _Thank you for choosing Solo Electronics!_
   };
 
   const handleSave = async () => {
-    if (!newProduct.name || !newProduct.price) return;
+    if (submitting) return; // Strict lock
+
+    const name = newProduct.name?.trim();
+    const description = newProduct.description?.trim();
+    const price = Number(newProduct.price);
+    const stock = Number(newProduct.stock || 0);
+
+    if (!name || isNaN(price) || price <= 0) {
+      alert("Please provide a valid product name and price.");
+      return;
+    }
     
     // Check if any uploads are still in progress
     const pending = uploadingMedia.filter(m => m.status === 'uploading');
     if (pending.length > 0) {
-      alert(`Waiting for ${pending.length} assets to finish syncing...`);
+      alert(`Synchronizing ${pending.length} assets. Please wait...`);
       return;
     }
 
@@ -222,7 +294,7 @@ _Thank you for choosing Solo Electronics!_
     const completedVideos = uploadingMedia.filter(m => m.type === 'video' && m.status === 'done').map(m => m.url!);
 
     if (completedImages.length === 0 && completedVideos.length === 0 && !newProduct.image && !newProduct.videoUrl) {
-      alert("At least one image or video is required.");
+      alert("Please upload at least one image or video for your product catalog.");
       return;
     }
 
@@ -234,12 +306,16 @@ _Thank you for choosing Solo Electronics!_
 
       const data = {
         ...newProduct,
+        name,
+        description,
+        price,
+        stock,
         image: newProduct.image || finalImages[0] || '',
         videoUrl: newProduct.videoUrl || finalVideos[0] || '',
         images: finalImages,
         videos: finalVideos,
         updatedAt: serverTimestamp(),
-        // Client-side timestamp for instant sorting (prevent flicker)
+        // Hardware clock hint for instant sorting
         clientUpdatedAt: Date.now()
       };
 
@@ -254,8 +330,10 @@ _Thank you for choosing Solo Electronics!_
         });
       }
       resetForm();
-    } catch (e) {
+    } catch (e: any) {
+      console.error("[Admin] Save failed:", e);
       handleFirestoreError(e, OperationType.WRITE, 'products');
+      alert(`SYSTEM ERROR: ${e.message || 'Could not save product.'}`);
     } finally {
       setSubmitting(false);
     }
@@ -414,8 +492,15 @@ _Thank you for choosing Solo Electronics!_
                          <button onClick={() => removeMedia(undefined, item.id)} className="mt-1 text-[8px] uppercase font-black">Clear</button>
                       </div>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Loader2 className="animate-spin text-blue-500" size={16} />
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                        <div className="w-full bg-gray-200 h-1 rounded-full overflow-hidden mb-2">
+                          <motion.div 
+                            className="bg-blue-600 h-full" 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${item.progress}%` }}
+                          />
+                        </div>
+                        <p className="text-[8px] font-black">{Math.round(item.progress)}%</p>
                       </div>
                     )}
                   </div>

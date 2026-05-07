@@ -1,9 +1,10 @@
 import { useState, ChangeEvent, useRef, useEffect } from 'react';
-import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark } from 'lucide-react';
+import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
 import { Tooltip } from '../ui/Tooltip';
+import { useAuth } from '../../AuthContext';
 
 interface NavbarProps {
   onCategorySelect: (category: string | null) => void;
@@ -16,6 +17,7 @@ interface NavbarProps {
   isAdmin: boolean;
   currentLanguage: Language;
   onLanguageChange: (lang: Language) => void;
+  onAuthClick: () => void;
   t: any;
 }
 
@@ -30,8 +32,10 @@ export function Navbar({
   isAdmin,
   currentLanguage,
   onLanguageChange,
+  onAuthClick,
   t
 }: NavbarProps) {
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showLang, setShowLang] = useState(false);
@@ -224,6 +228,23 @@ export function Navbar({
               </button>
             </Tooltip>
             
+            <Tooltip content={user ? "Logout Hardware Account" : "Access Personal Cloud"}>
+              <button 
+                onClick={user ? () => logout() : onAuthClick}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border",
+                  user 
+                    ? "bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/20" 
+                    : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border-white/5"
+                )}
+              >
+                {user ? <LogOut size={16} /> : <User size={16} className="text-blue-500" />}
+                <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">
+                  {user ? 'Exit' : 'Login'}
+                </span>
+              </button>
+            </Tooltip>
+
             {isAdmin && (
               <button 
                 onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'admin' }))}
