@@ -1,5 +1,5 @@
 import { useState, ChangeEvent, useRef, useEffect } from 'react';
-import { Menu, X, ShoppingCart, Search, Package, Globe } from 'lucide-react';
+import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
@@ -9,6 +9,7 @@ interface NavbarProps {
   onCategorySelect: (category: string | null) => void;
   onSearch: (query: string) => void;
   cartCount: number;
+  wishlistCount: number;
   onCartClick: () => void;
   onTrackingClick: () => void;
   onMarketingClick: () => void;
@@ -22,6 +23,7 @@ export function Navbar({
   onCategorySelect, 
   onSearch,
   cartCount, 
+  wishlistCount,
   onCartClick, 
   onTrackingClick,
   onMarketingClick,
@@ -191,6 +193,22 @@ export function Navbar({
                 </div>
               )}
             </div>
+
+            <Tooltip content="Saved Hardware">
+              <button 
+                className="relative p-2 text-gray-400 hover:text-white transition-colors"
+                onClick={() => {
+                   // Optional: feature to show wishlist modal if requested, for now just show count
+                }}
+              >
+                <Bookmark size={20} />
+                {wishlistCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-black">
+                    {wishlistCount}
+                  </span>
+                )}
+              </button>
+            </Tooltip>
 
             <Tooltip content="View Basket">
               <button 

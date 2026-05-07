@@ -105,6 +105,8 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
     price: 0,
     category: 'Phones',
     image: '',
+    images: [],
+    videos: [],
     stock: 0,
     featured: false,
     isVerified: true
@@ -155,41 +157,76 @@ _Thank you for choosing Solo Electronics!_
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [uploadingMedia, setUploadingMedia] = useState<{ id: string; type: 'image' | 'video'; progress: number; url?: string }[]>([]);
 
-    setSubmitting(true);
-    try {
-      // Use multipart/form-data by passing file in FormData
-      const formData = new FormData();
-      formData.append('file', file);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed via multipart terminal');
-      }
-
-      const result = await response.json();
-      const url = result.url;
+    // Convert FileList to Array and process each
+    Array.from(files).forEach(async (file: any) => {
+      const uploadId = Math.random().toString(36).substr(2, 9);
       
-      if (file.type.startsWith('video/')) {
-        setNewProduct(prev => ({ ...prev, videoUrl: url, videoDuration: 30 }));
-      } else {
-        setNewProduct(prev => ({ ...prev, image: url }));
+      setUploadingMedia(prev => [...prev, { id: uploadId, type, progress: 0 }]);
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error('Upload failed');
+
+        const result = await response.json();
+        const url = result.url;
+
+        setUploadingMedia(prev => prev.map(item => item.id === uploadId ? { ...item, progress: 100, url } : item));
+
+        if (type === 'video') {
+          setNewProduct(prev => ({
+            ...prev,
+            videoUrl: prev.videoUrl || url, // First one is primary
+            videos: [...(prev.videos || []), url]
+          }));
+        } else {
+          setNewProduct(prev => ({
+            ...prev,
+            image: prev.image || url, // First one is primary
+            images: [...(prev.images || []), url]
+          }));
+        }
+      } catch (err) {
+        console.error("Upload error:", err);
+        setUploadingMedia(prev => prev.filter(item => item.id !== uploadId));
       }
-    } catch (e) {
-      console.error("[Multipart Upload Error]", e);
-      handleFirestoreError(e, OperationType.WRITE, 'storage');
-    } finally {
-      setSubmitting(false);
-    }
+    });
   };
 
+  const removeMedia = (url: string, type: 'image' | 'video') => {
+    if (type === 'video') {
+      setNewProduct(prev => {
+        const filtered = (prev.videos || []).filter(v => v !== url);
+        return {
+          ...prev,
+          videos: filtered,
+          videoUrl: prev.videoUrl === url ? (filtered[0] || '') : prev.videoUrl
+        };
+      });
+    } else {
+      setNewProduct(prev => {
+        const filtered = (prev.images || []).filter(i => i !== url);
+        return {
+          ...prev,
+          images: filtered,
+          image: prev.image === url ? (filtered[0] || '') : prev.image
+        };
+      });
+    }
+    setUploadingMedia(prev => prev.filter(item => item.url !== url));
+  };
   const handleSave = async () => {
     if (!newProduct.name || !newProduct.price || (!newProduct.image && !newProduct.videoUrl)) return;
     setSubmitting(true);
@@ -313,21 +350,51 @@ _Thank you for choosing Solo Electronics!_
             </div>
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <label className="h-40 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
-                  <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                  <ImageIcon size={32} className="text-blue-500 mb-2" />
-                  <span className="text-[10px] font-black uppercase text-gray-400">Featured Image</span>
+                <label className="h-32 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
+                  <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'image')} />
+                  <ImageIcon size={24} className="text-blue-500 mb-2" />
+                  <span className="text-[9px] font-black uppercase text-gray-400">Add Images</span>
                 </label>
-                <label className="h-40 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
-                  <input type="file" className="hidden" accept="video/*" onChange={handleFileUpload} />
-                  <Video size={32} className="text-green-500 mb-2" />
-                  <span className="text-[10px] font-black uppercase text-gray-400">30s Demo Clip</span>
+                <label className="h-32 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
+                  <input type="file" className="hidden" accept="video/*" multiple onChange={(e) => handleFileUpload(e, 'video')} />
+                  <Video size={24} className="text-green-500 mb-2" />
+                  <span className="text-[9px] font-black uppercase text-gray-400">Add Videos</span>
                 </label>
               </div>
+
+              {/* Upload Previews */}
+              <div className="grid grid-cols-4 gap-3">
+                {uploadingMedia.map((item) => (
+                  <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                    {item.url ? (
+                      <>
+                        {item.type === 'image' ? (
+                          <img src={item.url} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-green-500/20 flex items-center justify-center">
+                            <Video className="text-green-500" size={16} />
+                          </div>
+                        )}
+                        <button 
+                          onClick={() => removeMedia(item.url!, item.type)}
+                          className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500"
+                        >
+                          <X size={10} />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Loader2 className="animate-spin text-blue-500" size={16} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
               <button 
                 onClick={handleSave} 
-                disabled={submitting}
-                className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-xl italic uppercase flex items-center justify-center gap-2"
+                disabled={submitting || uploadingMedia.some(m => !m.url)}
+                className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-xl italic uppercase flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {submitting ? <Loader2 size={18} className="animate-spin" /> : null}
                 {editingId ? 'Modify Cloud Asset' : 'Commit to Cloud Inventory'}

@@ -7,7 +7,9 @@ export interface Product {
   price: number;
   category: string;
   image: string;
+  images?: string[];
   videoUrl?: string;
+  videos?: string[];
   videoDuration?: number;
   stock: number;
   featured?: boolean;

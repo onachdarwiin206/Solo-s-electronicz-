@@ -244,6 +244,7 @@ _Your order is now being processed._
         onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }}
         onSearch={setSearchQuery}
         cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
+        wishlistCount={wishlist.length}
         onCartClick={() => setCartOpen(true)}
         onTrackingClick={() => setView('tracking')}
         onMarketingClick={() => setView('marketing')}
