@@ -11,7 +11,8 @@ interface AdminLoginModalProps {
 export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { loginWithGoogleAdmin } = useAuth();
+  const [pin, setPin] = useState('');
+  const { loginWithGoogleAdmin, loginWithPin } = useAuth();
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -23,6 +24,18 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
       setError("Restricted Access: Your account is not in the authorized 5-person admin whitelist.");
     }
     setLoading(false);
+  };
+
+  const handlePinSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const success = loginWithPin(pin);
+    if (success) {
+      onClose();
+    } else {
+      setError("INVALID ACCESS CODE: SECURITY ALERT TRIGGERED");
+      setPin('');
+    }
   };
 
   return (
@@ -80,17 +93,44 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
                   </motion.div>
                 )}
 
+                <form onSubmit={handlePinSubmit} className="mb-6">
+                  <div className="relative group">
+                    <input 
+                      type="password"
+                      placeholder="ENTER PIN CODE"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-6 px-10 text-white text-center font-black tracking-[1em] focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-700 placeholder:tracking-widest"
+                      maxLength={4}
+                    />
+                    <motion.button 
+                      type="submit"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-blue-600 rounded-full text-white shadow-lg shadow-blue-500/20"
+                    >
+                      <ArrowRight size={20} />
+                    </motion.button>
+                  </div>
+                </form>
+
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="h-px flex-1 bg-white/5" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-700">OR</span>
+                  <div className="h-px flex-1 bg-white/5" />
+                </div>
+
                 <motion.button 
                   onClick={handleGoogleLogin}
                   disabled={loading}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-8 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-[2rem] transition-all shadow-xl shadow-blue-500/20 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-4 disabled:opacity-50"
+                  className="w-full py-8 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-[2rem] border border-white/5 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 disabled:opacity-50"
                 >
                   {loading ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
-                      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 brightness-200 grayscale contrast-200" alt="Google" />
-                      Whitelisted Google Login
+                      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 grayscale opacity-50" alt="Google" />
+                      Whitelisted Override
                     </>
                   )}
                 </motion.button>

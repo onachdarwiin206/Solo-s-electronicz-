@@ -10,6 +10,7 @@ type AuthType = {
   loading: boolean;
   isAdmin: boolean;
   loginWithGoogleAdmin: () => Promise<boolean>;
+  loginWithPin: (pin: string) => boolean;
   logout: () => void;
 };
 
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthType>({
   loading: true,
   isAdmin: false,
   loginWithGoogleAdmin: async () => false,
+  loginWithPin: () => false,
   logout: () => {}
 });
 
@@ -125,6 +127,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
+  const loginWithPin = (pin: string) => {
+    if (pin === "8585") {
+      setIsAdmin(true);
+      sessionStorage.setItem('admin_auth', 'true');
+      sessionStorage.setItem('admin_last_active', Date.now().toString());
+      return true;
+    }
+    return false;
+  };
+
   const logout = () => {
     setIsAdmin(false);
     sessionStorage.removeItem('admin_auth');
@@ -138,6 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         isAdmin,
         loginWithGoogleAdmin,
+        loginWithPin,
         logout
       }}
     >
