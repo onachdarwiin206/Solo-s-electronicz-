@@ -22,7 +22,7 @@ try {
 }
 
 const firebaseApp = firebaseConfig ? initializeApp(firebaseConfig) : null;
-const storage = firebaseApp ? getStorage(firebaseApp, firebaseConfig.firestoreDatabaseId) : null;
+const storage = firebaseApp ? getStorage(firebaseApp) : null;
 
 async function startServer() {
   const app = express();
@@ -30,44 +30,6 @@ async function startServer() {
 
   // Middleware for parsing JSON
   app.use(express.json());
-
-  // Set up Multer for multipart/form-data (Memory storage)
-  const upload = multer({ 
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
-  });
-
-  // API Route for upload (demonstrating multipart/form-data support)
-  app.post("/api/upload", upload.single("file"), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-
-      if (!storage) {
-        return res.status(500).json({ error: "Firebase storage not initialized" });
-      }
-
-      const fileName = `${Date.now()}-${req.file.originalname}`;
-      const storageRef = ref(storage, `products/${fileName}`);
-      
-      // Upload to Firebase Storage from server using the buffer from multipart-form-data
-      await uploadBytes(storageRef, req.file.buffer, {
-        contentType: req.file.mimetype
-      });
-      
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      res.json({ 
-        url: downloadURL, 
-        name: fileName,
-        type: req.file.mimetype 
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      res.status(500).json({ error: "Internal server error during upload" });
-    }
-  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

@@ -58,45 +58,40 @@ export default function App() {
     const q = collection(db, 'products');
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log(`[Firestore] Snapshot received. Document count: ${snapshot.size}`);
-      const fetchedProducts = snapshot.docs.map(doc => ({
+      console.log(`[Firestore] Snapshot received. Metadata: ${snapshot.metadata.fromCache ? 'CACHE' : 'SERVER'}. Size: ${snapshot.size}`);
+      
+      let fetchedProducts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data({ serverTimestamps: 'estimate' })
       })) as Product[];
       
-      // Sort real products first by date
+      // Filter out invalid items if any
+      fetchedProducts = fetchedProducts.filter(p => p.name && p.price);
+
+      // Sort: Real products first by date (newest first)
       fetchedProducts.sort((a, b) => {
         const timeA = a.createdAt?.toMillis?.() || a.updatedAt?.toMillis?.() || Date.now();
         const timeB = b.createdAt?.toMillis?.() || b.updatedAt?.toMillis?.() || Date.now();
         return timeB - timeA;
       });
 
-      // Logic: Always show real products if they exist.
-      // If we have very few real products (e.g. < 4), we append some demo products to keep the UI looking full.
+      // Logic: If we have real products, use them.
+      // We only append demo products if explicitly needed or if absolutely empty and not coming from a failed cache
       if (fetchedProducts.length > 0) {
-        if (fetchedProducts.length < 4) {
-          // Add some unique demo products that don't clash with uploaded ones (simple name check)
-          const extraDemo = INITIAL_PRODUCTS.filter(dp => !fetchedProducts.some(fp => fp.name === dp.name)).slice(0, 4 - fetchedProducts.length);
-          setProducts([...fetchedProducts, ...extraDemo]);
-        } else {
-          setProducts(fetchedProducts);
-        }
-      } else {
-        console.log("[Firestore] Collection empty, using demo data");
+        setProducts(fetchedProducts);
+      } else if (!snapshot.metadata.fromCache) {
+        // Only if verified empty from server do we show demo data
+        console.log("[Firestore] Collection definitively empty, using demo data");
         setProducts(INITIAL_PRODUCTS);
       }
       setLoadingProducts(false);
     }, (error) => {
-      // Offline errors are common in proxy/sandboxed environments, handle gracefully
-      if (error.message.includes('offline')) {
-        console.warn("[Firestore] Subscription offline, keeping current state or showing demo data.");
-        if (products.length === 0) setProducts(INITIAL_PRODUCTS);
-        setLoadingProducts(false);
-      } else {
-        console.error("[Firestore] Subscription error:", error);
-        handleFirestoreError(error, OperationType.LIST, 'products');
-        setLoadingProducts(false);
+      console.error("[Firestore] Subscription error:", error);
+      // Only fallback to demo if we have nothing at all
+      if (products.length === 0) {
+        setProducts(INITIAL_PRODUCTS);
       }
+      setLoadingProducts(false);
     });
 
     return () => unsubscribe();

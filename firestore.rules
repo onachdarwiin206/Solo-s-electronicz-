@@ -20,11 +20,13 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Primary check: document role
-      // Secondary check for bootstrapping: literal email
+      // Primary check: document role or whitelisted email in the system/admin doc
       return isSignedIn() && (
-        (request.auth.token.email == 'onachdarwiin@gmail.com' && request.auth.token.email_verified == true) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        request.auth.token.email_verified == true && (
+          request.auth.token.email == 'onachdarwiin@gmail.com' ||
+          exists(/databases/$(database)/documents/system/admin) && 
+          request.auth.token.email in get(/databases/$(database)/documents/system/admin).data.allowedEmails
+        )
       );
     }
 

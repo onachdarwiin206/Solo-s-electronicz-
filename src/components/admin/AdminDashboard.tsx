@@ -5,7 +5,7 @@ import { Product, Category, Order, OrderStatus } from '../../types';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
-import { db, storage } from '../../firebase';
+import { db, storage, auth } from '../../firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, onSnapshot, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { handleFirestoreError, OperationType } from '../../lib/error-handler';
@@ -170,19 +170,14 @@ _Thank you for choosing Solo Electronics!_
       setUploadingMedia(prev => [...prev, { id: uploadId, type, progress: 0 }]);
 
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) throw new Error('Upload failed');
-
-        const result = await response.json();
-        const url = result.url;
-
+        const fileName = `${Date.now()}-${file.name}`;
+        const storageRef = ref(storage, `products/${fileName}`);
+        
+        console.log(`[Storage] Starting upload for ${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(snapshot.ref);
+        
+        console.log(`[Storage] Upload complete: ${url}`);
         setUploadingMedia(prev => prev.map(item => item.id === uploadId ? { ...item, progress: 100, url } : item));
 
         if (type === 'video') {
@@ -198,9 +193,14 @@ _Thank you for choosing Solo Electronics!_
             images: [...(prev.images || []), url]
           }));
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Upload error:", err);
         setUploadingMedia(prev => prev.filter(item => item.id !== uploadId));
+        if (err.code === 'storage/unauthorized') {
+          alert("PERMISSION DENIED: You must be signed in as an admin to upload assets.");
+        } else {
+          alert(`UPLOAD FAILED: ${err.message}`);
+        }
       }
     });
   };
@@ -267,8 +267,22 @@ _Thank you for choosing Solo Electronics!_
   };
 
   const resetForm = () => {
-    setIsAdding(false); setEditingId(null);
-    setNewProduct({ name: '', description: '', price: 0, category: 'Phones', image: '', stock: 0, featured: false, isVerified: true });
+    setIsAdding(false); 
+    setEditingId(null);
+    setNewProduct({ 
+      name: '', 
+      description: '', 
+      price: 0, 
+      category: 'Phones', 
+      image: '', 
+      images: [],
+      videos: [],
+      videoUrl: '',
+      stock: 0, 
+      featured: false, 
+      isVerified: true 
+    });
+    setUploadingMedia([]);
   };
 
   const statusMap: { [key in OrderStatus]: { icon: any, color: string } } = {
@@ -298,6 +312,14 @@ _Thank you for choosing Solo Electronics!_
                  {isSyncing ? "SYNCED" : "OFFLINE"}
                </p>
             </div>
+            {!auth.currentUser && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20">
+                <AlertCircle size={10} className="text-red-500" />
+                <p className="text-[9px] font-black uppercase tracking-widest text-red-500">
+                  Write Access Restricted: Sign in with Google
+                </p>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             {['inventory', 'orders', 'admins'].map((tab) => (
