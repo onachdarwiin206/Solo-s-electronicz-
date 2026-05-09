@@ -28,7 +28,11 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Orders Fetch Error:", error.message);
+        if (error.code === '42P01' || error.message?.includes('not found')) {
+          console.warn("[Supabase] Orders table not found.");
+        } else {
+          console.error("Orders Fetch Error:", error.message);
+        }
       } else {
         setOrders(data as Order[]);
       }

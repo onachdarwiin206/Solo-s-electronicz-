@@ -73,10 +73,17 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
           .eq('key', 'allowed_emails')
           .maybeSingle(); // Better for potentially missing data
         
-        if (data && data.value) {
-          setAllowedEmails(data.value || []);
+        if (error) {
+           if (error.code === '42P01' || error.message?.includes('not found')) {
+             console.warn("[Supabase] 'system_config' table not found.");
+           } else {
+             console.error("Admins Fetch Error:", error.message);
+           }
+           setAllowedEmails([]);
+        } else if (data && data.value) {
+           setAllowedEmails(data.value || []);
         } else {
-          setAllowedEmails([]);
+           setAllowedEmails([]);
         }
         setIsSyncing(true);
       } catch (e) {
@@ -132,7 +139,11 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Orders Fetch Error:", error.message);
+        if (error.code === '42P01' || error.message?.includes('not found')) {
+          console.warn("[Supabase] 'orders' table not found.");
+        } else {
+          console.error("Orders Fetch Error:", error.message);
+        }
       } else {
         setOrders(data as Order[]);
       }

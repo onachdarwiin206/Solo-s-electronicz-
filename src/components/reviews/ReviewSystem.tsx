@@ -31,7 +31,11 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Reviews Fetch Error:", error.message);
+        if (error.code === '42P01' || error.message?.includes('not found')) {
+          console.warn("[Supabase] Reviews table not found.");
+        } else {
+          console.error("Reviews Fetch Error:", error.message);
+        }
       } else {
         setReviews(data as Review[]);
       }

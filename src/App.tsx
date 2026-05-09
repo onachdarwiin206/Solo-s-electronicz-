@@ -54,7 +54,12 @@ export default function App() {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error("[Supabase] Fetch error:", error.message);
+          // If table is missing (PGRST116 or 42P01), suppress console noise and use fallback
+          if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('not found')) {
+            console.warn("[Supabase] Knowledge Base 'products' not initialized. Using local hardware feed.");
+          } else {
+            console.error("[Supabase] Fetch error:", error.message);
+          }
           setProducts(INITIAL_PRODUCTS);
         } else if (data && data.length > 0) {
           setProducts(data as Product[]);
@@ -179,7 +184,13 @@ export default function App() {
 
     try {
       const { error } = await supabase.from('orders').insert(orderData);
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01' || error.message?.includes('not found')) {
+          console.warn("[Supabase] Orders table mission. Persistence unavailable.");
+        } else {
+          throw error;
+        }
+      }
       
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
