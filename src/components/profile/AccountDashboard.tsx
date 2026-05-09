@@ -3,9 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
-import { db } from '../../firebase';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../../lib/error-handler';
+import { supabase } from '../../lib/supabase';
 
 interface AccountDashboardProps {
   user: UserProfile;
@@ -20,23 +18,32 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'likes'>('orders');
 
-  useEffect(() => {
+  const fetchOrders = async () => {
     setLoading(true);
-    const q = query(
-      collection(db, 'orders'),
-      where('userId', '==', user.id),
-      orderBy('createdAt', 'desc')
-    );
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'orders');
-      setLoading(false);
-    });
+    if (error) {
+      console.error("Orders Fetch Error:", error.message);
+    } else {
+      setOrders(data as Order[]);
+    }
+    setLoading(false);
+  };
 
-    return () => unsubscribe();
+  useEffect(() => {
+    fetchOrders();
+    
+    const channel = supabase.channel(`acc_orders_${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user.id]);
 
   const wishlistProducts = products.filter(p => user.wishlist?.includes(p.id));
@@ -165,7 +172,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                               </div>
                               <div>
                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{order.id}</p>
-                                <p className="text-white font-black text-lg">{new Date().toLocaleDateString()}</p>
+                                <p className="text-white font-black text-lg">{new Date(order.created_at).toLocaleDateString()}</p>
                               </div>
                            </div>
                            <div className="flex items-center gap-8">

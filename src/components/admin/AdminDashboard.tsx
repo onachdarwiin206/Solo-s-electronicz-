@@ -6,10 +6,8 @@ import { Product, Category, Order, OrderStatus } from '../../types';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
-import { db, storage, auth } from '../../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, onSnapshot, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { handleFirestoreError, OperationType } from '../../lib/error-handler';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../AuthContext';
 
 interface AdminDashboardProps {
   products: Product[];
@@ -54,7 +52,8 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
   );
 }
 
-export function AdminDashboard({ products }: AdminDashboardProps) {
+export function AdminDashboard({ products: initialProducts }: AdminDashboardProps) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'admins'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -66,27 +65,38 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
   const [newEmail, setNewEmail] = useState('');
 
   useEffect(() => {
-    const checkSync = async () => {
+    const fetchAdmins = async () => {
       try {
-        const adminDoc = await getDoc(doc(db, 'system', 'admin'));
-        if (adminDoc.exists()) {
-          setAllowedEmails(adminDoc.data().allowedEmails || []);
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('value')
+          .eq('key', 'allowed_emails')
+          .maybeSingle(); // Better for potentially missing data
+        
+        if (data && data.value) {
+          setAllowedEmails(data.value || []);
+        } else {
+          setAllowedEmails([]);
         }
         setIsSyncing(true);
       } catch (e) {
         setIsSyncing(false);
       }
     };
-    checkSync();
+    fetchAdmins();
   }, []);
 
   const updateAllowedEmails = async (newList: string[]) => {
     if (newList.length > 5) return;
     try {
-      await updateDoc(doc(db, 'system', 'admin'), { allowedEmails: newList });
+      const { error } = await supabase
+        .from('system_config')
+        .upsert({ key: 'allowed_emails', value: newList, updated_at: new Date().toISOString() });
+      
+      if (error) throw error;
       setAllowedEmails(newList);
     } catch (e) {
-      handleFirestoreError(e, OperationType.UPDATE, 'system/admin');
+      console.error("Whitelist Update Error:", e);
     }
   };
 
@@ -110,74 +120,78 @@ export function AdminDashboard({ products }: AdminDashboardProps) {
     videos: [],
     stock: 0,
     featured: false,
-    isVerified: true
+    is_verified: true
   });
 
-  useEffect(() => {
+  const fetchOrders = async () => {
     setLoadingOrders(true);
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
-      setLoadingOrders(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'orders');
-      setLoadingOrders(false);
-    });
-    return () => unsubscribe();
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("[Supabase] Orders Fetch Error:", error.message);
+    } else {
+      setOrders(data as Order[]);
+    }
+    setLoadingOrders(false);
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    const channel = supabase.channel('orders_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     try {
-      await updateDoc(doc(db, 'orders', orderId), { status });
+      await supabase
+        .from('orders')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', orderId);
     } catch (e) {
-      handleFirestoreError(e, OperationType.UPDATE, `orders/${orderId}`);
+      console.error("Order Update Error:", e);
     }
   };
 
   const shareReceiptToCustomer = (order: Order) => {
     const cartSummary = order.items.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
     const receiptTemplate = `
-🧾 *SOLO ELECTRONICS - DIGITAL RECEIPT*
----------------------------------------
-*Order ID:* ${order.id}
-*Customer:* ${order.customerName}
-
-*ITEMS:*
-${cartSummary}
-
----------------------------------------
-*TOTAL:* UGX ${order.total.toLocaleString()}
-
-*DELIVERY TO:*
-${order.district}, ${order.deliveryAddress}
-
-_Thank you for choosing Solo Electronics!_
-    `.trim();
+140: 🧾 *SOLO ELECTRONICS - DIGITAL RECEIPT*
+141: ---------------------------------------
+142: *Order ID:* ${order.id}
+143: *Customer:* ${order.customer_name}
+144: 
+145: *ITEMS:*
+146: ${cartSummary}
+147: 
+148: ---------------------------------------
+149: *TOTAL:* UGX ${order.total.toLocaleString()}
+150: 
+151: *DELIVERY TO:*
+152: ${order.district}, ${order.delivery_address}
+153: 
+154: _Thank you for choosing Solo Electronics!_
+155:     `.trim();
     
-    const whatsappUrl = `https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(receiptTemplate)}`;
+    const whatsappUrl = `https://wa.me/${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(receiptTemplate)}`;
     window.open(whatsappUrl, '_blank');
   };
 
   const [uploadingMedia, setUploadingMedia] = useState<{ id: string; type: 'image' | 'video'; file: File; status: 'queued' | 'uploading' | 'done' | 'error'; progress: number; url?: string }[]>([]);
 
-  // Throttled progress update helper to reduce rerenders
   const updateProgress = (id: string, progress: number, status?: 'uploading' | 'done' | 'error', url?: string) => {
-    setUploadingMedia(prev => {
-      const item = prev.find(i => i.id === id);
-      if (!item) return prev;
-      
-      // Only update if status changed or progress jumped by at least 5%
-      if (item.status === status && Math.abs(item.progress - progress) < 5 && !url) {
-        return prev;
-      }
-
-      return prev.map(i => i.id === id ? { 
-        ...i, 
-        progress, 
-        status: status || i.status,
-        url: url || i.url
-      } : i);
-    });
+    setUploadingMedia(prev => prev.map(i => i.id === id ? { 
+      ...i, 
+      progress, 
+      status: status || i.status,
+      url: url || i.url
+    } : i));
   };
 
   const processQueue = async () => {
@@ -187,63 +201,47 @@ _Thank you for choosing Solo Electronics!_
     if (active >= 2 || queued.length === 0) return;
 
     const next = queued[0];
-    
-    // Mark as uploading immediately
     setUploadingMedia(prev => prev.map(i => i.id === next.id ? { ...i, status: 'uploading' } : i));
 
     try {
       let fileToUpload: Blob | File = next.file;
-      console.log(`[Storage] Preparing: ${next.file.name} (Original: ${(next.file.size / 1024 / 1024).toFixed(2)}MB)`);
-
       if (next.type === 'image') {
         try {
-          fileToUpload = await imageCompression(next.file, {
-            maxSizeMB: 0.5,
-            maxWidthOrHeight: 1600,
-            useWebWorker: true
-          });
-          console.log(`[Storage] Compressed: ${(fileToUpload.size / 1024).toFixed(1)}KB`);
-        } catch (e) { 
-          console.warn("[Storage] Compression failed, using original:", e);
-        }
+          fileToUpload = await imageCompression(next.file, { maxSizeMB: 0.5, maxWidthOrHeight: 1600, useWebWorker: true });
+        } catch (e) { console.warn("Compression failed", e); }
       }
 
-      const storageRef = ref(storage, `products/${Date.now()}-${next.file.name}`);
-      console.log(`[Storage] Attempting upload to: ${storageRef.fullPath}`);
+      const fileName = `${Date.now()}-${next.file.name.replace(/\s+/g, '_')}`;
+      const bucket = next.type === 'image' ? 'product-images' : 'product-videos';
       
-      const snapshot = await uploadBytes(storageRef, fileToUpload);
-      const url = await getDownloadURL(snapshot.ref);
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, fileToUpload, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: next.file.type
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
       
-      console.log(`[Storage] Success: ${url}`);
-      updateProgress(next.id, 100, 'done', url);
+      updateProgress(next.id, 100, 'done', publicUrl);
       processQueue();
     } catch (err: any) {
-      console.error("[Storage] Critical Upload Failure:", err);
-      
-      let errorMessage = "Network link interrupted.";
-      if (err.code === 'storage/retry-limit-exceeded') {
-        errorMessage = "TIMED OUT: The server stopped responding. This usually happens on slow connections. Try uploading one image at a time.";
-      } else if (err.code === 'storage/unauthorized') {
-        errorMessage = "SECURITY REJECTION: You do not have permission to write to this bucket. Check security rules.";
-      } else if (err.code === 'storage/invalid-argument') {
-        errorMessage = "INVALID DATA: The file format is not supported.";
-      }
-
-      console.warn(`[Storage] Error ${err.code}: ${errorMessage}`);
+      console.error("Storage upload failed:", err);
       updateProgress(next.id, 0, 'error');
       processQueue();
     }
   };
 
-  // Trigger queue check wheneverUploadingMedia changes to 'queued'
-  useEffect(() => {
-    processQueue();
-  }, [uploadingMedia]);
+  useEffect(() => { processQueue(); }, [uploadingMedia]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     const newUploads = Array.from(files).map(file => ({
       id: Math.random().toString(36).substr(2, 9),
       type,
@@ -251,27 +249,15 @@ _Thank you for choosing Solo Electronics!_
       status: 'queued' as const,
       progress: 0
     }));
-
     setUploadingMedia(prev => [...prev, ...newUploads]);
   };
 
   const removeMedia = (url: string | undefined, id: string) => {
     setUploadingMedia(prev => prev.filter(item => item.id !== id));
-    
-    // Also clean up from newProduct if it was already committed there
-    if (url) {
-      setNewProduct(prev => ({
-        ...prev,
-        images: prev.images?.filter(i => i !== url),
-        videos: prev.videos?.filter(v => v !== url),
-        image: prev.image === url ? (prev.images?.[0] || '') : prev.image,
-        videoUrl: prev.videoUrl === url ? (prev.videos?.[0] || '') : prev.videoUrl
-      }));
-    }
   };
 
   const handleSave = async () => {
-    if (submitting) return; // Strict lock
+    if (submitting) return;
 
     const name = newProduct.name?.trim();
     const description = newProduct.description?.trim();
@@ -279,24 +265,12 @@ _Thank you for choosing Solo Electronics!_
     const stock = Number(newProduct.stock || 0);
 
     if (!name || isNaN(price) || price <= 0) {
-      alert("Please provide a valid product name and price.");
+      alert("Please provide valid data.");
       return;
     }
     
-    // Check if any uploads are still in progress
-    const pending = uploadingMedia.filter(m => m.status === 'uploading');
-    if (pending.length > 0) {
-      alert(`Synchronizing ${pending.length} assets. Please wait...`);
-      return;
-    }
-
     const completedImages = uploadingMedia.filter(m => m.type === 'image' && m.status === 'done').map(m => m.url!);
     const completedVideos = uploadingMedia.filter(m => m.type === 'video' && m.status === 'done').map(m => m.url!);
-
-    if (completedImages.length === 0 && completedVideos.length === 0 && !newProduct.image && !newProduct.videoUrl) {
-      alert("Please upload at least one image or video for your product catalog.");
-      return;
-    }
 
     setSubmitting(true);
     
@@ -304,66 +278,55 @@ _Thank you for choosing Solo Electronics!_
       const finalImages = [...(newProduct.images || []), ...completedImages];
       const finalVideos = [...(newProduct.videos || []), ...completedVideos];
 
-      const data = {
-        ...newProduct,
+      const data: any = {
         name,
         description,
         price,
         stock,
+        category: newProduct.category,
         image: newProduct.image || finalImages[0] || '',
-        videoUrl: newProduct.videoUrl || finalVideos[0] || '',
+        video_url: newProduct.video_url || finalVideos[0] || '',
         images: finalImages,
         videos: finalVideos,
-        updatedAt: serverTimestamp(),
-        // Hardware clock hint for instant sorting
-        clientUpdatedAt: Date.now()
+        featured: newProduct.featured,
+        is_verified: newProduct.is_verified,
+        updated_at: new Date().toISOString()
       };
 
       if (editingId) {
-        await updateDoc(doc(db, 'products', editingId), data);
+        const { error } = await supabase.from('products').update(data).eq('id', editingId);
+        if (error) throw error;
       } else {
-        await addDoc(collection(db, 'products'), {
+        const { error } = await supabase.from('products').insert({
           ...data,
-          createdAt: serverTimestamp(),
-          clientCreatedAt: Date.now(),
+          id: `SOLO-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          created_at: new Date().toISOString(),
           rating: 5
         });
+        if (error) throw error;
       }
       resetForm();
     } catch (e: any) {
-      console.error("[Admin] Save failed:", e);
-      handleFirestoreError(e, OperationType.WRITE, 'products');
-      alert(`SYSTEM ERROR: ${e.message || 'Could not save product.'}`);
+      console.error("Save failed:", e);
+      alert("Error saving record.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this asset?')) return;
+    if (!confirm('Are you sure?')) return;
     try {
-      await deleteDoc(doc(db, 'products', id));
+      await supabase.from('products').delete().eq('id', id);
     } catch (e) {
-      handleFirestoreError(e, OperationType.DELETE, `products/${id}`);
+      console.error("Delete failed:", e);
     }
   };
 
   const resetForm = () => {
     setIsAdding(false); 
     setEditingId(null);
-    setNewProduct({ 
-      name: '', 
-      description: '', 
-      price: 0, 
-      category: 'Phones', 
-      image: '', 
-      images: [],
-      videos: [],
-      videoUrl: '',
-      stock: 0, 
-      featured: false, 
-      isVerified: true 
-    });
+    setNewProduct({ name: '', description: '', price: 0, category: 'Phones', image: '', images: [], videos: [], stock: 0, featured: false, is_verified: true });
     setUploadingMedia([]);
   };
 
@@ -375,7 +338,7 @@ _Thank you for choosing Solo Electronics!_
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-20 px-4">
+    <div className="max-w-7xl mx-auto py-20 px-4 text-white">
       <button 
         onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))}
         className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest group"
@@ -390,16 +353,12 @@ _Thank you for choosing Solo Electronics!_
             <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">Command Center</h2>
             <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
                <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isSyncing ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]")} />
-               <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">
-                 {isSyncing ? "SYNCED" : "OFFLINE"}
-               </p>
+               <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{isSyncing ? "SYNCED" : "OFFLINE"}</p>
             </div>
-            {!auth.currentUser && (
+            {!user && (
               <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20">
                 <AlertCircle size={10} className="text-red-500" />
-                <p className="text-[9px] font-black uppercase tracking-widest text-red-500">
-                  Write Access Restricted: Sign in with Google
-                </p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-red-500">Sign in with Google required</p>
               </div>
             )}
           </div>
@@ -422,28 +381,10 @@ _Thank you for choosing Solo Electronics!_
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="space-y-6">
               <input placeholder="Product Name" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-blue-500 font-bold" />
-              <textarea placeholder="Technical Specifications" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} rows={4} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-blue-500 text-sm no-scrollbar" />
+              <textarea placeholder="Technical Specifications" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} rows={4} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-blue-500 text-sm" />
               <div className="grid grid-cols-2 gap-4">
-                <input 
-                  type="number" 
-                  placeholder="Price (UGX)" 
-                  value={isNaN(newProduct.price as number) ? '' : newProduct.price} 
-                  onChange={e => {
-                    const val = parseFloat(e.target.value);
-                    setNewProduct({ ...newProduct, price: isNaN(val) ? 0 : val });
-                  }} 
-                  className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" 
-                />
-                <input 
-                  type="number" 
-                  placeholder="Stock" 
-                  value={isNaN(newProduct.stock as number) ? '' : newProduct.stock} 
-                  onChange={e => {
-                    const val = parseInt(e.target.value);
-                    setNewProduct({ ...newProduct, stock: isNaN(val) ? 0 : val });
-                  }} 
-                  className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" 
-                />
+                <input type="number" placeholder="Price" value={newProduct.price || ''} onChange={e => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) || 0 })} className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" />
+                <input type="number" placeholder="Stock" value={newProduct.stock || ''} onChange={e => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) || 0 })} className="bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono" />
               </div>
               <select value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value as Category })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white">
                 <option value="Phones">Phones</option>
@@ -466,7 +407,6 @@ _Thank you for choosing Solo Electronics!_
                 </label>
               </div>
 
-              {/* Upload Previews */}
               <div className="grid grid-cols-4 gap-3">
                 {uploadingMedia.map((item) => (
                   <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10">
@@ -475,30 +415,14 @@ _Thank you for choosing Solo Electronics!_
                         {item.type === 'image' ? (
                           <img src={item.url} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full bg-green-500/20 flex items-center justify-center">
-                            <Video className="text-green-500" size={16} />
-                          </div>
+                          <div className="w-full h-full bg-green-500/20 flex items-center justify-center"><Video className="text-green-500" size={16} /></div>
                         )}
-                        <button 
-                          onClick={() => removeMedia(item.url, item.id)}
-                          className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500"
-                        >
-                          <X size={10} />
-                        </button>
+                        <button onClick={() => removeMedia(item.url, item.id)} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500"><X size={10} /></button>
                       </>
-                    ) : item.status === 'error' ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-red-500/20">
-                         <AlertCircle className="text-red-500" size={16} />
-                         <button onClick={() => removeMedia(undefined, item.id)} className="mt-1 text-[8px] uppercase font-black">Clear</button>
-                      </div>
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-2">
                         <div className="w-full bg-gray-200 h-1 rounded-full overflow-hidden mb-2">
-                          <motion.div 
-                            className="bg-blue-600 h-full" 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${item.progress}%` }}
-                          />
+                          <motion.div className="bg-blue-600 h-full" initial={{ width: 0 }} animate={{ width: `${item.progress}%` }} />
                         </div>
                         <p className="text-[8px] font-black">{Math.round(item.progress)}%</p>
                       </div>
@@ -522,32 +446,17 @@ _Thank you for choosing Solo Electronics!_
 
       {activeTab === 'inventory' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map(p => (
+          {initialProducts.map(p => (
             <div key={p.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl flex items-center gap-6 relative group overflow-hidden">
               <img src={p.image} className="w-20 h-20 rounded-2xl object-cover" />
               <div className="flex-1 min-w-0">
                 <h4 className="text-white font-black uppercase italic tracking-tighter truncate">{p.name}</h4>
                 <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
                 <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center bg-black/40 rounded-lg px-2 border border-white/10">
-                      <button 
-                        onClick={() => updateDoc(doc(db, 'products', p.id), { stock: Math.max(0, (p.stock || 0) - 1) })}
-                        className="px-2 py-1 text-gray-500 hover:text-white"
-                      >-</button>
-                      <span className="px-2 font-mono text-xs text-white">{p.stock}</span>
-                      <button 
-                        onClick={() => updateDoc(doc(db, 'products', p.id), { stock: (p.stock || 0) + 1 })}
-                        className="px-2 py-1 text-gray-500 hover:text-white"
-                      >+</button>
-                   </div>
-                   <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase">Edit</button>
+                    <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase">Edit</button>
+                    <button onClick={() => handleDelete(p.id)} className="text-[10px] font-black text-red-500/50 hover:text-red-500 uppercase">Remove</button>
                 </div>
               </div>
-                <Tooltip content="Remove (Cloud)" position="left">
-                  <button onClick={() => handleDelete(p.id)} className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 size={14} className="text-red-500/50 hover:text-red-500" />
-                  </button>
-                </Tooltip>
             </div>
           ))}
         </div>
@@ -556,50 +465,29 @@ _Thank you for choosing Solo Electronics!_
       {activeTab === 'orders' && (
         <div className="space-y-6">
           {loadingOrders ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-blue-500" size={32} />
-            </div>
+            <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
           ) : orders.length === 0 ? (
-            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">
-               No Active Logistical Requests
-            </div>
+            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">No Orders</div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
               {orders.map((order) => (
                 <div key={order.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl">
-                  {/* ... order content exists ... */}
                   <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{order.id}</span>
-                        <span className="text-gray-500 text-xs font-bold">{format(order.createdAt?.toDate ? order.createdAt.toDate() : new Date(), 'MMM dd, HH:mm')}</span>
+                        <span className="text-gray-500 text-xs font-bold">{format(new Date(order.created_at), 'MMM dd, HH:mm')}</span>
                       </div>
-                      <h4 className="text-lg font-bold text-white uppercase">{order.deliveryAddress}</h4>
-                      <p className="text-blue-500 font-mono text-sm">{order.customerPhone}</p>
+                      <h4 className="text-lg font-bold text-white uppercase">{order.delivery_address}</h4>
+                      <p className="text-blue-500 font-mono text-sm">{order.customer_phone}</p>
                     </div>
                     <div className="w-full lg:w-96 bg-black/20 rounded-2xl p-4 border border-white/5">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2">Transit Lifecycle</p>
                       <StatusProgress currentStatus={order.status} />
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {(['pending', 'confirmed', 'delivering', 'delivered'] as OrderStatus[]).map((status) => {
-                        const Icon = statusMap[status].icon;
-                        return (
-                          <button
-                            key={status}
-                            onClick={() => updateOrderStatus(order.id, status)}
-                            className={cn(
-                              "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                              order.status === status 
-                                ? "bg-white text-black" 
-                                : "bg-white/5 text-gray-500 hover:bg-white/10"
-                            )}
-                          >
-                            <Icon size={12} />
-                            {status}
-                          </button>
-                        );
-                      })}
+                      {(['pending', 'confirmed', 'delivering', 'delivered'] as OrderStatus[]).map((status) => (
+                        <button key={status} onClick={() => updateOrderStatus(order.id, status)} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", order.status === status ? "bg-white text-black" : "bg-white/5 text-gray-500 hover:bg-white/10")}>{status}</button>
+                      ))}
                     </div>
                   </div>
                   <div className="border-t border-white/5 pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -613,14 +501,8 @@ _Thank you for choosing Solo Electronics!_
                       </div>
                     ))}
                     <div className="lg:col-start-4 text-right flex flex-col items-end">
-                       <p className="text-[10px] text-gray-500 font-black uppercase mb-1">Total Payload</p>
                        <p className="text-white font-black text-xl italic tracking-tighter mb-4">UGX {order.total.toLocaleString()}</p>
-                       <button 
-                         onClick={() => shareReceiptToCustomer(order)}
-                         className="flex items-center gap-2 px-6 py-2 bg-green-600/10 hover:bg-green-600/20 text-green-500 text-[9px] font-black uppercase tracking-widest rounded-xl border border-green-500/20 transition-all"
-                       >
-                         <ShoppingBag size={12} /> Send WhatsApp Receipt
-                       </button>
+                       <button onClick={() => shareReceiptToCustomer(order)} className="px-6 py-2 bg-green-600/10 hover:bg-green-600/20 text-green-500 text-[9px] font-black uppercase tracking-widest rounded-xl border border-green-500/20">Send Receipt</button>
                     </div>
                   </div>
                 </div>
@@ -632,59 +514,20 @@ _Thank you for choosing Solo Electronics!_
 
       {activeTab === 'admins' && (
         <div className="max-w-2xl bg-white/5 border border-white/10 rounded-[2.5rem] p-10">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-               <ShieldCheck className="text-blue-500" size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Identity Whitelist</h3>
-              <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Restricted to 5 Authorized Personnel</p>
-            </div>
-          </div>
-
+          <div className="flex items-center gap-4 mb-8"><ShieldCheck className="text-blue-500" size={24} /><div><h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Whiltelist</h3></div></div>
           <div className="space-y-6">
             <div className="flex gap-4">
-              <input 
-                placeholder="Google Account Email (e.g. name@gmail.com)"
-                value={newEmail}
-                onChange={e => setNewEmail(e.target.value)}
-                className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-700"
-              />
-              <button 
-                onClick={handleAddEmail}
-                disabled={allowedEmails.length >= 5 || !newEmail}
-                className="px-8 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:grayscale text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg transition-all"
-              >
-                Whitelist
-              </button>
+              <input placeholder="Email" value={newEmail} onChange={e => setNewEmail(e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none" />
+              <button onClick={handleAddEmail} className="px-8 bg-blue-600 text-white font-black text-[10px] uppercase rounded-2xl">Whitelist</button>
             </div>
-
             <div className="space-y-3">
               {allowedEmails.map((email) => (
-                <div key={email} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    <span className="text-sm font-bold text-white">{email}</span>
-                  </div>
-                  <button onClick={() => handleRemoveEmail(email)} className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-500/50 hover:text-red-500">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-              
-              {[...Array(5 - allowedEmails.length)].map((_, i) => (
-                <div key={i} className="p-4 border border-dashed border-white/5 rounded-2xl flex items-center justify-center">
-                  <span className="text-[8px] font-black text-gray-700 uppercase tracking-[0.3em]">Identity Slot {allowedEmails.length + i + 1} Available</span>
+                <div key={email} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl">
+                  <span className="text-sm font-bold text-white">{email}</span>
+                  <button onClick={() => handleRemoveEmail(email)} className="text-red-500/50 hover:text-red-500"><Trash2 size={16} /></button>
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="mt-10 p-6 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-start gap-4">
-             <AlertCircle size={18} className="text-blue-500 shrink-0 mt-0.5" />
-             <p className="text-[10px] font-medium text-blue-300 leading-relaxed uppercase tracking-wider">
-               *Note:* These individuals will be required to verify their identity via Secure Google Sign-In to access the Command Center.
-             </p>
           </div>
         </div>
       )}

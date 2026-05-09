@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Truck, Search, MapPin, CheckCircle2, ArrowLeft, Clock, Circle } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../../lib/error-handler';
+import { supabase } from '../../lib/supabase';
 import { Order, OrderStatus } from '../../types';
 
 export function OrderTracking() {
@@ -18,16 +16,20 @@ export function OrderTracking() {
     setLoading(true);
     setError(null);
     try {
-      const docRef = doc(db, 'orders', orderId.trim());
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setTrackingData({ id: docSnap.id, ...docSnap.data() } as Order);
-      } else {
+      const { data, error: sbError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId.trim())
+        .single();
+
+      if (sbError) {
         setError("Order ID not found. Verify with your WhatsApp receipt.");
         setTrackingData(null);
+      } else {
+        setTrackingData(data as Order);
       }
     } catch (e: any) {
-      handleFirestoreError(e, OperationType.GET, `orders/${orderId}`);
+      console.error("Tracking Error:", e);
       setError("An error occurred. Check your connection.");
     } finally {
       setLoading(false);
@@ -40,7 +42,6 @@ export function OrderTracking() {
 
   const getEstimatedDelivery = () => {
     if (!trackingData) return null;
-    const baseDate = trackingData.createdAt?.toDate ? trackingData.createdAt.toDate() : new Date();
     
     switch (trackingData.status) {
       case 'pending':
@@ -111,7 +112,7 @@ export function OrderTracking() {
                 <MapPin className="text-blue-500 mt-1" size={18} />
                 <div>
                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Shipping Target</h4>
-                   <p className="text-xs font-bold text-gray-200">{trackingData.deliveryAddress}</p>
+                   <p className="text-xs font-bold text-gray-200">{trackingData.delivery_address}</p>
                 </div>
               </div>
               <div className="p-6 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-4">

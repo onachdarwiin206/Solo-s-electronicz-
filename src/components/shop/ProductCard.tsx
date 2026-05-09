@@ -80,9 +80,9 @@ export function ProductCard({
         className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 shadow-2xl cursor-pointer"
       >
         <div className="aspect-square overflow-hidden relative">
-          {product.videoUrl ? (
+          {product.video_url ? (
             <video
-              src={product.videoUrl}
+              src={product.video_url}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               autoPlay
               muted
@@ -142,8 +142,8 @@ export function ProductCard({
                 )}
               >
                 <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
-                {product.likesCount !== undefined && (
-                  <span className="text-[8px] font-black">{product.likesCount}</span>
+                {product.likes_count !== undefined && (
+                  <span className="text-[8px] font-black">{product.likes_count}</span>
                 )}
               </button>
             </Tooltip>
@@ -156,7 +156,7 @@ export function ProductCard({
             )}>
               {stockStatus.label}
             </div>
-            {product.isVerified && (
+            {product.is_verified && (
               <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/80 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-white border border-green-400/30">
                 <BadgeCheck size={12} />
                 Verified

@@ -28,12 +28,12 @@ export function ProductDetail({ product, onBack, onAddToCart }: ProductDetailPro
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-20">
         <div className="space-y-6">
           <div className="aspect-square rounded-[2rem] overflow-hidden bg-white/5 border border-white/10 relative group">
-            {product.videoUrl ? (
-              <video src={product.videoUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline controls />
+            {product.video_url ? (
+              <video src={product.video_url} className="w-full h-full object-cover" autoPlay muted loop playsInline controls />
             ) : (
               <img src={product.image} className="w-full h-full object-cover" alt={product.name} />
             )}
-            {product.isVerified && (
+            {product.is_verified && (
               <div className="absolute top-6 left-6 flex items-center gap-2 px-3 py-1.5 bg-green-500/90 backdrop-blur rounded-full text-[8px] font-black uppercase tracking-widest text-white">
                 <BadgeCheck size={12} /> Verified Hardware
               </div>

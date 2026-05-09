@@ -4,9 +4,7 @@ import { Star, MessageSquare, Send, User, Calendar, Loader2, AlertCircle, Quote 
 import { Review, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
 import { cn } from '../../lib/utils';
-import { db } from '../../firebase';
-import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../../lib/error-handler';
+import { supabase } from '../../lib/supabase';
 
 interface ReviewSystemProps {
   product: Product;
@@ -23,28 +21,30 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
   const [guestName, setGuestName] = useState('');
   const [hoverRating, setHoverRating] = useState(0);
 
-  useEffect(() => {
+  const fetchReviews = async () => {
     setLoading(true);
-    const q = query(
-      collection(db, 'reviews'),
-      where('productId', '==', product.id),
-      orderBy('createdAt', 'desc')
-    );
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('created_at', { ascending: false });
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedReviews = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date()
-      })) as Review[];
-      setReviews(fetchedReviews);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'reviews');
-      setLoading(false);
-    });
+    if (error) {
+      console.error("Reviews Fetch Error:", error.message);
+    } else {
+      setReviews(data as Review[]);
+    }
+    setLoading(false);
+  };
 
-    return () => unsubscribe();
+  useEffect(() => {
+    fetchReviews();
+    const channel = supabase.channel(`reviews_prod_${product.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews', filter: `product_id=eq.${product.id}` }, () => {
+        fetchReviews();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [product.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,20 +53,22 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
 
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'reviews'), {
-        productId: product.id,
-        userId: 'guest',
-        userName: guestName.trim(),
+      const { error } = await supabase.from('reviews').insert({
+        product_id: product.id,
+        user_id: 'guest',
+        user_name: guestName.trim(),
         rating,
         comment,
-        createdAt: serverTimestamp()
+        created_at: new Date().toISOString()
       });
+
+      if (error) throw error;
 
       setComment('');
       setGuestName('');
       setRating(5);
     } catch (e) {
-      handleFirestoreError(e, OperationType.CREATE, 'reviews');
+      console.error("Review Submit Error:", e);
     } finally {
       setSubmitting(false);
     }
@@ -218,10 +220,10 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
                       <User size={20} />
                     </div>
                     <div>
-                      <h5 className="font-bold text-white uppercase tracking-tight">{review.userName}</h5>
+                      <h5 className="font-bold text-white uppercase tracking-tight">{review.user_name}</h5>
                       <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase tracking-widest">
                          <Calendar size={12} />
-                         {review.createdAt instanceof Date ? review.createdAt.toLocaleDateString() : 'Just now'}
+                         {new Date(review.created_at).toLocaleDateString()}
                       </div>
                     </div>
                   </div>

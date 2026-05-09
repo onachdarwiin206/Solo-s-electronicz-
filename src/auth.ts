@@ -1,47 +1,52 @@
-import { auth, googleProvider } from "./firebase";
-import { signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { supabase } from "./lib/supabase";
 
 export const signupWithEmail = async (email: string, pass: string) => {
-  try {
-    const result = await createUserWithEmailAndPassword(auth, email, pass);
-    return { user: result.user, error: null };
-  } catch (error: any) {
-    console.error("Signup error:", error.code);
-    let message = "Signup failed.";
-    if (error.code === 'auth/email-already-in-use') {
-      message = "user already exist. please sign in.";
-    }
-    return { user: null, error: message };
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: pass,
+  });
+
+  if (error) {
+    console.error("Signup error:", error.message);
+    return { user: null, error: error.message };
   }
+  return { user: data.user, error: null };
 };
 
 export const loginWithEmail = async (email: string, pass: string) => {
-  try {
-    const result = await signInWithEmailAndPassword(auth, email, pass);
-    return { user: result.user, error: null };
-  } catch (error: any) {
-    console.error("Login error:", error.code);
-    let message = "email or password is incorrect.";
-    return { user: null, error: message };
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: pass,
+  });
+
+  if (error) {
+    console.error("Login error:", error.message);
+    return { user: null, error: "Email or password is incorrect." };
   }
+  return { user: data.user, error: null };
 };
 
 export const logoutUser = async () => {
-  try {
-    await signOut(auth);
-    return true;
-  } catch (error) {
-    console.error("Logout error:", error);
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error("Logout error:", error.message);
     return false;
   }
+  return true;
 };
 
 export const loginWithGoogle = async () => {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.error("Login error:", error);
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    }
+  });
+
+  if (error) {
+    console.error("Login error:", error.message);
     return null;
   }
+  // Note: OAuth usually redirects, so this won't return a user immediately in the same way popup did
+  return null; 
 };

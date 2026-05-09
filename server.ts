@@ -2,27 +2,9 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-import multer from "multer";
-import { initializeApp } from "firebase/app";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import fs from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Initialize Firebase (Server-side)
-// We use the same config as the frontend
-const configPath = path.join(__dirname, "firebase-applet-config.json");
-let firebaseConfig;
-try {
-  const configData = await fs.readFile(configPath, "utf-8");
-  firebaseConfig = JSON.parse(configData);
-} catch (e) {
-  console.error("Failed to load Firebase config on server:", e);
-}
-
-const firebaseApp = firebaseConfig ? initializeApp(firebaseConfig) : null;
-const storage = firebaseApp ? getStorage(firebaseApp) : null;
 
 async function startServer() {
   const app = express();

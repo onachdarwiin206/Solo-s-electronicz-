@@ -129,7 +129,9 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
                 >
                   {loading ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
-                      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 grayscale opacity-50" alt="Google" />
+                      <div className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center">
+                        <Lock size={10} className="text-blue-500" />
+                      </div>
                       Whitelisted Override
                     </>
                   )}

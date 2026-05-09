@@ -8,9 +8,7 @@ import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
 import { Footer } from './components/layout/Footer';
 import { INITIAL_PRODUCTS } from './constants';
-import { db } from './firebase';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, limit } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from './lib/error-handler';
+import { supabase } from './lib/supabase';
 import { Product, CartItem, PaymentMethod, Order } from './types';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -46,60 +44,39 @@ export default function App() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [language, setLanguage] = useState<Language>('en');
 
-  // Prefetch Admin Dashboard when modal is opened for instant switch
   useEffect(() => {
-    if (isAdminModalOpen) {
-      const prefetch = import('./components/admin/AdminDashboard');
-      // We don't need to do anything with the result, the browser will cache it
+    async function fetchProducts() {
+      setLoadingProducts(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("[Supabase] Fetch error:", error.message);
+        setProducts(INITIAL_PRODUCTS);
+      } else if (data && data.length > 0) {
+        setProducts(data as Product[]);
+      } else {
+        setProducts(INITIAL_PRODUCTS);
+      }
+      setLoadingProducts(false);
     }
-  }, [isAdminModalOpen]);
 
-  useEffect(() => {
-    // We keep loadingProducts true until we get a real answer from Firestore
-    console.log("[Firestore] Subscribing to products collection...");
-    // We fetch with an explicit order to offload work from the bundle
-    const q = query(collection(db, 'products'), orderBy('clientCreatedAt', 'desc'), limit(50));
+    fetchProducts();
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log(`[Firestore] Snapshot received. Metadata: ${snapshot.metadata.fromCache ? 'CACHE' : 'SERVER'}. Size: ${snapshot.size}`);
-      
-      let fetchedProducts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data({ serverTimestamps: 'estimate' })
-      })) as Product[];
-      
-      // Filter out invalid items if any
-      fetchedProducts = fetchedProducts.filter(p => p.name && p.price);
+    // Optional: Realtime subscription (requires enabling in Supabase dashboard)
+    const channel = supabase.channel('products_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+        fetchProducts(); 
+      })
+      .subscribe();
 
-      // Robust Sorting: 
-      // 1. Use clientCreatedAt if server-side createdAt is still pending (null)
-      // 2. This prevents the "Flicker to the bottom" bug
-      fetchedProducts.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis?.() || a.clientCreatedAt || Date.now();
-        const timeB = b.createdAt?.toMillis?.() || b.clientCreatedAt || Date.now();
-        return timeB - timeA;
-      });
-
-      if (fetchedProducts.length > 0) {
-        setProducts(fetchedProducts);
-      } else if (!snapshot.metadata.fromCache) {
-        console.log("[Firestore] Collection definitively empty, using demo data");
-        setProducts(INITIAL_PRODUCTS);
-      }
-      setLoadingProducts(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'products');
-      // Only fallback to demo if we have nothing at all
-      if (products.length === 0) {
-        setProducts(INITIAL_PRODUCTS);
-      }
-      setLoadingProducts(false);
-    });
-
-    return () => unsubscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  // Handle admin login trigger
   useEffect(() => {
     const handleOpenAdmin = () => setIsAdminModalOpen(true);
     window.addEventListener('openAdmin', handleOpenAdmin);
@@ -143,6 +120,8 @@ export default function App() {
 
   const t = translations[language];
 
+  const credentialsMissing = !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder');
+
   const filteredProducts = useMemo(() => products.filter(p => {
     const matchesCategory = category ? p.category === category : true;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -177,21 +156,23 @@ export default function App() {
     const total = subtotal + deliveryFee;
     const orderId = `SOLO-ORD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
-    const orderData: Omit<Order, 'id'> = {
-      userId: 'guest',
-      customerName,
-      customerPhone: phone,
+    const orderData = {
+      id: orderId,
+      user_id: user?.id || null, // UUID or null for guest
+      customer_name: customerName,
+      customer_phone: phone,
       items: cart,
       total: total,
       status: 'pending',
-      createdAt: serverTimestamp() as any,
-      deliveryAddress: address,
+      delivery_address: address,
       district,
-      paymentMethod: method
+      payment_method: method,
+      created_at: new Date().toISOString()
     };
 
     try {
-      await addDoc(collection(db, 'orders'), orderData);
+      const { error } = await supabase.from('orders').insert(orderData);
+      if (error) throw error;
       
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
@@ -224,8 +205,8 @@ _Your order is now being processed._
       setCart([]);
       setCartOpen(false);
       setView('shop');
-    } catch (e) {
-      handleFirestoreError(e, OperationType.CREATE, 'orders');
+    } catch (e: any) {
+      console.error("[Supabase] Order error:", e.message);
     }
   };
 
@@ -262,6 +243,22 @@ _Your order is now being processed._
       />
 
       <main className="pb-24 md:pb-0">
+        {credentialsMissing && (
+          <div className="max-w-7xl mx-auto px-4 pt-20">
+            <div className="bg-amber-500/10 border border-amber-500/20 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4 text-amber-500">
+                <AlertCircle size={32} />
+                <div>
+                  <h3 className="font-black uppercase italic tracking-tighter">Supabase Setup Required</h3>
+                  <p className="text-xs font-bold opacity-70 italic">VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY missing in Settings.</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-amber-500/60 font-mono text-center md:text-right max-w-xs uppercase">
+                Using local sample assets until environment connectivity is established.
+              </p>
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             <Suspense fallback={<div className="flex items-center justify-center py-40"><Loader2 className="animate-spin text-blue-500" size={48} /></div>}>

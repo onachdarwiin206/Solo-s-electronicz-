@@ -18,7 +18,7 @@ export function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModal
 
   const allMedia = [
     ...(product.images || [product.image]),
-    ...(product.videos || (product.videoUrl ? [product.videoUrl] : []))
+    ...(product.videos || (product.video_url ? [product.video_url] : []))
   ].filter(Boolean);
 
   const handleWhatsAppBuy = () => {
@@ -116,7 +116,7 @@ export function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModal
                   </div>
                 )}
                 
-                {product.isVerified && (
+                {product.is_verified && (
                   <div className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-green-500/90 backdrop-blur-xl rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-white border border-green-400/30 z-20 shadow-2xl">
                     <BadgeCheck size={14} className="text-white" /> Solo Verified
                   </div>
