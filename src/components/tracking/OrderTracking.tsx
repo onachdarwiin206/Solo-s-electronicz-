@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Truck, Search, MapPin, CheckCircle2, ArrowLeft, Clock, Circle } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../supabaseClient';
 import { Order, OrderStatus } from '../../types';
 
 export function OrderTracking() {

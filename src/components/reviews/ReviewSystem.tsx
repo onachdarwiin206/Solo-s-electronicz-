@@ -4,7 +4,7 @@ import { Star, MessageSquare, Send, User, Calendar, Loader2, AlertCircle, Quote 
 import { Review, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
 import { cn } from '../../lib/utils';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../supabaseClient';
 
 interface ReviewSystemProps {
   product: Product;

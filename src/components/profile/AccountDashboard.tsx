@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../supabaseClient';
 
 interface AccountDashboardProps {
   user: UserProfile;

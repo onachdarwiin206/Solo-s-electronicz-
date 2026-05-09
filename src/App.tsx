@@ -8,12 +8,12 @@ import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
 import { Footer } from './components/layout/Footer';
 import { INITIAL_PRODUCTS } from './constants';
-import { supabase } from './lib/supabase';
+import { supabase, credentialsMissing } from './supabaseClient';
 import { Product, CartItem, PaymentMethod, Order } from './types';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
-import { ShieldCheck, ChevronRight, X, UserCog, Loader2 } from 'lucide-react';
+import { ShieldCheck, ChevronRight, X, UserCog, Loader2, AlertCircle } from 'lucide-react';
 
 const OrderTracking = lazy(() => import('./components/tracking/OrderTracking').then(module => ({ default: module.OrderTracking })));
 const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal').then(module => ({ default: module.MarketingPortal })));
@@ -46,18 +46,29 @@ export default function App() {
 
   useEffect(() => {
     async function fetchProducts() {
-      setLoadingProducts(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error("[Supabase] Fetch error:", error.message);
+      if (credentialsMissing) {
+        console.warn("[Supabase] Skipping fetch: Setup required.");
         setProducts(INITIAL_PRODUCTS);
-      } else if (data && data.length > 0) {
-        setProducts(data as Product[]);
-      } else {
+        setLoadingProducts(false);
+        return;
+      }
+      setLoadingProducts(true);
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("[Supabase] Fetch error:", error.message);
+          setProducts(INITIAL_PRODUCTS);
+        } else if (data && data.length > 0) {
+          setProducts(data as Product[]);
+        } else {
+          setProducts(INITIAL_PRODUCTS);
+        }
+      } catch (err) {
+        console.error("[Supabase] Dynamic error:", err);
         setProducts(INITIAL_PRODUCTS);
       }
       setLoadingProducts(false);
@@ -66,11 +77,14 @@ export default function App() {
     fetchProducts();
     
     // Optional: Realtime subscription (requires enabling in Supabase dashboard)
-    const channel = supabase.channel('products_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-        fetchProducts(); 
-      })
-      .subscribe();
+    let channel: any = null;
+    if (!credentialsMissing) {
+      channel = supabase.channel('products_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+          fetchProducts(); 
+        })
+        .subscribe();
+    }
 
     return () => {
       supabase.removeChannel(channel);
@@ -79,11 +93,14 @@ export default function App() {
 
   useEffect(() => {
     const handleOpenAdmin = () => setIsAdminModalOpen(true);
+    const handleOpenAuth = () => setIsAuthModalOpen(true);
     window.addEventListener('openAdmin', handleOpenAdmin);
     window.addEventListener('openLogin', handleOpenAdmin);
+    window.addEventListener('openAuth', handleOpenAuth);
     return () => {
       window.removeEventListener('openAdmin', handleOpenAdmin);
       window.removeEventListener('openLogin', handleOpenAdmin);
+      window.removeEventListener('openAuth', handleOpenAuth);
     };
   }, []);
 

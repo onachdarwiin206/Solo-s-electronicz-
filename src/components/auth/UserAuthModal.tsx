@@ -1,8 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Lock, AlertCircle, Loader2, ArrowRight, User, Mail, UserPlus, LogIn } from 'lucide-react';
+import { X, Lock, AlertCircle, Loader2, ArrowRight, User, Mail, UserPlus, LogIn, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
-import { signupWithEmail, loginWithEmail } from '../../auth';
+import { signupWithEmail, loginWithEmail, loginWithGoogle } from '../../auth';
 
 interface UserAuthModalProps {
   isOpen: boolean;
@@ -15,23 +15,44 @@ export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { user } = useAuth();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
-    const { user: authUser, error: authError } = isLogin 
+    const result: any = isLogin 
       ? await loginWithEmail(email, password)
       : await signupWithEmail(email, password);
 
-    if (authUser) {
-      onClose();
-      // Redirect or state update handled by AuthContext listener
-      window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }));
-    } else {
+    const { user: authUser, session, error: authError } = result;
+
+    if (authError) {
       setError(authError);
+      setLoading(false);
+      return;
+    }
+
+    if (isLogin) {
+      if (authUser) {
+        onClose();
+        window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }));
+      }
+    } else {
+      // Sign up success
+      if (!session) {
+        // Needs email verification
+        setSuccessMessage("Identity Created. Action Required: Check your email and confirm your hardware profile before logging in.");
+        setIsLogin(true); // Switch to login mode
+        // Keep the email pre-filled
+      } else {
+        // Auto-logged in (no email verification required)
+        onClose();
+        window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }));
+      }
     }
     setLoading(false);
   };
@@ -76,6 +97,20 @@ export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
                     <X size={20} />
                   </button>
                 </div>
+
+                {successMessage && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8 p-5 bg-blue-500/10 border border-blue-500/20 rounded-3xl flex items-start gap-4 text-blue-400"
+                  >
+                    <ShieldCheck size={20} className="shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Signup Successful</p>
+                      <p className="text-xs font-medium leading-relaxed">{successMessage}</p>
+                    </div>
+                  </motion.div>
+                )}
 
                 {error && (
                   <motion.div 
@@ -145,8 +180,18 @@ export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
                     <div className="h-px flex-1 bg-white/5" />
                   </div>
 
+                  <motion.button 
+                    onClick={() => loginWithGoogle()}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-5 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-[2rem] border border-white/5 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4"
+                  >
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 grayscale opacity-50" alt="Google" />
+                    Continue with Cloud ID
+                  </motion.button>
+
                   <button 
-                    onClick={() => { setIsLogin(!isLogin); setError(null); }}
+                    onClick={() => { setIsLogin(!isLogin); setError(null); setSuccessMessage(null); }}
                     className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 hover:text-blue-400 transition-colors"
                   >
                     {isLogin ? 'Create New Hardware Identity' : 'Already have an identity? Login'}

@@ -6,7 +6,7 @@ import { Product, Category, Order, OrderStatus } from '../../types';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
-import { supabase } from '../../lib/supabase';
+import { supabase, credentialsMissing } from '../../supabaseClient';
 import { useAuth } from '../../AuthContext';
 
 interface AdminDashboardProps {
@@ -66,6 +66,7 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
 
   useEffect(() => {
     const fetchAdmins = async () => {
+      if (credentialsMissing) return;
       try {
         const { data, error } = await supabase
           .from('system_config')
@@ -87,7 +88,7 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
   }, []);
 
   const updateAllowedEmails = async (newList: string[]) => {
-    if (newList.length > 5) return;
+    if (newList.length > 5 || credentialsMissing) return;
     try {
       const { error } = await supabase
         .from('system_config')
@@ -124,16 +125,21 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
   });
 
   const fetchOrders = async () => {
+    if (credentialsMissing) return;
     setLoadingOrders(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error("[Supabase] Orders Fetch Error:", error.message);
-    } else {
-      setOrders(data as Order[]);
+      if (error) {
+        console.error("Orders Fetch Error:", error.message);
+      } else {
+        setOrders(data as Order[]);
+      }
+    } catch (err) {
+      console.error("Dynamic order error", err);
     }
     setLoadingOrders(false);
   };
