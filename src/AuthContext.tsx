@@ -30,6 +30,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Check if we are in a Supabase OAuth popup redirect
+    // If so, notify the parent and close the window
+    if (typeof window !== 'undefined' && window.opener && (window.location.hash.includes('access_token=') || window.location.search.includes('code='))) {
+       // Optional: We can wait for session to be fully ready if needed, 
+       // but closing the window is often enough as the parent iframe will detect session via onAuthStateChange
+       window.close();
+    }
+
     // Initial eager check
     const checkSession = async () => {
       try {

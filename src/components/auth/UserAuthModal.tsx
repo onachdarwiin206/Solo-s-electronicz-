@@ -1,8 +1,10 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Lock, AlertCircle, Loader2, ArrowRight, User, Mail, UserPlus, LogIn, ShieldCheck } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
-import { signupWithEmail, loginWithEmail, loginWithGoogle } from '../../auth';
+import { loginWithGoogle } from '../../auth';
+import { SignIn } from './SignIn';
+import { SignUp } from './SignUp';
 
 interface UserAuthModalProps {
   isOpen: boolean;
@@ -11,50 +13,18 @@ interface UserAuthModalProps {
 
 export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [preFilledEmail, setPreFilledEmail] = useState('');
+  const [showSignupSuccess, setShowSignupSuccess] = useState(false);
   const { user } = useAuth();
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
+  const handleSignupSuccess = (email: string) => {
+    setPreFilledEmail(email);
+    setShowSignupSuccess(true);
+    setIsLogin(true);
+  };
 
-    const result: any = isLogin 
-      ? await loginWithEmail(email, password)
-      : await signupWithEmail(email, password);
-
-    const { user: authUser, session, error: authError } = result;
-
-    if (authError) {
-      setError(authError);
-      setLoading(false);
-      return;
-    }
-
-    if (isLogin) {
-      if (authUser) {
-        onClose();
-        window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }));
-      }
-    } else {
-      // Sign up success
-      if (!session) {
-        // Needs email verification
-        setSuccessMessage("Identity Created. Action Required: Check your email and confirm your hardware profile before logging in.");
-        setIsLogin(true); // Switch to login mode
-        // Keep the email pre-filled
-      } else {
-        // Auto-logged in (no email verification required)
-        onClose();
-        window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }));
-      }
-    }
-    setLoading(false);
+  const handleLoginSuccess = () => {
+    onClose();
   };
 
   if (user) return null;
@@ -78,18 +48,7 @@ export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
           >
             <div className="bg-neutral-900 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
               <div className="p-8 md:p-12">
-                <div className="flex justify-between items-start mb-10">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-blue-600/20 rounded-2xl">
-                      {isLogin ? <LogIn className="text-blue-500" size={24} /> : <UserPlus className="text-blue-500" size={24} />}
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Security Gateway</span>
-                      <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">
-                        {isLogin ? 'Login' : 'Sign Up'}
-                      </h2>
-                    </div>
-                  </div>
+                <div className="flex justify-end mb-4">
                   <button 
                     onClick={onClose}
                     className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
@@ -98,80 +57,19 @@ export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
                   </button>
                 </div>
 
-                {successMessage && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-8 p-5 bg-blue-500/10 border border-blue-500/20 rounded-3xl flex items-start gap-4 text-blue-400"
-                  >
-                    <ShieldCheck size={20} className="shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Signup Successful</p>
-                      <p className="text-xs font-medium leading-relaxed">{successMessage}</p>
-                    </div>
-                  </motion.div>
+                {isLogin ? (
+                  <SignIn 
+                    onSuccess={handleLoginSuccess}
+                    onSwitchToSignUp={() => { setIsLogin(false); setShowSignupSuccess(false); }}
+                    initialEmail={preFilledEmail}
+                    signupSuccess={showSignupSuccess}
+                  />
+                ) : (
+                  <SignUp 
+                    onSuccess={handleSignupSuccess}
+                    onSwitchToSignIn={() => { setIsLogin(true); setShowSignupSuccess(false); }}
+                  />
                 )}
-
-                {error && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="mb-8 p-5 bg-red-500/10 border border-red-500/20 rounded-3xl flex items-start gap-4 text-red-500"
-                  >
-                    <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Authorization Failed</p>
-                      <p className="text-xs font-medium leading-relaxed">{error}</p>
-                    </div>
-                  </motion.div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-4">Email Address</label>
-                    <div className="relative group">
-                      <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
-                      <input 
-                        type="email"
-                        required
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 pl-16 pr-6 text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-700"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-4">Access Code</label>
-                    <div className="relative group">
-                      <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
-                      <input 
-                        type="password"
-                        required
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 pl-16 pr-6 text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-700"
-                      />
-                    </div>
-                  </div>
-
-                  <motion.button 
-                    type="submit"
-                    disabled={loading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-[2rem] shadow-xl shadow-blue-900/20 transition-all uppercase tracking-[0.2em] text-[12px] flex items-center justify-center gap-4 disabled:opacity-50"
-                  >
-                    {loading ? <Loader2 className="animate-spin" size={20} /> : (
-                      <>
-                        {isLogin ? 'Enter Hardware Cloud' : 'Initialize Account'}
-                        <ArrowRight size={18} />
-                      </>
-                    )}
-                  </motion.button>
-                </form>
 
                 <div className="mt-10 flex flex-col items-center gap-6">
                   <div className="flex items-center gap-4 w-full">
@@ -189,13 +87,6 @@ export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 grayscale opacity-50" alt="Google" />
                     Continue with Cloud ID
                   </motion.button>
-
-                  <button 
-                    onClick={() => { setIsLogin(!isLogin); setError(null); setSuccessMessage(null); }}
-                    className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 hover:text-blue-400 transition-colors"
-                  >
-                    {isLogin ? 'Create New Hardware Identity' : 'Already have an identity? Login'}
-                  </button>
                 </div>
 
                 <div className="mt-12 text-center">

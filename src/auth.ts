@@ -45,6 +45,7 @@ export const loginWithGoogle = async () => {
     provider: 'google',
     options: {
       redirectTo: window.location.origin,
+      skipBrowserRedirect: true
     }
   });
 
@@ -52,6 +53,20 @@ export const loginWithGoogle = async () => {
     console.error("Login error:", error.message);
     return null;
   }
-  // Note: OAuth usually redirects, so this won't return a user immediately in the same way popup did
+
+  if (data?.url) {
+    // Open the OAuth provider's URL directly in a popup
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    window.open(
+      data.url,
+      'google_auth',
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+  }
+  
   return null; 
 };
