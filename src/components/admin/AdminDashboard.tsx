@@ -6,7 +6,7 @@ import { Product, Category, Order, OrderStatus } from '../../types';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
-import { supabase, credentialsMissing } from '../../supabaseClient';
+import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../AuthContext';
 
 interface AdminDashboardProps {
@@ -66,7 +66,6 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
 
   useEffect(() => {
     const fetchAdmins = async () => {
-      if (credentialsMissing) return;
       try {
         const { data, error } = await supabase
           .from('system_config')
@@ -88,7 +87,7 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
   }, []);
 
   const updateAllowedEmails = async (newList: string[]) => {
-    if (newList.length > 5 || credentialsMissing) return;
+    if (newList.length > 5) return;
     try {
       const { error } = await supabase
         .from('system_config')
@@ -125,7 +124,6 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
   });
 
   const fetchOrders = async () => {
-    if (credentialsMissing) return;
     setLoadingOrders(true);
     try {
       const { data, error } = await supabase
@@ -151,7 +149,7 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
         fetchOrders();
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, []);
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {

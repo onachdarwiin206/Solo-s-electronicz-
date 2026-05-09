@@ -4,7 +4,7 @@ import { Star, MessageSquare, Send, User, Calendar, Loader2, AlertCircle, Quote 
 import { Review, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
 import { cn } from '../../lib/utils';
-import { supabase, credentialsMissing } from '../../supabaseClient';
+import { supabase } from '../../supabaseClient';
 
 interface ReviewSystemProps {
   product: Product;
@@ -22,7 +22,6 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
   const [hoverRating, setHoverRating] = useState(0);
 
   const fetchReviews = async () => {
-    if (credentialsMissing) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -44,13 +43,12 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
 
   useEffect(() => {
     fetchReviews();
-    if (credentialsMissing) return;
     const channel = supabase.channel(`reviews_prod_${product.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews', filter: `product_id=eq.${product.id}` }, () => {
         fetchReviews();
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, [product.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {

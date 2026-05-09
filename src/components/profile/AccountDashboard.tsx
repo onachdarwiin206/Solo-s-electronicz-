@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
-import { supabase, credentialsMissing } from '../../supabaseClient';
+import { supabase } from '../../supabaseClient';
 
 interface AccountDashboardProps {
   user: UserProfile;
@@ -19,7 +19,6 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'likes'>('orders');
 
   const fetchOrders = async () => {
-    if (credentialsMissing) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -42,15 +41,13 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   useEffect(() => {
     fetchOrders();
     
-    if (credentialsMissing) return;
-
     const channel = supabase.channel(`acc_orders_${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` }, () => {
         fetchOrders();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, [user.id]);
 
   const wishlistProducts = products.filter(p => user.wishlist?.includes(p.id));

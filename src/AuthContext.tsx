@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
-import { supabase, credentialsMissing } from "./supabaseClient";
+import { supabase } from "./supabaseClient";
 import { UserProfile } from './types';
 import { loginWithGoogle, logoutUser } from './auth';
 
@@ -32,10 +32,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Initial eager check
     const checkSession = async () => {
-      if (credentialsMissing) {
-        setLoading(false);
-        return;
-      }
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
@@ -51,8 +47,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     checkSession();
 
-    if (credentialsMissing) return;
-
     // Supabase Auth Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
@@ -64,7 +58,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   const handleSessionChange = async (session: any) => {

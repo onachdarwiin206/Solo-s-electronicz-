@@ -8,7 +8,7 @@ import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
 import { Footer } from './components/layout/Footer';
 import { INITIAL_PRODUCTS } from './constants';
-import { supabase, credentialsMissing } from './supabaseClient';
+import { supabase } from './supabaseClient';
 import { Product, CartItem, PaymentMethod, Order } from './types';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -46,12 +46,6 @@ export default function App() {
 
   useEffect(() => {
     async function fetchProducts() {
-      if (credentialsMissing) {
-        console.warn("[Supabase] Skipping fetch: Setup required.");
-        setProducts(INITIAL_PRODUCTS);
-        setLoadingProducts(false);
-        return;
-      }
       setLoadingProducts(true);
       try {
         const { data, error } = await supabase
@@ -78,16 +72,14 @@ export default function App() {
     
     // Optional: Realtime subscription (requires enabling in Supabase dashboard)
     let channel: any = null;
-    if (!credentialsMissing) {
-      channel = supabase.channel('products_changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-          fetchProducts(); 
-        })
-        .subscribe();
-    }
+    channel = supabase.channel('products_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+        fetchProducts(); 
+      })
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
@@ -186,12 +178,8 @@ export default function App() {
     };
 
     try {
-      if (!credentialsMissing) {
-        const { error } = await supabase.from('orders').insert(orderData);
-        if (error) throw error;
-      } else {
-        console.warn("[Supabase] Skipping DB insert: Setup required.");
-      }
+      const { error } = await supabase.from('orders').insert(orderData);
+      if (error) throw error;
       
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
@@ -262,22 +250,6 @@ _Your order is now being processed._
       />
 
       <main className="pb-24 md:pb-0">
-        {credentialsMissing && (
-          <div className="max-w-7xl mx-auto px-4 pt-20">
-            <div className="bg-amber-500/10 border border-amber-500/20 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 text-amber-500">
-                <AlertCircle size={32} />
-                <div>
-                  <h3 className="font-black uppercase italic tracking-tighter">Supabase Setup Required</h3>
-                  <p className="text-xs font-bold opacity-70 italic">VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY missing in Settings.</p>
-                </div>
-              </div>
-              <p className="text-[10px] text-amber-500/60 font-mono text-center md:text-right max-w-xs uppercase">
-                Using local sample assets until environment connectivity is established.
-              </p>
-            </div>
-          </div>
-        )}
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             <Suspense fallback={<div className="flex items-center justify-center py-40"><Loader2 className="animate-spin text-blue-500" size={48} /></div>}>
