@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Truck, Search, MapPin, CheckCircle2, ArrowLeft, Clock, Circle } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { supabase } from '../../supabaseClient';
+import { supabase, credentialsMissing } from '../../supabaseClient';
 import { Order, OrderStatus } from '../../types';
 
 export function OrderTracking() {
@@ -13,6 +13,10 @@ export function OrderTracking() {
 
   const handleTrack = async () => {
     if (!orderId) return;
+    if (credentialsMissing) {
+      setError("Logistics connection unavailable. Please contact engineering support.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

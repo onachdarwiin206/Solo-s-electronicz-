@@ -1,38 +1,26 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Helper to validate Supabase URL
-const isValidUrl = (url) => {
-  try {
-    return url && (url.startsWith('http://') || url.startsWith('https://'));
-  } catch {
-    return false;
-  }
-};
+/**
+ * --- SUPABASE CONFIGURATION ---
+ * 1. Go to your Supabase Project Settings > API
+ * 2. Copy the "Project URL" and paste it into VITE_SUPABASE_URL in the Settings menu
+ * 3. Copy the "anon" public key and paste it into VITE_SUPABASE_ANON_KEY in the Settings menu
+ */
 
-// --- CREDENTIALS CONFIGURATION ---
-// We prefer environment variables from the Settings menu first.
-// If missing, we fallback to the hardcoded placeholders you provided.
-const ENV_URL = import.meta.env.VITE_SUPABASE_URL;
-const ENV_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://rzbgipdajulkunlswygz.supabase.co";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_nI4YRsOoKELjPKkUkJ_P_w_EM19pUhO";
 
-const PLACEHOLDER_URL = "https://rzbgipdajulkunlswygz.supabase.co"; 
-const PLACEHOLDER_KEY = "sb_publishable_nI4YRsOoKELjPKkUkJ_P_w_EM19pUhO";
-
-export const supabaseUrl = ENV_URL || PLACEHOLDER_URL;
-export const supabaseAnonKey = ENV_KEY || PLACEHOLDER_KEY;
-
-// Detect if settings are actually configured or if we are using invalid placeholders
+// Enhanced Detection: Check if we are still using placeholders or provided invalid format
 export const credentialsMissing = 
-  !isValidUrl(supabaseUrl) || 
-  !supabaseAnonKey || 
-  supabaseAnonKey === PLACEHOLDER_KEY || 
-  supabaseAnonKey.startsWith('sb_publishable'); // Detection for the invalid key format provided
+  !SUPABASE_URL || 
+  SUPABASE_URL.includes("rzbgipdajulkunlswygz") || 
+  !SUPABASE_ANON_KEY || 
+  SUPABASE_ANON_KEY.includes("sb_publishable") ||
+  SUPABASE_ANON_KEY.length < 40; // Real Supabase keys are long JWTs
 
-const finalUrl = isValidUrl(supabaseUrl) ? supabaseUrl : 'https://placeholder.supabase.co';
-const finalKey = credentialsMissing ? 'placeholder-key' : supabaseAnonKey;
-
-export const supabase = createClient(finalUrl, finalKey);
-
-if (credentialsMissing && typeof window !== 'undefined') {
-  console.warn("Supabase Configuration Required: Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Settings.");
-}
+// We use hardcoded placeholders to avoid crashes during initialization
+// but we prevent actual network requests if credentialsMissing is true.
+export const supabase = createClient(
+  SUPABASE_URL.includes("http") ? SUPABASE_URL : `https://${SUPABASE_URL}.supabase.co`,
+  credentialsMissing ? "placeholder-key" : SUPABASE_ANON_KEY
+);

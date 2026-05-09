@@ -5,8 +5,6 @@ import { AuthProvider } from './AuthContext';
 import { supabase } from './supabaseClient';
 import './index.css';
 
-console.log('Supabase Connection Status:', !!supabase);
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>

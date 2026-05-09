@@ -137,8 +137,6 @@ export default function App() {
 
   const t = translations[language];
 
-  const credentialsMissing = !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('placeholder');
-
   const filteredProducts = useMemo(() => products.filter(p => {
     const matchesCategory = category ? p.category === category : true;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -188,8 +186,12 @@ export default function App() {
     };
 
     try {
-      const { error } = await supabase.from('orders').insert(orderData);
-      if (error) throw error;
+      if (!credentialsMissing) {
+        const { error } = await supabase.from('orders').insert(orderData);
+        if (error) throw error;
+      } else {
+        console.warn("[Supabase] Skipping DB insert: Setup required.");
+      }
       
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       

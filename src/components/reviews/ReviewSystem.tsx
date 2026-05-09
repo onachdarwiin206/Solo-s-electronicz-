@@ -4,7 +4,7 @@ import { Star, MessageSquare, Send, User, Calendar, Loader2, AlertCircle, Quote 
 import { Review, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
 import { cn } from '../../lib/utils';
-import { supabase } from '../../supabaseClient';
+import { supabase, credentialsMissing } from '../../supabaseClient';
 
 interface ReviewSystemProps {
   product: Product;
@@ -22,23 +22,29 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
   const [hoverRating, setHoverRating] = useState(0);
 
   const fetchReviews = async () => {
+    if (credentialsMissing) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('*')
-      .eq('product_id', product.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('product_id', product.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error("Reviews Fetch Error:", error.message);
-    } else {
-      setReviews(data as Review[]);
+      if (error) {
+        console.error("Reviews Fetch Error:", error.message);
+      } else {
+        setReviews(data as Review[]);
+      }
+    } catch (err) {
+      console.error("Reviews Dynamic error", err);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchReviews();
+    if (credentialsMissing) return;
     const channel = supabase.channel(`reviews_prod_${product.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews', filter: `product_id=eq.${product.id}` }, () => {
         fetchReviews();

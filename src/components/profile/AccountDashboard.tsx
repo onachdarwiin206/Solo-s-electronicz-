@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
-import { supabase } from '../../supabaseClient';
+import { supabase, credentialsMissing } from '../../supabaseClient';
 
 interface AccountDashboardProps {
   user: UserProfile;
@@ -19,17 +19,22 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'likes'>('orders');
 
   const fetchOrders = async () => {
+    if (credentialsMissing) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error("Orders Fetch Error:", error.message);
-    } else {
-      setOrders(data as Order[]);
+      if (error) {
+        console.error("Orders Fetch Error:", error.message);
+      } else {
+        setOrders(data as Order[]);
+      }
+    } catch (err) {
+      console.error("Orders Dynamic error", err);
     }
     setLoading(false);
   };
@@ -37,6 +42,8 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   useEffect(() => {
     fetchOrders();
     
+    if (credentialsMissing) return;
+
     const channel = supabase.channel(`acc_orders_${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` }, () => {
         fetchOrders();
