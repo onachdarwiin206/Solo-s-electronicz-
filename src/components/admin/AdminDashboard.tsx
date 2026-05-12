@@ -6,8 +6,11 @@ import { Product, Category, Order, OrderStatus } from '../../types';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
-import { supabase } from '../../supabaseClient';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useAuth } from '../../AuthContext';
+import { uploadFile, getPublicUrl, deleteFile } from '../../lib/storage';
+import { v4 as uuidv4 } from 'uuid';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface AdminDashboardProps {
   products: Product[];
@@ -66,55 +69,55 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
 
   useEffect(() => {
     const fetchAdmins = async () => {
+      if (!isSupabaseConfigured) {
+        setIsSyncing(false);
+        return;
+      }
       try {
         const { data, error } = await supabase
-          .from('system_config')
-          .select('value')
-          .eq('key', 'allowed_emails')
-          .maybeSingle(); // Better for potentially missing data
+          .from('admins')
+          .select('email');
         
         if (error) {
-           if (error.code === '42P01' || error.message?.includes('not found')) {
-             console.warn("[Supabase] 'system_config' table not found.");
-           } else {
-             console.error("Admins Fetch Error:", error.message);
-           }
+           console.error("[Supabase] Admins Fetch Error:", error.message || error);
            setAllowedEmails([]);
-        } else if (data && data.value) {
-           setAllowedEmails(data.value || []);
-        } else {
-           setAllowedEmails([]);
+        } else if (data) {
+           setAllowedEmails(data.map(a => a.email));
         }
         setIsSyncing(true);
-      } catch (e) {
+      } catch (e: any) {
         setIsSyncing(false);
       }
     };
     fetchAdmins();
   }, []);
 
-  const updateAllowedEmails = async (newList: string[]) => {
-    if (newList.length > 5) return;
+  const handleAddEmail = async () => {
+    if (!newEmail || allowedEmails.includes(newEmail)) return;
     try {
       const { error } = await supabase
-        .from('system_config')
-        .upsert({ key: 'allowed_emails', value: newList, updated_at: new Date().toISOString() });
+        .from('admins')
+        .insert({ email: newEmail });
       
       if (error) throw error;
-      setAllowedEmails(newList);
+      setAllowedEmails([...allowedEmails, newEmail]);
+      setNewEmail('');
     } catch (e) {
       console.error("Whitelist Update Error:", e);
     }
   };
 
-  const handleAddEmail = () => {
-    if (!newEmail || allowedEmails.length >= 5 || allowedEmails.includes(newEmail)) return;
-    updateAllowedEmails([...allowedEmails, newEmail]);
-    setNewEmail('');
-  };
-
-  const handleRemoveEmail = (email: string) => {
-    updateAllowedEmails(allowedEmails.filter(e => e !== email));
+  const handleRemoveEmail = async (email: string) => {
+    try {
+      const { error } = await supabase
+        .from('admins')
+        .delete()
+        .eq('email', email);
+      if (error) throw error;
+      setAllowedEmails(allowedEmails.filter(e => e !== email));
+    } catch (e) {
+      console.error("Whitelist Delete Error:", e);
+    }
   };
 
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
@@ -131,6 +134,10 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
   });
 
   const fetchOrders = async () => {
+    if (!isSupabaseConfigured) {
+      setLoadingOrders(false);
+      return;
+    }
     setLoadingOrders(true);
     try {
       const { data, error } = await supabase
@@ -142,25 +149,31 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
         if (error.code === '42P01' || error.message?.includes('not found')) {
           console.warn("[Supabase] 'orders' table not found.");
         } else {
-          console.error("Orders Fetch Error:", error.message);
+          console.error("[Supabase] Orders Fetch Error:", error.message || error);
         }
       } else {
         setOrders(data as Order[]);
       }
-    } catch (err) {
-      console.error("Dynamic order error", err);
+    } catch (err: any) {
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+         console.error("[Supabase] Connection Failure in orders: Check network.");
+      } else {
+         console.error("[Supabase] Dynamic order error", err);
+      }
     }
     setLoadingOrders(false);
   };
 
   useEffect(() => {
-    fetchOrders();
-    const channel = supabase.channel('orders_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        fetchOrders();
-      })
-      .subscribe();
-    return () => { if (channel) supabase.removeChannel(channel); };
+    if (isSupabaseConfigured) {
+      fetchOrders();
+      const channel = supabase.channel('orders_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          fetchOrders();
+        })
+        .subscribe();
+      return () => { if (channel) supabase.removeChannel(channel); };
+    }
   }, []);
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
@@ -198,7 +211,16 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
     window.open(whatsappUrl, '_blank');
   };
 
-  const [uploadingMedia, setUploadingMedia] = useState<{ id: string; type: 'image' | 'video'; file: File; status: 'queued' | 'uploading' | 'done' | 'error'; progress: number; url?: string }[]>([]);
+  const [uploadSessionId, setUploadSessionId] = useState(uuidv4());
+  const [uploadingMedia, setUploadingMedia] = useState<{ 
+    id: string; 
+    type: 'image' | 'video'; 
+    file: File; 
+    status: 'queued' | 'uploading' | 'done' | 'error'; 
+    progress: number; 
+    url?: string;
+    path?: string;
+  }[]>([]);
 
   const updateProgress = (id: string, progress: number, status?: 'uploading' | 'done' | 'error', url?: string) => {
     setUploadingMedia(prev => prev.map(i => i.id === id ? { 
@@ -226,24 +248,23 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
         } catch (e) { console.warn("Compression failed", e); }
       }
 
-      const fileName = `${Date.now()}-${next.file.name.replace(/\s+/g, '_')}`;
       const bucket = next.type === 'image' ? 'product-images' : 'product-videos';
+      const storagePath = `${editingId || uploadSessionId}`;
       
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, fileToUpload, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: next.file.type
-        });
+      const filePath = await uploadFile(
+        fileToUpload as File, 
+        bucket, 
+        storagePath
+      );
 
-      if (error) throw error;
+      if (!filePath) throw new Error("Upload failed");
 
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
+      const publicUrl = getPublicUrl(bucket, filePath);
       
-      updateProgress(next.id, 100, 'done', publicUrl);
+      updateProgress(next.id, 100, 'done', publicUrl || undefined);
+      // We keep track of the PATH to save it to the DB later
+      setUploadingMedia(prev => prev.map(i => i.id === next.id ? { ...i, path: filePath } : i));
+      
       processQueue();
     } catch (err: any) {
       console.error("Storage upload failed:", err);
@@ -284,8 +305,14 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
       return;
     }
     
-    const completedImages = uploadingMedia.filter(m => m.type === 'image' && m.status === 'done').map(m => m.url!);
-    const completedVideos = uploadingMedia.filter(m => m.type === 'video' && m.status === 'done').map(m => m.url!);
+    // Check if any uploads are still in progress
+    if (uploadingMedia.some(m => m.status === 'uploading' || m.status === 'queued')) {
+       alert("Please wait for all media to finish uploading.");
+       return;
+    }
+
+    const completedImages = uploadingMedia.filter(m => m.type === 'image' && m.status === 'done').map(m => m.path!);
+    const completedVideos = uploadingMedia.filter(m => m.type === 'video' && m.status === 'done').map(m => m.path!);
 
     setSubmitting(true);
     
@@ -293,14 +320,20 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
       const finalImages = [...(newProduct.images || []), ...completedImages];
       const finalVideos = [...(newProduct.videos || []), ...completedVideos];
 
+      if (finalImages.length === 0) {
+        alert("At least one product image is required.");
+        setSubmitting(false);
+        return;
+      }
+
       const data: any = {
         name,
         description,
         price,
         stock,
         category: newProduct.category,
-        image: newProduct.image || finalImages[0] || '',
-        video_url: newProduct.video_url || finalVideos[0] || '',
+        image: finalImages[0], // Use the first image as main
+        video_url: finalVideos[0] || '',
         images: finalImages,
         videos: finalVideos,
         featured: newProduct.featured,
@@ -332,6 +365,26 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure?')) return;
     try {
+      // Find product to get media paths
+      const product = initialProducts.find(p => p.id === id);
+      if (product) {
+        // Delete images
+        if (product.images) {
+          for (const path of product.images) {
+            if (!path.startsWith('http')) {
+              await deleteFile('product-images', path);
+            }
+          }
+        }
+        // Delete videos
+        if (product.videos) {
+          for (const path of product.videos) {
+            if (!path.startsWith('http')) {
+              await deleteFile('product-videos', path);
+            }
+          }
+        }
+      }
       await supabase.from('products').delete().eq('id', id);
     } catch (e) {
       console.error("Delete failed:", e);
@@ -341,6 +394,7 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
   const resetForm = () => {
     setIsAdding(false); 
     setEditingId(null);
+    setUploadSessionId(uuidv4());
     setNewProduct({ name: '', description: '', price: 0, category: 'Phones', image: '', images: [], videos: [], stock: 0, featured: false, is_verified: true });
     setUploadingMedia([]);
   };
@@ -423,20 +477,60 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
               </div>
 
               <div className="grid grid-cols-4 gap-3">
+                {/* Existing Images */}
+                {newProduct.images?.map((img, idx) => (
+                  <div key={`existing-img-${idx}`} className="relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 group/item">
+                    <OptimizedImage src={img} alt="Existing" className="w-full h-full object-cover opacity-50" />
+                    <button 
+                      onClick={() => setNewProduct(prev => ({ ...prev, images: prev.images?.filter((_, i) => i !== idx) }))}
+                      className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                    >
+                      <X size={10} />
+                    </button>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                       <span className="text-[6px] font-black uppercase bg-black/40 px-1 rounded text-gray-400">Stored</span>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Existing Videos */}
+                {newProduct.videos?.map((vid, idx) => (
+                  <div key={`existing-vid-${idx}`} className="relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 group/item">
+                    <div className="w-full h-full bg-green-500/10 flex items-center justify-center opacity-50">
+                      <Video size={16} className="text-green-500" />
+                    </div>
+                    <button 
+                      onClick={() => setNewProduct(prev => ({ ...prev, videos: prev.videos?.filter((_, i) => i !== idx) }))}
+                      className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                    >
+                      <X size={10} />
+                    </button>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                       <span className="text-[6px] font-black uppercase bg-black/40 px-1 rounded text-green-500/50">Stored</span>
+                    </div>
+                  </div>
+                ))}
+
                 {uploadingMedia.map((item) => (
-                  <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                    {item.url ? (
+                  <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 group/item">
+                    {item.status === 'done' && item.url ? (
                       <>
                         {item.type === 'image' ? (
-                          <img src={item.url} className="w-full h-full object-cover" />
+                          <OptimizedImage src={item.url} alt="Preview" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full bg-green-500/20 flex items-center justify-center"><Video className="text-green-500" size={16} /></div>
                         )}
-                        <button onClick={() => removeMedia(item.url, item.id)} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500"><X size={10} /></button>
+                        <button onClick={() => removeMedia(item.url, item.id)} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity"><X size={10} /></button>
                       </>
+                    ) : item.status === 'error' ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-red-500">
+                        <AlertCircle size={24} />
+                        <span className="text-[8px] font-black uppercase mt-1">Failed</span>
+                        <button onClick={() => setUploadingMedia(prev => prev.map(m => m.id === item.id ? { ...m, status: 'queued' } : m))} className="text-[8px] underline mt-1">Retry</button>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-2">
-                        <div className="w-full bg-gray-200 h-1 rounded-full overflow-hidden mb-2">
+                        <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden mb-2">
                           <motion.div className="bg-blue-600 h-full" initial={{ width: 0 }} animate={{ width: `${item.progress}%` }} />
                         </div>
                         <p className="text-[8px] font-black">{Math.round(item.progress)}%</p>
@@ -463,7 +557,9 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {initialProducts.map(p => (
             <div key={p.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl flex items-center gap-6 relative group overflow-hidden">
-              <img src={p.image} className="w-20 h-20 rounded-2xl object-cover" />
+              <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
+                <OptimizedImage src={p.image} alt={p.name} className="w-full h-full object-cover" />
+              </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-white font-black uppercase italic tracking-tighter truncate">{p.name}</h4>
                 <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
@@ -508,7 +604,9 @@ export function AdminDashboard({ products: initialProducts }: AdminDashboardProp
                   <div className="border-t border-white/5 pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {order.items.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-4">
-                        <img src={item.image} className="w-12 h-12 rounded-xl object-cover" />
+                        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+                          <OptimizedImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
                         <div>
                           <p className="text-xs font-bold text-white uppercase">{item.name}</p>
                           <p className="text-[10px] text-gray-500">Qty: {item.quantity}</p>

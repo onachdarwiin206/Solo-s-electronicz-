@@ -8,7 +8,7 @@ import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
 import { Footer } from './components/layout/Footer';
 import { INITIAL_PRODUCTS } from './constants';
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Product, CartItem, PaymentMethod, Order } from './types';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -43,45 +43,66 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [language, setLanguage] = useState<Language>('en');
+  const fetchProducts = async () => {
+    if (!isSupabaseConfigured) {
+      setProducts(INITIAL_PRODUCTS);
+      setLoadingProducts(false);
+      return;
+    }
+    setLoadingProducts(true);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  useEffect(() => {
-    async function fetchProducts() {
-      setLoadingProducts(true);
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          // If table is missing (PGRST116 or 42P01), suppress console noise and use fallback
-          if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('not found')) {
-            console.warn("[Supabase] Knowledge Base 'products' not initialized. Using local hardware feed.");
-          } else {
-            console.error("[Supabase] Fetch error:", error.message);
-          }
-          setProducts(INITIAL_PRODUCTS);
-        } else if (data && data.length > 0) {
-          setProducts(data as Product[]);
+      if (error) {
+        // If table is missing or network failure
+        if (error.code === 'PGRST116' || error.code === '42P01' || error.hint?.includes('not found')) {
+          console.warn("[Supabase] 'products' table missing. Using hardware feed fallback.");
         } else {
-          setProducts(INITIAL_PRODUCTS);
+          console.error("[Supabase] Query error:", error.message || error);
         }
-      } catch (err) {
-        console.error("[Supabase] Dynamic error:", err);
+        setProducts(INITIAL_PRODUCTS);
+      } else if (data && data.length > 0) {
+        setProducts(data as Product[]);
+      } else {
         setProducts(INITIAL_PRODUCTS);
       }
+    } catch (err: any) {
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        console.error("[Supabase] Connection Failure: Check if project URL is correct or if your network/ad-blocker is blocking supabase.co");
+      } else {
+        console.error("[Supabase] Dynamic error:", err);
+      }
+      setProducts(INITIAL_PRODUCTS);
+    } finally {
       setLoadingProducts(false);
     }
+  };
 
+  useEffect(() => {
+    // Initial fetch
     fetchProducts();
     
     // Optional: Realtime subscription (requires enabling in Supabase dashboard)
     let channel: any = null;
-    channel = supabase.channel('products_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-        fetchProducts(); 
-      })
-      .subscribe();
+    if (isSupabaseConfigured) {
+      try {
+        channel = supabase.channel('products_changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+            console.log('[Realtime] Product update detected:', payload.eventType);
+            fetchProducts(); 
+          })
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              console.log('[Realtime] Connected to products table');
+            }
+          });
+      } catch (e) {
+        console.warn("[Realtime] Subscription failed. Reverting to manual sync.", e);
+      }
+    }
 
     return () => {
       if (channel) supabase.removeChannel(channel);
@@ -217,12 +238,13 @@ _Thank you for choosing Solo Electronics!_
 _Your order is now being processed._
       `.trim();
       
+      // WhatsApp is the default primary channel for this business model
       const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(receiptTemplate)}`;
       window.open(whatsappUrl, '_blank');
       
       setCart([]);
-      setCartOpen(false);
-      setView('shop');
+      // We no longer close the modal immediately here; the Cart component handles its own success state and allows the user to close it.
+      return orderId;
     } catch (e: any) {
       console.error("[Supabase] Order error:", e.message);
     }

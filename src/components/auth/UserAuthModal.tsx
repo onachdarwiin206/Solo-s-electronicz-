@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
+import { X, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
 import { loginWithGoogle } from '../../auth';
 import { SignIn } from './SignIn';
 import { SignUp } from './SignUp';
+import { AuthFeatureWall } from './AuthFeatureWall';
 
 interface UserAuthModalProps {
   isOpen: boolean;
@@ -44,37 +45,39 @@ export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-md z-[210]"
+            className="relative w-full max-w-5xl z-[210] flex"
           >
-            <div className="bg-neutral-900 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl">
-              <div className="p-8 md:p-12">
-                <div className="flex justify-end mb-4">
-                  <button 
-                    onClick={onClose}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
-                  >
-                    <X size={20} />
-                  </button>
+            <div className="bg-neutral-900 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row w-full">
+              {/* Form Side */}
+              <div className="flex-1 p-8 md:p-12 lg:p-16 overflow-y-auto max-h-[90vh]">
+                <div className="flex justify-between items-center mb-8 md:hidden">
+                   <div className="flex items-center gap-2">
+                     <ShieldCheck className="text-blue-500" size={20} />
+                     <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-500 italic">Solo Security</span>
+                   </div>
+                   <button onClick={onClose} className="p-2 bg-white/5 rounded-full"><X size={16} /></button>
                 </div>
 
-                {isLogin ? (
-                  <SignIn 
-                    onSuccess={handleLoginSuccess}
-                    onSwitchToSignUp={() => { setIsLogin(false); setShowSignupSuccess(false); }}
-                    initialEmail={preFilledEmail}
-                    signupSuccess={showSignupSuccess}
-                  />
-                ) : (
-                  <SignUp 
-                    onSuccess={handleSignupSuccess}
-                    onSwitchToSignIn={() => { setIsLogin(true); setShowSignupSuccess(false); }}
-                  />
-                )}
+                <div className="relative">
+                  {isLogin ? (
+                    <SignIn 
+                      onSuccess={handleLoginSuccess}
+                      onSwitchToSignUp={() => { setIsLogin(false); setShowSignupSuccess(false); }}
+                      initialEmail={preFilledEmail}
+                      signupSuccess={showSignupSuccess}
+                    />
+                  ) : (
+                    <SignUp 
+                      onSuccess={handleSignupSuccess}
+                      onSwitchToSignIn={() => { setIsLogin(true); setShowSignupSuccess(false); }}
+                    />
+                  )}
+                </div>
 
                 <div className="mt-10 flex flex-col items-center gap-6">
                   <div className="flex items-center gap-4 w-full">
                     <div className="h-px flex-1 bg-white/5" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-700">Database Options</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-700">Digital Identity Sync</span>
                     <div className="h-px flex-1 bg-white/5" />
                   </div>
 
@@ -82,21 +85,31 @@ export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
                     onClick={() => loginWithGoogle()}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full py-5 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-[2rem] border border-white/5 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4"
+                    className="w-full py-5 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-[2rem] border border-white/5 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
                   >
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 grayscale opacity-50" alt="Google" />
-                    Continue with Cloud ID
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all" alt="Google" />
+                    Connect via Hardware Cloud
                   </motion.button>
                 </div>
 
-                <div className="mt-12 text-center">
-                  <p className="text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em] leading-loose max-w-[280px] mx-auto opacity-50">
-                    Solo's Electronics Security Protocol <br/>
-                    All sessions are encrypted and monitored.
-                  </p>
+                <div className="mt-12">
+                   <p className="text-[8px] text-gray-600 font-bold uppercase tracking-[0.1em] text-center opacity-50 italic">Protected by Solo Electronics Advanced Encryption Standard V4.2</p>
                 </div>
               </div>
+
+              {/* Feature Wall Side - Hidden on Mobile */}
+              <div className="hidden md:block w-[400px] shrink-0">
+                <AuthFeatureWall />
+              </div>
             </div>
+
+            {/* Desktop Close Button outside the main card */}
+            <button 
+              onClick={onClose}
+              className="absolute -top-12 -right-4 hidden md:flex items-center gap-3 p-3 text-white/40 hover:text-white transition-colors uppercase font-black text-[10px] tracking-widest group"
+            >
+              Close <X size={20} className="group-hover:rotate-90 transition-transform" />
+            </button>
           </motion.div>
         </div>
       )}

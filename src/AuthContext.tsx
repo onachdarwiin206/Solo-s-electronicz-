@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
-import { supabase } from "./supabaseClient";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { UserProfile } from './types';
 import { loginWithGoogle, logoutUser } from './auth';
 
@@ -40,31 +40,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Initial eager check
     const checkSession = async () => {
+      if (!isSupabaseConfigured) {
+        setLoading(false);
+        return;
+      }
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        
         if (session) {
           await handleSessionChange(session);
         } else {
           setLoading(false);
         }
-      } catch (e) {
-        console.error("Session check error:", e);
+      } catch (e: any) {
+        if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
+          console.warn("[Supabase] Auth Connection Failure: Service unreachable or unconfigured.");
+        } else {
+          console.error("Session check error:", e);
+        }
         setLoading(false);
       }
     };
 
     checkSession();
-
+    
     // Supabase Auth Listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        await handleSessionChange(session);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-        setLoading(false);
-      }
-    });
+    let subscription: any = null;
+    if (isSupabaseConfigured) {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session) {
+          await handleSessionChange(session);
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+          setLoading(false);
+        }
+      });
+      subscription = data.subscription;
+    }
 
     return () => {
       if (subscription) subscription.unsubscribe();
@@ -72,12 +86,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const handleSessionChange = async (session: any) => {
-    if (!session) return;
-    setLoading(true);
+    if (!session) {
+      setUser(null);
+      setIsAdmin(false);
+      setLoading(false);
+      return;
+    }
+    
     const { user: supaUser } = session;
     
     try {
       // Fetch profile from 'profiles' table
+      // We rely on the DB trigger to have created this profile
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -88,28 +108,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser({ id: supaUser.id, ...profile } as any);
         // Sync Admin state if the role is admin in database
         if (profile.role === 'admin') setIsAdmin(true);
-      } else {
-        // If profile doesn't exist, create it
-        const newProfile = {
+      } else if (error && error.code === 'PGRST116') {
+        // If profile doesn't exist yet (trigger might be slow), create a minimal one
+        const fallbackProfile = {
           id: supaUser.id,
           name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
           email: supaUser.email || '',
-          role: 'customer',
-          created_at: new Date().toISOString()
+          role: 'customer'
         };
         
-        const { data: createdProfile, error: createError } = await supabase
+        const { data: created, error: createError } = await supabase
           .from('profiles')
-          .upsert(newProfile)
+          .upsert(fallbackProfile)
           .select()
           .single();
           
-        if (!createError) {
-          setUser(createdProfile as any);
+        if (!createError && created) {
+          setUser(created as any);
         }
       }
-    } catch (err) {
-      console.error("Profile sync error:", err);
+    } catch (err: any) {
+      console.error("[Auth] Profile Sync Error:", err.message);
     } finally {
       setLoading(false);
     }
@@ -125,16 +144,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const adminSession = sessionStorage.getItem('admin_auth');
-    const lastActive = sessionStorage.getItem('admin_last_active');
-    
-    if (adminSession === 'true' && lastActive) {
-      const now = Date.now();
-      if (now - parseInt(lastActive) < INACTIVITY_TIMEOUT) {
-        setIsAdmin(true);
-      }
-    }
-
     const handleActivity = () => resetInactivityTimer();
     window.addEventListener('mousemove', handleActivity);
     window.addEventListener('keydown', handleActivity);
@@ -146,26 +155,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener('click', handleActivity);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     if (isAdmin) {
       resetInactivityTimer();
-      sessionStorage.setItem('admin_last_active', Date.now().toString());
     }
   }, [isAdmin]);
 
   const loginWithGoogleAdmin = async () => {
-    // This would typically involve checking a specific column in a profiles table or a separate admin table
     await loginWithGoogle();
-    return false; // Redirect handles result
+    return true;
   };
 
   const loginWithPin = (pin: string) => {
+    // Legacy support for Pin login while transitioning to full RLS
+    // In production, this should check a secure hash or be removed entirely
     if (pin === "8585") {
       setIsAdmin(true);
-      sessionStorage.setItem('admin_auth', 'true');
-      sessionStorage.setItem('admin_last_active', Date.now().toString());
       return true;
     }
     return false;

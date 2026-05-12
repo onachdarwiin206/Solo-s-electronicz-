@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
-import { supabase } from '../../supabaseClient';
+import { supabase } from '../../lib/supabase';
+
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface AccountDashboardProps {
   user: UserProfile;
@@ -207,7 +209,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                         <div className="flex gap-4 pt-6 overflow-x-auto no-scrollbar">
                            {order.items.map((item, idx) => (
                              <div key={idx} className="shrink-0 w-16 h-16 rounded-xl bg-black/40 border border-white/10 overflow-hidden">
-                                <img src={item.image} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt={item.name} />
+                                <OptimizedImage src={item.image} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt={item.name} />
                              </div>
                            ))}
                         </div>
@@ -244,7 +246,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                     {wishlistProducts.map(product => (
                       <div key={product.id} className="relative group bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-blue-500/30 transition-all duration-500 shadow-2xl">
                          <div className="aspect-video overflow-hidden relative">
-                            <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
+                            <OptimizedImage src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
                          </div>
                          <div className="p-8">
@@ -287,7 +289,7 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
                     {likedProducts.map(product => (
                       <div key={product.id} className="relative group bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-pink-500/30 transition-all duration-500 shadow-2xl">
                          <div className="aspect-video overflow-hidden relative">
-                            <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
+                            <OptimizedImage src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
                          </div>
                          <div className="p-8">

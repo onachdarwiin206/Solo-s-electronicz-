@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, ShoppingCart, MessageCircle, BadgeCheck, Star, Shield, Zap, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../../types';
 import { cn } from '../../lib/utils';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -67,11 +68,10 @@ export function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModal
                       playsInline 
                     />
                   ) : (
-                    <img 
+                    <OptimizedImage 
                       src={currentMedia} 
                       className="w-full h-full object-contain" 
                       alt={product.name} 
-                      loading="lazy"
                     />
                   )}
 
@@ -109,7 +109,7 @@ export function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModal
                               <Zap size={16} className="text-green-500" />
                            </div>
                         ) : (
-                           <img src={media} className="w-full h-full object-cover" />
+                           <OptimizedImage src={media} className="w-full h-full object-cover" alt={product.name} />
                         )}
                       </button>
                     ))}

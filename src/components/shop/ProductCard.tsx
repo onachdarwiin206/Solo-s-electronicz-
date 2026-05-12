@@ -4,6 +4,7 @@ import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye, Star, MessageC
 import { Product } from '../../types';
 import { cn } from '../../lib/utils';
 import { Tooltip } from '../ui/Tooltip';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface ProductCardProps {
   product: Product;
@@ -90,10 +91,9 @@ export function ProductCard({
               playsInline
             />
           ) : (
-            <img
+            <OptimizedImage
               src={product.image}
               alt={product.name}
-              loading="lazy"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />
           )}
@@ -246,7 +246,7 @@ export function ProductCard({
             transition={{ duration: 0.8, ease: "easeInOut" }}
             className="pointer-events-none bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.8)]"
           >
-            <img src={product.image} className="w-full h-full object-cover rounded-inherit" />
+            <OptimizedImage src={product.image} alt={product.name} className="w-full h-full object-cover rounded-inherit" />
           </motion.div>
         )}
       </AnimatePresence>

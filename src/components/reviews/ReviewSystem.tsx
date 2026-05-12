@@ -4,7 +4,7 @@ import { Star, MessageSquare, Send, User, Calendar, Loader2, AlertCircle, Quote 
 import { Review, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
 import { cn } from '../../lib/utils';
-import { supabase } from '../../supabaseClient';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 interface ReviewSystemProps {
   product: Product;
@@ -22,6 +22,10 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
   const [hoverRating, setHoverRating] = useState(0);
 
   const fetchReviews = async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -34,18 +38,26 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
         if (error.code === '42P01' || error.message?.includes('not found')) {
           console.warn("[Supabase] Reviews table not found.");
         } else {
-          console.error("Reviews Fetch Error:", error.message);
+          console.error("[Supabase] Reviews Fetch Error:", error.message || error);
         }
       } else {
         setReviews(data as Review[]);
       }
-    } catch (err) {
-      console.error("Reviews Dynamic error", err);
+    } catch (err: any) {
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        console.error("[Supabase] Connection Failure in reviews: Check project URL or network.");
+      } else {
+        console.error("[Supabase] Dynamic reviews error:", err);
+      }
     }
     setLoading(false);
   };
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
     fetchReviews();
     const channel = supabase.channel(`reviews_prod_${product.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews', filter: `product_id=eq.${product.id}` }, () => {

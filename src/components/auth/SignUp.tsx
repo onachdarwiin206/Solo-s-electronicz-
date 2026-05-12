@@ -1,16 +1,32 @@
 import { useState, FormEvent } from 'react';
-import { Mail, Lock, UserPlus, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
-import { motion } from 'motion/react';
-import { supabase } from '../../supabaseClient';
+import { Mail, Lock, UserPlus, AlertCircle, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from '../../lib/supabase';
 
 interface SignUpProps {
   onSuccess: (email: string) => void;
   onSwitchToSignIn: () => void;
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
+
 export function SignUp({ onSuccess, onSwitchToSignIn }: SignUpProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +50,6 @@ export function SignUp({ onSuccess, onSwitchToSignIn }: SignUpProps) {
         return;
       }
 
-      // If Supabase is configured for email confirmation, session will be null
       if (data.user) {
         onSuccess(email);
       } else {
@@ -48,78 +63,95 @@ export function SignUp({ onSuccess, onSwitchToSignIn }: SignUpProps) {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">Security Gateway</span>
-        <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">Sign Up</h2>
-      </div>
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
+      <motion.div variants={itemVariants}>
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500">Security Gateway</span>
+        <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Sign Up</h2>
+      </motion.div>
 
-      {error && (
-        <motion.div 
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="p-5 bg-red-500/10 border border-red-500/20 rounded-3xl flex items-start gap-4 text-red-500 text-xs font-medium leading-relaxed"
-        >
-          <AlertCircle size={20} className="shrink-0 mt-0.5" />
-          <p>{error}</p>
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            className="p-5 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex items-start gap-4 text-red-500 text-[10px] font-bold uppercase tracking-wider leading-relaxed"
+          >
+            <AlertCircle size={20} className="shrink-0 mt-0.5" />
+            <p>{error}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-4">Email Address</label>
+        <motion.div variants={itemVariants} className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-6">Hardware Identifier (Email)</label>
           <div className="relative group">
             <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
             <input 
               type="email"
               required
-              placeholder="your@email.com"
+              placeholder="id@solo-electronics.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 pl-16 pr-6 text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-700"
             />
           </div>
-        </div>
+        </motion.div>
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-4">Create Access Code</label>
+        <motion.div variants={itemVariants} className="space-y-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-6">Security Access Key (Password)</label>
           <div className="relative group">
             <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
             <input 
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 pl-16 pr-6 text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-700"
+              className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 pl-16 pr-14 text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-700"
             />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
-        </div>
+        </motion.div>
 
         <motion.button 
+          variants={itemVariants}
           type="submit"
           disabled={loading}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-[2rem] shadow-xl shadow-blue-900/20 transition-all uppercase tracking-[0.2em] text-[12px] flex items-center justify-center gap-4 disabled:opacity-50"
+          className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-900/40 transition-all uppercase tracking-[0.25em] text-[12px] flex items-center justify-center gap-4 disabled:opacity-50"
         >
           {loading ? <Loader2 className="animate-spin" size={20} /> : (
             <>
-              Initialize Account
+              Initialize Digital Identity
               <ArrowRight size={18} />
             </>
           )}
         </motion.button>
       </form>
 
-      <div className="pt-6 text-center">
+      <motion.div variants={itemVariants} className="pt-6 text-center border-t border-white/5">
         <button 
           onClick={onSwitchToSignIn}
-          className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 hover:text-blue-400 transition-colors"
+          className="group relative inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-white transition-colors"
         >
-          Already have an identity? Login
+          <span>Already Verified? Login</span>
+          <div className="h-px w-8 bg-gray-500 group-hover:w-12 group-hover:bg-blue-500 transition-all" />
         </button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
