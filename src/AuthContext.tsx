@@ -93,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
+    setLoading(true);
     const { user: supaUser } = session;
     
     try {
@@ -125,6 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
         if (!createError && created) {
           setUser(created as any);
+          if (created.role === 'admin') setIsAdmin(true);
         }
       }
     } catch (err: any) {

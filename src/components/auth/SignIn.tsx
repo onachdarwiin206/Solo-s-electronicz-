@@ -55,7 +55,6 @@ export function SignIn({ onSuccess, onSwitchToSignUp, initialEmail = '', signupS
 
       if (data.session) {
         onSuccess();
-        window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }));
       } else {
         setError("Account access restricted. Please ensure your hardware identity is verified via email.");
       }

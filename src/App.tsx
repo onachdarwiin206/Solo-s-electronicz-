@@ -124,13 +124,30 @@ export default function App() {
 
   useEffect(() => {
     if (authResolving) return;
+
+    // 1. Protection Logic: If user tries to access protected views without auth
     if (view === 'admin' && !isAdmin) {
       setView('shop');
     }
     if ((view === 'tracking' || view === 'profile') && !user) {
       setIsAuthModalOpen(true);
+      // Wait for user to auth, then either they login and the effect below handles it
+      // or they close modal and the view check above kicks in if they tried admin
     }
-  }, [view, isAdmin, user, authResolving]);
+
+    // 2. Post-Login Redirect Logic
+    // If the auth modal just closed and the user is now authenticated
+    if (user && !isAuthModalOpen) {
+      // If they are on the shop view, redirect to their main dashboard
+      if (view === 'shop') {
+        if (isAdmin) {
+          setView('admin');
+        } else {
+          setView('tracking');
+        }
+      }
+    }
+  }, [user, isAdmin, authResolving, isAuthModalOpen]);
 
   useEffect(() => {
     const handleNav = (e: any) => { if (e.detail) setView(e.detail); };
