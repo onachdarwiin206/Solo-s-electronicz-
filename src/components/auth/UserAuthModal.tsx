@@ -12,7 +12,7 @@ interface UserAuthModalProps {
   onClose: () => void;
 }
 
-export function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
+export default function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [preFilledEmail, setPreFilledEmail] = useState('');
   const [showSignupSuccess, setShowSignupSuccess] = useState(false);

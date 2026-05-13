@@ -8,7 +8,7 @@ interface AdminLoginModalProps {
   onClose: () => void;
 }
 
-export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
+export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pin, setPin] = useState('');

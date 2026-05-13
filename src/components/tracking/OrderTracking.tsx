@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
 import { Order, OrderStatus } from '../../types';
 
-export function OrderTracking() {
+export default function OrderTracking() {
   const [orderId, setOrderId] = useState('');
   const [trackingData, setTrackingData] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);

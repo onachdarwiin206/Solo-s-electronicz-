@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
 import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
@@ -9,19 +9,19 @@ import { Cart } from './components/shop/Cart';
 import { Footer } from './components/layout/Footer';
 import { INITIAL_PRODUCTS } from './constants';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
-import { Product, CartItem, PaymentMethod, Order } from './types';
+import { Product, CartItem, PaymentMethod } from './types';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
-import { ShieldCheck, ChevronRight, X, UserCog, Loader2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, ChevronRight, X, UserCog, Loader2 } from 'lucide-react';
 
-const OrderTracking = lazy(() => import('./components/tracking/OrderTracking').then(module => ({ default: module.OrderTracking })));
-const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal').then(module => ({ default: module.MarketingPortal })));
-const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
-const ProductDetail = lazy(() => import('./components/shop/ProductDetail').then(module => ({ default: module.ProductDetail })));
-const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal').then(module => ({ default: module.QuickViewModal })));
-const AdminLoginModal = lazy(() => import('./components/auth/LoginModal').then(module => ({ default: module.AdminLoginModal })));
-const UserAuthModal = lazy(() => import('./components/auth/UserAuthModal').then(module => ({ default: module.UserAuthModal })));
+const OrderTracking = lazy(() => import('./components/tracking/OrderTracking'));
+const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal'));
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
+const ProductDetail = lazy(() => import('./components/shop/ProductDetail'));
+const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal'));
+const AdminLoginModal = lazy(() => import('./components/auth/LoginModal'));
+const UserAuthModal = lazy(() => import('./components/auth/UserAuthModal'));
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
 
@@ -33,6 +33,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const [view, setView] = useState<View>('shop');
+  const prevUserRef = useRef<any>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
@@ -43,6 +44,23 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [language, setLanguage] = useState<Language>('en');
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return JSON.parse(localStorage.getItem('wishlist') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [likes, setLikes] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return JSON.parse(localStorage.getItem('likes') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
   const fetchProducts = async () => {
     if (!isSupabaseConfigured) {
       setProducts(INITIAL_PRODUCTS);
@@ -57,7 +75,6 @@ export default function App() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        // If table is missing or network failure
         if (error.code === 'PGRST116' || error.code === '42P01' || error.hint?.includes('not found')) {
           console.warn("[Supabase] 'products' table missing. Using hardware feed fallback.");
         } else {
@@ -71,7 +88,7 @@ export default function App() {
       }
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-        console.error("[Supabase] Connection Failure: Check if project URL is correct or if your network/ad-blocker is blocking supabase.co");
+        console.error("[Supabase] Connection Failure: Check if project URL is correct.");
       } else {
         console.error("[Supabase] Dynamic error:", err);
       }
@@ -82,31 +99,18 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Initial fetch
     fetchProducts();
-    
-    // Optional: Realtime subscription (requires enabling in Supabase dashboard)
     let channel: any = null;
     if (isSupabaseConfigured) {
       try {
         channel = supabase.channel('products_changes')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-            console.log('[Realtime] Product update detected:', payload.eventType);
-            fetchProducts(); 
-          })
-          .subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-              console.log('[Realtime] Connected to products table');
-            }
-          });
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
+          .subscribe();
       } catch (e) {
-        console.warn("[Realtime] Subscription failed. Reverting to manual sync.", e);
+        console.warn("[Realtime] Subscription failed.", e);
       }
     }
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, []);
 
   useEffect(() => {
@@ -125,29 +129,27 @@ export default function App() {
   useEffect(() => {
     if (authResolving) return;
 
-    // 1. Protection Logic: If user tries to access protected views without auth
+    const justLoggedIn = !prevUserRef.current && user;
+    prevUserRef.current = user;
+
+    if (justLoggedIn) {
+      if (isAdmin) {
+        setView('admin');
+      } else {
+        setView('tracking');
+      }
+      setIsAuthModalOpen(false);
+      setIsAdminModalOpen(false);
+    }
+
     if (view === 'admin' && !isAdmin) {
       setView('shop');
     }
+    
     if ((view === 'tracking' || view === 'profile') && !user) {
       setIsAuthModalOpen(true);
-      // Wait for user to auth, then either they login and the effect below handles it
-      // or they close modal and the view check above kicks in if they tried admin
     }
-
-    // 2. Post-Login Redirect Logic
-    // If the auth modal just closed and the user is now authenticated
-    if (user && !isAuthModalOpen) {
-      // If they are on the shop view, redirect to their main dashboard
-      if (view === 'shop') {
-        if (isAdmin) {
-          setView('admin');
-        } else {
-          setView('tracking');
-        }
-      }
-    }
-  }, [user, isAdmin, authResolving, isAuthModalOpen]);
+  }, [user, isAdmin, authResolving, view]);
 
   useEffect(() => {
     const handleNav = (e: any) => { if (e.detail) setView(e.detail); };
@@ -158,9 +160,6 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view, category]);
-
-  const [wishlist, setWishlist] = useState<string[]>(() => JSON.parse(localStorage.getItem('wishlist') || '[]'));
-  const [likes, setLikes] = useState<string[]>(() => JSON.parse(localStorage.getItem('likes') || '[]'));
 
   useEffect(() => {
     localStorage.setItem('wishlist', JSON.stringify(wishlist));
@@ -178,16 +177,6 @@ export default function App() {
                          p.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   }), [products, category, searchQuery]);
-
-  if (authResolving) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-        <BackgroundSlideshow />
-        <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin z-10" />
-        <p className="mt-4 text-white font-black tracking-widest uppercase italic animate-pulse">Syncing Hardware Feed...</p>
-      </div>
-    );
-  }
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -208,7 +197,7 @@ export default function App() {
 
     const orderData = {
       id: orderId,
-      user_id: user?.id || null, // UUID or null for guest
+      user_id: user?.id || null,
       customer_name: customerName,
       customer_phone: phone,
       items: cart,
@@ -255,12 +244,10 @@ _Thank you for choosing Solo Electronics!_
 _Your order is now being processed._
       `.trim();
       
-      // WhatsApp is the default primary channel for this business model
       const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(receiptTemplate)}`;
       window.open(whatsappUrl, '_blank');
       
       setCart([]);
-      // We no longer close the modal immediately here; the Cart component handles its own success state and allows the user to close it.
       return orderId;
     } catch (e: any) {
       console.error("[Supabase] Order error:", e.message);
@@ -278,129 +265,139 @@ _Your order is now being processed._
   return (
     <div className="min-h-screen">
       <BackgroundSlideshow />
-      <Navbar 
-        onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }}
-        onSearch={setSearchQuery}
-        cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-        wishlistCount={wishlist.length}
-        onCartClick={() => setCartOpen(true)}
-        onTrackingClick={() => setView('tracking')}
-        onMarketingClick={() => setView('marketing')}
-        isAdmin={isAdmin}
-        currentLanguage={language}
-        onLanguageChange={setLanguage}
-        onAuthClick={() => setIsAuthModalOpen(true)}
-        t={t}
-      />
-
-      <BottomNav 
-        activeView={view} 
-        onViewChange={(v) => { setView(v); setCategory(null); }}
-        cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-      />
-
-      <main className="pb-24 md:pb-0">
-        <AnimatePresence mode="wait">
-          <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            <Suspense fallback={<div className="flex items-center justify-center py-40"><Loader2 className="animate-spin text-blue-500" size={48} /></div>}>
-              {view === 'shop' && (
-                <>
-                  {!category && (
-                    <Hero onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
-                  )}
-                  <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-end mb-12">
-                       <h2 className="text-4xl font-black tracking-tighter uppercase italic">{category || 'Hardware Feed'}</h2>
-                       <div className="flex items-center gap-4">
-                          {loadingProducts && <Loader2 size={16} className="animate-spin text-blue-500" />}
-                          <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filteredProducts.length} Results</span>
-                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                      {loadingProducts ? (
-                        [...Array(6)].map((_, i) => (
-                          <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
-                             <div className="aspect-square bg-white/5" />
-                             <div className="p-6 space-y-4">
-                                <div className="h-6 bg-white/5 rounded-full w-3/4" />
-                                <div className="h-4 bg-white/5 rounded-full w-1/4" />
-                                <div className="h-12 bg-white/5 rounded-2xl w-full" />
-                             </div>
-                          </div>
-                        ))
-                      ) : (
-                        filteredProducts.map(product => (
-                          <ProductCard 
-                            key={product.id} 
-                            product={product} 
-                            onAddToCart={addToCart} 
-                            onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
-                            onQuickView={(p) => setQuickViewProduct(p)}
-                            isWishlisted={wishlist.includes(product.id)}
-                            onToggleWishlist={toggleWishlist}
-                            isLiked={likes.includes(product.id)}
-                            onToggleLike={toggleLike}
-                          />
-                        ))
-                      )}
-                    </div>
-                  </section>
-                </>
-              )}
-
-              {view === 'product-detail' && selectedProduct && (
-                <ProductDetail product={selectedProduct} onBack={() => setView('shop')} onAddToCart={addToCart} />
-              )}
-
-              {view === 'tracking' && (
-                <ProtectedRoute>
-                  <OrderTracking />
-                </ProtectedRoute>
-              )}
-              {view === 'marketing' && <MarketingPortal />}
-              {view === 'admin' && (
-                <ProtectedRoute requireAdmin>
-                  <AdminDashboard products={products} />
-                </ProtectedRoute>
-              )}
-            </Suspense>
-          </motion.div>
-        </AnimatePresence>
-
-        {isAdmin && view !== 'admin' && (
-          <div className="fixed bottom-32 left-8 z-[90]">
-            <button onClick={() => setView('admin')} className="bg-red-600 p-4 rounded-full text-white shadow-2xl flex items-center gap-3 pr-6"><UserCog size={24} /><span className="text-sm font-black uppercase tracking-widest">Admin Control</span></button>
-          </div>
-        )}
-
-        <div className="bg-white/5 backdrop-blur-md border-y border-white/10 py-12">
-           <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="flex items-center gap-6"><ShieldCheck size={48} className="text-blue-500" /><div><h3 className="text-xl font-bold uppercase italic">Quality Assured</h3><p className="text-gray-500 text-sm">Every asset is verified by our engineering desk.</p></div></div>
-              <button onClick={() => setShowTerms(true)} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all flex items-center gap-2 text-sm font-bold">Terms & Security <ChevronRight size={16} /></button>
-           </div>
-        </div>
-      </main>
-
-      <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
-      <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
       
-      <Suspense fallback={null}>
-        <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
-        <UserAuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-        <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
-      </Suspense>
+      {authResolving ? (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+          <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin z-10" />
+          <p className="mt-4 text-white font-black tracking-widest uppercase italic animate-pulse">Syncing Hardware Feed...</p>
+        </div>
+      ) : (
+        <>
+          <Navbar 
+            onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }}
+            onSearch={setSearchQuery}
+            cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
+            wishlistCount={wishlist.length}
+            onCartClick={() => setCartOpen(true)}
+            onTrackingClick={() => setView('tracking')}
+            onMarketingClick={() => setView('marketing')}
+            isAdmin={isAdmin}
+            currentLanguage={language}
+            onLanguageChange={setLanguage}
+            onAuthClick={() => setIsAuthModalOpen(true)}
+            t={t}
+          />
 
-      <AnimatePresence>
-        {showTerms && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
-             <div className="bg-gray-900 border border-white/10 p-8 rounded-[3rem] max-w-2xl w-full relative">
-                <button onClick={() => setShowTerms(false)} className="absolute top-8 right-8"><X size={24} /></button>
-                <h2 className="text-3xl font-black mb-8 italic uppercase">Warranty & Service</h2>
-                <div className="space-y-6 text-gray-400 text-sm"><p>All hardware comes with a 12-month Solo Assurance guarantee. We facilitate repairs and replacements directly with brand importers in Lira/Kampala.</p></div>
-             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <BottomNav 
+            activeView={view} 
+            onViewChange={(v) => { setView(v); setCategory(null); }}
+            cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
+          />
+
+          <main className="pb-24 md:pb-0">
+            <AnimatePresence mode="wait">
+              <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                <Suspense fallback={<div className="flex items-center justify-center py-40"><Loader2 className="animate-spin text-blue-500" size={48} /></div>}>
+                  {view === 'shop' && (
+                    <>
+                      {!category && (
+                        <Hero onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
+                      )}
+                      <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between items-end mb-12">
+                           <h2 className="text-4xl font-black tracking-tighter uppercase italic">{category || 'Hardware Feed'}</h2>
+                           <div className="flex items-center gap-4">
+                              {loadingProducts && <Loader2 size={16} className="animate-spin text-blue-500" />}
+                              <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filteredProducts.length} Results</span>
+                           </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                          {loadingProducts ? (
+                            [...Array(6)].map((_, i) => (
+                              <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
+                                 <div className="aspect-square bg-white/5" />
+                                 <div className="p-6 space-y-4">
+                                    <div className="h-6 bg-white/5 rounded-full w-3/4" />
+                                    <div className="h-4 bg-white/5 rounded-full w-1/4" />
+                                    <div className="h-12 bg-white/5 rounded-2xl w-full" />
+                                 </div>
+                              </div>
+                            ))
+                          ) : (
+                            filteredProducts.map(product => (
+                              <ProductCard 
+                                key={product.id} 
+                                product={product} 
+                                onAddToCart={addToCart} 
+                                onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
+                                onQuickView={(p) => setQuickViewProduct(p)}
+                                isWishlisted={wishlist.includes(product.id)}
+                                onToggleWishlist={toggleWishlist}
+                                isLiked={likes.includes(product.id)}
+                                onToggleLike={toggleLike}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </section>
+                    </>
+                  )}
+
+                  {view === 'product-detail' && selectedProduct && (
+                    <ProductDetail product={selectedProduct} onBack={() => setView('shop')} onAddToCart={addToCart} />
+                  )}
+
+                  {view === 'tracking' && (
+                    <ProtectedRoute>
+                      <OrderTracking />
+                    </ProtectedRoute>
+                  )}
+                  {view === 'marketing' && <MarketingPortal />}
+                  {view === 'admin' && (
+                    <ProtectedRoute requireAdmin>
+                      <AdminDashboard products={products} />
+                    </ProtectedRoute>
+                  )}
+                </Suspense>
+              </motion.div>
+            </AnimatePresence>
+
+            {isAdmin && view !== 'admin' && (
+              <div className="fixed bottom-32 left-8 z-[90]">
+                <button onClick={() => setView('admin')} className="bg-red-600 p-4 rounded-full text-white shadow-2xl flex items-center gap-3 pr-6"><UserCog size={24} /><span className="text-sm font-black uppercase tracking-widest">Admin Control</span></button>
+              </div>
+            )}
+
+            <div className="bg-white/5 backdrop-blur-md border-y border-white/10 py-12">
+               <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
+                  <div className="flex items-center gap-6"><ShieldCheck size={48} className="text-blue-500" /><div><h3 className="text-xl font-bold uppercase italic">Quality Assured</h3><p className="text-gray-500 text-sm">Every asset is verified by our engineering desk.</p></div></div>
+                  <button onClick={() => setShowTerms(true)} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all flex items-center gap-2 text-sm font-bold">Terms & Security <ChevronRight size={16} /></button>
+               </div>
+            </div>
+          </main>
+
+          <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
+          <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
+          
+          <Suspense fallback={null}>
+            <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
+            <UserAuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+            <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
+          </Suspense>
+
+          <AnimatePresence>
+            {showTerms && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
+                 <div className="bg-gray-900 border border-white/10 p-8 rounded-[3rem] max-w-2xl w-full relative">
+                    <button onClick={() => setShowTerms(false)} className="absolute top-8 right-8"><X size={24} /></button>
+                    <h2 className="text-3xl font-black mb-8 italic uppercase">Warranty & Service</h2>
+                    <div className="space-y-6 text-gray-400 text-sm"><p>All hardware comes with a 12-month Solo Assurance guarantee. We facilitate repairs and replacements directly with brand importers in Lira/Kampala.</p></div>
+                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </div>
   );
 }

@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let subscription: any = null;
     if (isSupabaseConfigured) {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log(`[Auth] Event: ${event}`);
         if (session) {
           await handleSessionChange(session);
         } else {
@@ -98,7 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       // Fetch profile from 'profiles' table
-      // We rely on the DB trigger to have created this profile
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -107,10 +107,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (profile) {
         setUser({ id: supaUser.id, ...profile } as any);
-        // Sync Admin state if the role is admin in database
-        if (profile.role === 'admin') setIsAdmin(true);
+        setIsAdmin(profile.role === 'admin');
       } else if (error && error.code === 'PGRST116') {
-        // If profile doesn't exist yet (trigger might be slow), create a minimal one
         const fallbackProfile = {
           id: supaUser.id,
           name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
@@ -126,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
         if (!createError && created) {
           setUser(created as any);
-          if (created.role === 'admin') setIsAdmin(true);
+          setIsAdmin(created.role === 'admin');
         }
       }
     } catch (err: any) {

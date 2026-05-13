@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Megaphone, Plus, Image as ImageIcon, Send, BarChart3, Users, Tags } from 'lucide-react';
 
-export function MarketingPortal() {
+export default function MarketingPortal() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 

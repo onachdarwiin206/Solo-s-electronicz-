@@ -55,7 +55,7 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
   );
 }
 
-export function AdminDashboard({ products: initialProducts }: AdminDashboardProps) {
+export default function AdminDashboard({ products: initialProducts }: AdminDashboardProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'admins'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);

@@ -12,7 +12,7 @@ interface ProductDetailProps {
 
 const WHATSAPP_NUMBER = "256793405517";
 
-export function ProductDetail({ product, onBack, onAddToCart }: ProductDetailProps) {
+export default function ProductDetail({ product, onBack, onAddToCart }: ProductDetailProps) {
   const handleWhatsAppBuy = () => {
     const message = `*Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I'm interested in this unit. Is it available for delivery in Lira?`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;

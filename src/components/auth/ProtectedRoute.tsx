@@ -1,11 +1,11 @@
-import React from 'react';
+import { ReactNode } from 'react';
 import { useAuth } from '../../AuthContext';
 import { Loader2, ShieldAlert } from 'lucide-react';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
   requireAdmin?: boolean;
-  fallback?: React.ReactNode;
+  fallback?: ReactNode;
 }
 
 export function ProtectedRoute({ children, requireAdmin = false, fallback }: ProtectedRouteProps) {

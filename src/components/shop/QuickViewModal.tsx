@@ -13,7 +13,7 @@ interface QuickViewModalProps {
 
 const WHATSAPP_NUMBER = "256793405517";
 
-export function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModalProps) {
+export default function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModalProps) {
   const [activeMedia, setActiveMedia] = useState(0);
   if (!product) return null;
 
