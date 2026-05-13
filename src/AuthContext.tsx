@@ -108,27 +108,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (profile) {
         setUser({ id: supaUser.id, ...profile } as any);
         setIsAdmin(profile.role === 'admin');
-      } else if (error && error.code === 'PGRST116') {
-        const fallbackProfile = {
-          id: supaUser.id,
-          name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
-          email: supaUser.email || '',
-          role: 'customer'
-        };
-        
-        const { data: created, error: createError } = await supabase
-          .from('profiles')
-          .upsert(fallbackProfile)
-          .select()
-          .single();
+      } else if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile not found, create one
+          const fallbackProfile = {
+            id: supaUser.id,
+            name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
+            email: supaUser.email || '',
+            role: 'customer'
+          };
           
-        if (!createError && created) {
-          setUser(created as any);
-          setIsAdmin(created.role === 'admin');
+          const { data: created, error: createError } = await supabase
+            .from('profiles')
+            .upsert(fallbackProfile)
+            .select()
+            .single();
+            
+          if (!createError && created) {
+            setUser(created as any);
+            setIsAdmin(created.role === 'admin');
+          } else {
+            console.warn("[Auth] Profile creation failed (check RLS):", createError?.message);
+            // Fallback to minimal identity
+            setUser({ id: supaUser.id, name: fallbackProfile.name, email: fallbackProfile.email, role: 'customer' } as any);
+          }
+        } else if (error.code === '42P01') {
+          console.warn("[Auth] 'profiles' table not found. Using memory-only profile.");
+          setUser({ 
+            id: supaUser.id, 
+            name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
+            email: supaUser.email || '',
+            role: 'customer'
+          } as any);
+        } else {
+          console.error("[Auth] Profile Fetch Error:", error.message);
         }
       }
     } catch (err: any) {
-      console.error("[Auth] Profile Sync Error:", err.message);
+      console.error("[Auth] Profile Sync Exception:", err.message);
     } finally {
       setLoading(false);
     }

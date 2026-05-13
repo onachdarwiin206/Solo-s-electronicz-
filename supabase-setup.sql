@@ -175,6 +175,42 @@ alter publication supabase_realtime add table public.orders;
 alter publication supabase_realtime add table public.carts;
 alter publication supabase_realtime add table public.wishlists;
 
+--- STORAGE BUCKET CREATION ---
+-- NOTE: Run these in the SQL Editor to ensure buckets exist
+insert into storage.buckets (id, name, public) 
+values ('product-images', 'product-images', true) 
+on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public) 
+values ('product-videos', 'product-videos', true) 
+on conflict (id) do nothing;
+
+--- STORAGE POLICIES ---
+
+-- 1. Product Images Policies
+create policy "Public Access" on storage.objects for select using (bucket_id = 'product-images');
+
+create policy "Admin Upload" on storage.objects for insert 
+with check (bucket_id = 'product-images' and (select public.is_admin()));
+
+create policy "Admin Update" on storage.objects for update 
+using (bucket_id = 'product-images' and (select public.is_admin()));
+
+create policy "Admin Delete" on storage.objects for delete 
+using (bucket_id = 'product-images' and (select public.is_admin()));
+
+-- 2. Product Videos Policies
+create policy "Public Access Videos" on storage.objects for select using (bucket_id = 'product-videos');
+
+create policy "Admin Upload Videos" on storage.objects for insert 
+with check (bucket_id = 'product-videos' and (select public.is_admin()));
+
+create policy "Admin Update Videos" on storage.objects for update 
+using (bucket_id = 'product-videos' and (select public.is_admin()));
+
+create policy "Admin Delete Videos" on storage.objects for delete 
+using (bucket_id = 'product-videos' and (select public.is_admin()));
+
 --- INDEXES ---
 create index if not exists idx_products_category on public.products(category);
 create index if not exists idx_orders_user_id on public.orders(user_id);

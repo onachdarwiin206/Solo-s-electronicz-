@@ -64,6 +64,7 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [missingTables, setMissingTables] = useState<string[]>([]);
   const [allowedEmails, setAllowedEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
 
@@ -80,6 +81,9 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
         
         if (error) {
            console.error("[Supabase] Admins Fetch Error:", error.message || error);
+           if (error.code === '42P01') {
+             setMissingTables(prev => Array.from(new Set([...prev, 'admins'])));
+           }
            setAllowedEmails([]);
         } else if (data) {
            setAllowedEmails(data.map(a => a.email));
@@ -148,10 +152,12 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
       if (error) {
         if (error.code === '42P01' || error.message?.includes('not found')) {
           console.warn("[Supabase] 'orders' table not found.");
+          setMissingTables(prev => Array.from(new Set([...prev, 'orders'])));
         } else {
           console.error("[Supabase] Orders Fetch Error:", error.message || error);
         }
       } else {
+        setMissingTables(prev => prev.filter(t => t !== 'orders'));
         setOrders(data as Order[]);
       }
     } catch (err: any) {
@@ -220,14 +226,16 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
     progress: number; 
     url?: string;
     path?: string;
+    error?: string;
   }[]>([]);
 
-  const updateProgress = (id: string, progress: number, status?: 'uploading' | 'done' | 'error', url?: string) => {
+  const updateProgress = (id: string, progress: number, status?: 'uploading' | 'done' | 'error', url?: string, error?: string) => {
     setUploadingMedia(prev => prev.map(i => i.id === id ? { 
       ...i, 
       progress, 
       status: status || i.status,
-      url: url || i.url
+      url: url || i.url,
+      error: error || i.error
     } : i));
   };
 
@@ -249,8 +257,11 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
       }
 
       const bucket = next.type === 'image' ? 'product-images' : 'product-videos';
-      const storagePath = `${editingId || uploadSessionId}`;
+      // Use products/{productId}/ format for organization
+      const storagePath = `products/${editingId || 'new'}`;
       
+      console.log(`[Storage] Starting upload to ${bucket}: ${storagePath}/${next.file.name}`);
+
       const filePath = await uploadFile(
         fileToUpload as File, 
         bucket, 
@@ -268,7 +279,7 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
       processQueue();
     } catch (err: any) {
       console.error("Storage upload failed:", err);
-      updateProgress(next.id, 0, 'error');
+      updateProgress(next.id, 0, 'error', undefined, err.message);
       processQueue();
     }
   };
@@ -399,6 +410,36 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
     setUploadingMedia([]);
   };
 
+  const SetupMessage = () => (
+    <div className="mb-12 p-8 bg-amber-500/10 border border-amber-500/20 rounded-[2rem] space-y-4">
+      <div className="flex items-center gap-3 text-amber-500 font-black italic uppercase italic tracking-tighter">
+        <AlertCircle size={24} />
+        <h3 className="text-xl">System Initialization Required</h3>
+      </div>
+      <p className="text-gray-400 text-sm leading-relaxed">
+        Required database tables or storage buckets were not detected. 
+        Please run the code from <code className="bg-white/5 px-1.5 py-0.5 rounded text-amber-400">supabase-setup.sql</code> in your 
+        <a href="https://supabase.com/dashboard/project/_/sql" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline mx-1">Supabase SQL Editor</a>.
+      </p>
+      <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Important Security Note</p>
+        <p className="text-gray-500 text-[9px] leading-relaxed">
+          Storage uploads are protected by Row Level Security (RLS). You <strong>must</strong> be signed in via Google to upload assets. 
+          PIN login alone does not provide a secure Supabase session for file operations.
+        </p>
+      </div>
+      {missingTables.length > 0 && (
+        <div className="flex gap-2">
+          {missingTables.map(table => (
+            <span key={table} className="px-3 py-1 bg-amber-500/20 text-amber-500 text-[9px] font-black uppercase tracking-widest rounded-full border border-amber-500/20">
+              Missing Resource: {table}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const statusMap: { [key in OrderStatus]: { icon: any, color: string } } = {
     'pending': { icon: Clock, color: 'text-amber-500' },
     'confirmed': { icon: CheckCircle, color: 'text-blue-500' },
@@ -443,6 +484,8 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
           </button>
         )}
       </div>
+
+      {missingTables.length > 0 && <SetupMessage />}
 
       {isAdding && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 mb-12 relative">
@@ -523,10 +566,10 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
                         <button onClick={() => removeMedia(item.url, item.id)} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity"><X size={10} /></button>
                       </>
                     ) : item.status === 'error' ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-red-500">
-                        <AlertCircle size={24} />
-                        <span className="text-[8px] font-black uppercase mt-1">Failed</span>
-                        <button onClick={() => setUploadingMedia(prev => prev.map(m => m.id === item.id ? { ...m, status: 'queued' } : m))} className="text-[8px] underline mt-1">Retry</button>
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-red-500 bg-red-500/5">
+                        <AlertCircle size={20} />
+                        <span className="text-[7px] font-black uppercase mt-1 text-center leading-tight truncate w-full">{item.error || 'Upload failed'}</span>
+                        <button onClick={() => setUploadingMedia(prev => prev.map(m => m.id === item.id ? { ...m, status: 'queued', error: undefined } : m))} className="text-[8px] underline mt-1 font-black">Retry</button>
                       </div>
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-2">

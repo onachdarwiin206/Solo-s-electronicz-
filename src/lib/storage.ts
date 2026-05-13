@@ -7,8 +7,11 @@ export async function uploadFile(
   path: string
 ): Promise<string | null> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Authentication required for upload");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.warn("[Storage] No Supabase session found. You must be signed in via Google to upload files.");
+      throw new Error("Supabase Authentication required for storage operations. Please sign in via Google.");
+    }
 
     const extension = file.name.split('.').pop();
     const fileName = `${uuidv4()}.${extension}`;
@@ -21,7 +24,12 @@ export async function uploadFile(
         upsert: false
       });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      if (uploadError.message.includes('bucket_not_found') || uploadError.message.includes('not found')) {
+        throw new Error(`Storage bucket '${bucket}' not found. Please create it in Supabase.`);
+      }
+      throw uploadError;
+    }
 
     return fullPath;
   } catch (error) {
