@@ -187,8 +187,19 @@ create table if not exists public.wishlists (
 );
 
 --- RLS POLICIES for carts/wishlists ---
-alter table public.carts enable row level security;
-alter table public.wishlists enable row level security;
+do $$
+begin
+  alter table public.carts enable row level security;
+exception when others then
+  raise notice 'RLS already enabled or table missing';
+end $$;
+
+do $$
+begin
+  alter table public.wishlists enable row level security;
+exception when others then
+  raise notice 'RLS already enabled or table missing';
+end $$;
 
 drop policy if exists "Users can manage own cart." on public.carts;
 create policy "Users can manage own cart." on public.carts for all using (auth.uid() = user_id);
@@ -197,58 +208,45 @@ drop policy if exists "Users can manage own wishlist." on public.wishlists;
 create policy "Users can manage own wishlist." on public.wishlists for all using (auth.uid() = user_id);
 
 --- REALTIME (idempotent) ---
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_publication_tables
-    where pubname = 'supabase_realtime'
-      and schemaname = 'public'
-      and tablename = 'reviews'
-  ) then
-    alter publication supabase_realtime add table public.reviews;
-  end if;
+DO $$
+BEGIN
+  -- Enable realtime for the publication if not already added
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime'
+  ) THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
 
-  if not exists (
-    select 1
-    from pg_publication_tables
-    where pubname = 'supabase_realtime'
-      and schemaname = 'public'
-      and tablename = 'products'
-  ) then
-    alter publication supabase_realtime add table public.products;
-  end if;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'reviews'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.reviews;
+  END IF;
 
-  if not exists (
-    select 1
-    from pg_publication_tables
-    where pubname = 'supabase_realtime'
-      and schemaname = 'public'
-      and tablename = 'orders'
-  ) then
-    alter publication supabase_realtime add table public.orders;
-  end if;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'products'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.products;
+  END IF;
 
-  if not exists (
-    select 1
-    from pg_publication_tables
-    where pubname = 'supabase_realtime'
-      and schemaname = 'public'
-      and tablename = 'carts'
-  ) then
-    alter publication supabase_realtime add table public.carts;
-  end if;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'orders'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+  END IF;
 
-  if not exists (
-    select 1
-    from pg_publication_tables
-    where pubname = 'supabase_realtime'
-      and schemaname = 'public'
-      and tablename = 'wishlists'
-  ) then
-    alter publication supabase_realtime add table public.wishlists;
-  end if;
-end $$;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'carts'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.carts;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'wishlists'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.wishlists;
+  END IF;
+END $$;
 
 --- STORAGE BUCKET CREATION ---
 -- NOTE: Run these in the SQL Editor to ensure buckets exist

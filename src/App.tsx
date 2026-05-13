@@ -20,9 +20,9 @@ const MarketingPortal = lazy(() => import('./components/marketing/MarketingPorta
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 const ProductDetail = lazy(() => import('./components/shop/ProductDetail'));
 const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal'));
-const AdminLoginModal = lazy(() => import('./components/auth/LoginModal'));
-const UserAuthModal = lazy(() => import('./components/auth/UserAuthModal'));
-const UserProfile = lazy(() => import('./components/profile/UserProfile'));
+import AdminLoginModal from './components/auth/LoginModal';
+import UserAuthModal from './components/auth/UserAuthModal';
+import UserProfile from './components/profile/UserProfile';
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
 
@@ -118,11 +118,11 @@ export default function App() {
     const handleOpenAdmin = () => setIsAdminModalOpen(true);
     const handleOpenAuth = () => setIsAuthModalOpen(true);
     window.addEventListener('openAdmin', handleOpenAdmin);
-    window.addEventListener('openLogin', handleOpenAdmin);
+    window.addEventListener('openLogin', handleOpenAuth);
     window.addEventListener('openAuth', handleOpenAuth);
     return () => {
       window.removeEventListener('openAdmin', handleOpenAdmin);
-      window.removeEventListener('openLogin', handleOpenAdmin);
+      window.removeEventListener('openLogin', handleOpenAuth);
       window.removeEventListener('openAuth', handleOpenAuth);
     };
   }, []);
@@ -387,9 +387,9 @@ _Your order is now being processed._
           <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
           <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
           
+          <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
+          <UserAuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
           <Suspense fallback={null}>
-            <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
-            <UserAuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
             <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
           </Suspense>
 
