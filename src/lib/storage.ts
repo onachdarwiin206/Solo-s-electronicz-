@@ -32,9 +32,9 @@ export async function uploadFile(
     }
 
     return fullPath;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[Storage] Upload error in ${bucket}:`, error);
-    return null;
+    throw error; // Re-throw to allow component to handle specific error
   }
 }
 

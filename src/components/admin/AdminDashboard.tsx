@@ -268,9 +268,8 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
         storagePath
       );
 
-      if (!filePath) throw new Error("Upload failed");
-
-      const publicUrl = getPublicUrl(bucket, filePath);
+      // filePath will be returned if successful
+      const publicUrl = getPublicUrl(bucket, filePath!);
       
       updateProgress(next.id, 100, 'done', publicUrl || undefined);
       // We keep track of the PATH to save it to the DB later
@@ -466,9 +465,15 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
                <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{isSyncing ? "SYNCED" : "OFFLINE"}</p>
             </div>
             {!user && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20">
-                <AlertCircle size={10} className="text-red-500" />
-                <p className="text-[9px] font-black uppercase tracking-widest text-red-500">Sign in with Google required</p>
+              <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/10 rounded-full border border-amber-500/20">
+                <AlertCircle size={10} className="text-amber-500" />
+                <p className="text-[9px] font-black uppercase tracking-widest text-amber-500">Google Session Required for Uploads</p>
+                <button 
+                  onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
+                  className="text-[8px] underline font-black ml-1 text-blue-400"
+                >
+                  Sign In
+                </button>
               </div>
             )}
           </div>

@@ -228,19 +228,19 @@ export function Navbar({
               </button>
             </Tooltip>
             
-            <Tooltip content={user ? "Logout Hardware Account" : "Access Personal Cloud"}>
+            <Tooltip content={user ? "Manage Hardware Profile" : "Access Personal Cloud"}>
               <button 
-                onClick={user ? () => logout() : onAuthClick}
+                onClick={user ? () => window.dispatchEvent(new CustomEvent('changeView', { detail: 'profile' })) : onAuthClick}
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border",
                   user 
-                    ? "bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/20" 
+                    ? "bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border-blue-500/20" 
                     : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border-white/5"
                 )}
               >
-                {user ? <LogOut size={16} /> : <User size={16} className="text-blue-500" />}
+                <User size={16} className={cn(!user && "text-blue-500")} />
                 <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">
-                  {user ? 'Exit' : 'Login'}
+                  {user ? (user.name?.split(' ')[0] || 'Profile') : 'Login'}
                 </span>
               </button>
             </Tooltip>

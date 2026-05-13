@@ -22,6 +22,7 @@ const ProductDetail = lazy(() => import('./components/shop/ProductDetail'));
 const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal'));
 const AdminLoginModal = lazy(() => import('./components/auth/LoginModal'));
 const UserAuthModal = lazy(() => import('./components/auth/UserAuthModal'));
+const UserProfile = lazy(() => import('./components/profile/UserProfile'));
 
 type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
 
@@ -350,6 +351,11 @@ _Your order is now being processed._
                   {view === 'tracking' && (
                     <ProtectedRoute>
                       <OrderTracking />
+                    </ProtectedRoute>
+                  )}
+                  {view === 'profile' && (
+                    <ProtectedRoute>
+                      <UserProfile />
                     </ProtectedRoute>
                   )}
                   {view === 'marketing' && <MarketingPortal />}
