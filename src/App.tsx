@@ -252,6 +252,8 @@ _Your order is now being processed._
       return orderId;
     } catch (e: any) {
       console.error("[Supabase] Order error:", e.message);
+      alert("Command Failure: Your purchase signature could not be committed to the hardware pool. Please contact Solo Support.");
+      return null;
     }
   };
 

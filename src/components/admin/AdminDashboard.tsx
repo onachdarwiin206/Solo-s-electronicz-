@@ -81,11 +81,12 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
         
         if (error) {
            console.error("[Supabase] Admins Fetch Error:", error.message || error);
-           if (error.code === '42P01') {
+           if (error.code === '42P01' || error.message?.includes('does not exist')) {
              setMissingTables(prev => Array.from(new Set([...prev, 'admins'])));
            }
            setAllowedEmails([]);
         } else if (data) {
+           setMissingTables(prev => prev.filter(t => t !== 'admins'));
            setAllowedEmails(data.map(a => a.email));
         }
         setIsSyncing(true);
@@ -94,7 +95,7 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
       }
     };
     fetchAdmins();
-  }, []);
+  }, [activeTab]);
 
   const handleAddEmail = async () => {
     if (!newEmail || allowedEmails.includes(newEmail)) return;
@@ -321,14 +322,18 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
        return;
     }
 
-    const completedImages = uploadingMedia.filter(m => m.type === 'image' && m.status === 'done').map(m => m.path!);
-    const completedVideos = uploadingMedia.filter(m => m.type === 'video' && m.status === 'done').map(m => m.path!);
+    const completedImages = uploadingMedia.filter(m => m.type === 'image' && m.status === 'done').map(m => m.url!);
+    const completedVideos = uploadingMedia.filter(m => m.type === 'video' && m.status === 'done').map(m => m.url!);
 
     setSubmitting(true);
     
     try {
-      const finalImages = [...(newProduct.images || []), ...completedImages];
-      const finalVideos = [...(newProduct.videos || []), ...completedVideos];
+      // Merge existing (if editing) with new uploads
+      const existingImages = (newProduct.images || []).filter(img => img.startsWith('http'));
+      const existingVideos = (newProduct.videos || []).filter(vid => vid.startsWith('http'));
+
+      const finalImages = [...existingImages, ...completedImages];
+      const finalVideos = [...existingVideos, ...completedVideos];
 
       if (finalImages.length === 0) {
         alert("At least one product image is required.");
@@ -346,8 +351,8 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
         video_url: finalVideos[0] || '',
         images: finalImages,
         videos: finalVideos,
-        featured: newProduct.featured,
-        is_verified: newProduct.is_verified,
+        featured: !!newProduct.featured,
+        is_verified: !!newProduct.is_verified,
         updated_at: new Date().toISOString()
       };
 

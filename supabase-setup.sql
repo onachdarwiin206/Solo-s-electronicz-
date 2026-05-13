@@ -96,30 +96,54 @@ end;
 $$ language plpgsql security definer;
 
 -- Profiles Policies
+drop policy if exists "Public profiles are viewable by everyone." on public.profiles;
 create policy "Public profiles are viewable by everyone." on public.profiles for select using (true);
+
+drop policy if exists "Users can update own profile." on public.profiles;
 create policy "Users can update own profile." on public.profiles for update using (auth.uid() = id);
+
+drop policy if exists "Users can insert own profile." on public.profiles;
 create policy "Users can insert own profile." on public.profiles for insert with check (auth.uid() = id);
 
 -- Products Policies
+drop policy if exists "Products viewable by everyone." on public.products;
 create policy "Products viewable by everyone." on public.products for select using (true);
+
+drop policy if exists "Admins can manage products." on public.products;
 create policy "Admins can manage products." on public.products for all using (is_admin());
 
 -- Reviews Policies
+drop policy if exists "Reviews viewable by everyone." on public.reviews;
 create policy "Reviews viewable by everyone." on public.reviews for select using (true);
+
+drop policy if exists "Authenticated users can post a review." on public.reviews;
 create policy "Authenticated users can post a review." on public.reviews for insert with check (auth.uid() is not null);
+
+drop policy if exists "Owners can delete reviews." on public.reviews;
 create policy "Owners can delete reviews." on public.reviews for delete using (auth.uid()::text = user_id or is_admin());
 
 -- Orders Policies
+drop policy if exists "Users can view own orders." on public.orders;
 create policy "Users can view own orders." on public.orders for select using (auth.uid() = user_id or user_id is null);
+
+drop policy if exists "Anyone can create an order." on public.orders;
 create policy "Anyone can create an order." on public.orders for insert with check (true);
+
+drop policy if exists "Admins can manage all orders." on public.orders;
 create policy "Admins can manage all orders." on public.orders for all using (is_admin());
 
 -- Admin Table Policies
+drop policy if exists "Admins can view admin list." on public.admins;
 create policy "Admins can view admin list." on public.admins for select using (is_admin());
+
+drop policy if exists "Super admins can manage admins." on public.admins;
 create policy "Super admins can manage admins." on public.admins for all using (is_admin());
 
 -- System Config Policies
+drop policy if exists "System config viewable by everyone." on public.system_config;
 create policy "System config viewable by everyone." on public.system_config for select using (true);
+
+drop policy if exists "Admins can manage system config." on public.system_config;
 create policy "Admins can manage system config." on public.system_config for all using (is_admin());
 
 --- AUTOMATION: Auto-create profile on signup ---
@@ -166,15 +190,65 @@ create table if not exists public.wishlists (
 alter table public.carts enable row level security;
 alter table public.wishlists enable row level security;
 
+drop policy if exists "Users can manage own cart." on public.carts;
 create policy "Users can manage own cart." on public.carts for all using (auth.uid() = user_id);
+
+drop policy if exists "Users can manage own wishlist." on public.wishlists;
 create policy "Users can manage own wishlist." on public.wishlists for all using (auth.uid() = user_id);
 
---- REALTIME ---
-alter publication supabase_realtime add table public.reviews;
-alter publication supabase_realtime add table public.products;
-alter publication supabase_realtime add table public.orders;
-alter publication supabase_realtime add table public.carts;
-alter publication supabase_realtime add table public.wishlists;
+--- REALTIME (idempotent) ---
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'reviews'
+  ) then
+    alter publication supabase_realtime add table public.reviews;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'products'
+  ) then
+    alter publication supabase_realtime add table public.products;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'orders'
+  ) then
+    alter publication supabase_realtime add table public.orders;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'carts'
+  ) then
+    alter publication supabase_realtime add table public.carts;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'wishlists'
+  ) then
+    alter publication supabase_realtime add table public.wishlists;
+  end if;
+end $$;
 
 --- STORAGE BUCKET CREATION ---
 -- NOTE: Run these in the SQL Editor to ensure buckets exist
@@ -189,26 +263,34 @@ on conflict (id) do nothing;
 --- STORAGE POLICIES ---
 
 -- 1. Product Images Policies
+drop policy if exists "Public Access" on storage.objects;
 create policy "Public Access" on storage.objects for select using (bucket_id = 'product-images');
 
+drop policy if exists "Admin Upload" on storage.objects;
 create policy "Admin Upload" on storage.objects for insert 
 with check (bucket_id = 'product-images' and (select public.is_admin()));
 
+drop policy if exists "Admin Update" on storage.objects;
 create policy "Admin Update" on storage.objects for update 
 using (bucket_id = 'product-images' and (select public.is_admin()));
 
+drop policy if exists "Admin Delete" on storage.objects;
 create policy "Admin Delete" on storage.objects for delete 
 using (bucket_id = 'product-images' and (select public.is_admin()));
 
 -- 2. Product Videos Policies
+drop policy if exists "Public Access Videos" on storage.objects;
 create policy "Public Access Videos" on storage.objects for select using (bucket_id = 'product-videos');
 
+drop policy if exists "Admin Upload Videos" on storage.objects;
 create policy "Admin Upload Videos" on storage.objects for insert 
 with check (bucket_id = 'product-videos' and (select public.is_admin()));
 
+drop policy if exists "Admin Update Videos" on storage.objects;
 create policy "Admin Update Videos" on storage.objects for update 
 using (bucket_id = 'product-videos' and (select public.is_admin()));
 
+drop policy if exists "Admin Delete Videos" on storage.objects;
 create policy "Admin Delete Videos" on storage.objects for delete 
 using (bucket_id = 'product-videos' and (select public.is_admin()));
 

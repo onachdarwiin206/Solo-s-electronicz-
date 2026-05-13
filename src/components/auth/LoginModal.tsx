@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Lock, AlertCircle, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
+import { cn } from '../../lib/utils';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -29,6 +30,10 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
   const handlePinSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (pin.length < 4) {
+      setError("INCOMPLETE PROTOCOL: 4-DIGIT PIN REQUIRED");
+      return;
+    }
     const success = loginWithPin(pin);
     if (success) {
       onClose();
@@ -72,10 +77,10 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
 
                 <div className="mb-10 text-center">
                   <h2 className="text-4xl font-black tracking-tighter text-white mb-3 uppercase italic">
-                    Admin Terminal
+                    Command Terminal
                   </h2>
                   <p className="text-gray-500 text-xs font-bold uppercase tracking-widest leading-relaxed">
-                    Identity verification required for command access.
+                    Secure identity verification required to bypass public encryption layers.
                   </p>
                 </div>
 
@@ -87,27 +92,34 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
                   >
                     <AlertCircle size={16} className="shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest">Access Denied</p>
-                      <p className="text-xs font-medium leading-tight">{error}</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest leading-none">Security Flag</p>
+                      <p className="text-[11px] font-bold leading-tight">{error}</p>
                     </div>
                   </motion.div>
                 )}
 
                 <form onSubmit={handlePinSubmit} className="mb-6">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-gray-700 mb-3 ml-6">Input 4-Digit Manual Override</p>
                   <div className="relative group">
                     <input 
                       type="password"
-                      placeholder="ENTER PIN CODE"
+                      placeholder="••••"
                       value={pin}
                       onChange={(e) => setPin(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-6 px-10 text-white text-center font-black tracking-[1em] focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-700 placeholder:tracking-widest"
+                      className={cn(
+                        "w-full bg-white/5 border border-white/10 rounded-[2rem] py-6 px-10 text-white text-center font-black tracking-[1.5em] focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-700 placeholder:tracking-widest",
+                        pin.length === 4 && "border-emerald-500/50 text-emerald-500"
+                      )}
                       maxLength={4}
                     />
                     <motion.button 
                       type="submit"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-blue-600 rounded-full text-white shadow-lg shadow-blue-500/20"
+                      className={cn(
+                        "absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full text-white transition-all",
+                        pin.length === 4 ? "bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-blue-600 shadow-lg shadow-blue-500/20"
+                      )}
                     >
                       <ArrowRight size={20} />
                     </motion.button>
@@ -116,7 +128,7 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
 
                 <div className="flex items-center gap-4 mb-6">
                   <div className="h-px flex-1 bg-white/5" />
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-700">OR</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-700 italic">Advanced Cloud Sync</span>
                   <div className="h-px flex-1 bg-white/5" />
                 </div>
 
@@ -125,23 +137,27 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
                   disabled={loading}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-8 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-[2rem] border border-white/5 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 disabled:opacity-50"
+                  className="w-full py-8 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 font-bold rounded-[2rem] border border-blue-500/20 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 disabled:opacity-50"
                 >
                   {loading ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
-                      <div className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center">
-                        <Lock size={10} className="text-blue-500" />
-                      </div>
-                      Whitelisted Override
+                      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 grayscale opacity-50" alt="Google" />
+                      Google Whitelist Login
                     </>
                   )}
                 </motion.button>
 
-                <div className="mt-12 text-center">
-                  <p className="text-[8px] text-gray-600 font-bold uppercase tracking-[0.2em] leading-loose max-w-[240px] mx-auto">
-                    Solo's Electronics Control Unit <br/>
-                    Unauthorized access is strictly prohibited.
+                <div className="mt-12 text-center space-y-4">
+                  <p className="text-[8px] text-gray-600 font-bold uppercase tracking-[0.2em] leading-loose max-w-[240px] mx-auto italic">
+                    SOLO ELECTRONICS SECURE COMMAND NODE <br/>
+                    AUTHORIZED PERSONNEL ONLY
                   </p>
+                  <button 
+                    onClick={onClose}
+                    className="text-[9px] font-black uppercase text-gray-700 hover:text-white transition-colors"
+                  >
+                    Abort Connection
+                  </button>
                 </div>
               </div>
             </div>

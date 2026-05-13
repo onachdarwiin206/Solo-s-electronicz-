@@ -58,20 +58,38 @@ export default function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
                    <button onClick={onClose} className="p-2 bg-white/5 rounded-full"><X size={16} /></button>
                 </div>
 
-                <div className="relative">
-                  {isLogin ? (
-                    <SignIn 
-                      onSuccess={handleLoginSuccess}
-                      onSwitchToSignUp={() => { setIsLogin(false); setShowSignupSuccess(false); }}
-                      initialEmail={preFilledEmail}
-                      signupSuccess={showSignupSuccess}
-                    />
-                  ) : (
-                    <SignUp 
-                      onSuccess={handleSignupSuccess}
-                      onSwitchToSignIn={() => { setIsLogin(true); setShowSignupSuccess(false); }}
-                    />
-                  )}
+                <div className="relative overflow-hidden min-h-[400px]">
+                  <AnimatePresence mode="wait">
+                    {isLogin ? (
+                      <motion.div
+                        key="login"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <SignIn 
+                          onSuccess={handleLoginSuccess}
+                          onSwitchToSignUp={() => { setIsLogin(false); setShowSignupSuccess(false); }}
+                          initialEmail={preFilledEmail}
+                          signupSuccess={showSignupSuccess}
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="signup"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <SignUp 
+                          onSuccess={handleSignupSuccess}
+                          onSwitchToSignIn={() => { setIsLogin(true); setShowSignupSuccess(false); }}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="mt-10 flex flex-col items-center gap-6">

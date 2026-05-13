@@ -30,59 +30,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Check if we are in a Supabase OAuth popup redirect
-    // If so, notify the parent and close the window
     if (typeof window !== 'undefined' && window.opener && (window.location.hash.includes('access_token=') || window.location.search.includes('code='))) {
-       // Optional: We can wait for session to be fully ready if needed, 
-       // but closing the window is often enough as the parent iframe will detect session via onAuthStateChange
        window.close();
     }
 
-    // Initial eager check
-    const checkSession = async () => {
-      if (!isSupabaseConfigured) {
-        setLoading(false);
-        return;
-      }
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
+    let isInitialized = false;
+
+    // First, check the current session immediately
+    const initAuth = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        
+        const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           await handleSessionChange(session);
         } else {
           setLoading(false);
         }
-      } catch (e: any) {
-        if (e.message === 'Failed to fetch' || e.name === 'TypeError') {
-          console.warn("[Supabase] Auth Connection Failure: Service unreachable or unconfigured.");
-        } else {
-          console.error("Session check error:", e);
-        }
+      } catch (e) {
+        console.error("[Auth] Init Error:", e);
         setLoading(false);
+      } finally {
+        isInitialized = true;
       }
     };
 
-    checkSession();
-    
-    // Supabase Auth Listener
-    let subscription: any = null;
-    if (isSupabaseConfigured) {
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log(`[Auth] Event: ${event}`);
+    initAuth();
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] Event: ${event}`);
+      
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsAdmin(false);
+        setLoading(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session) {
-          await handleSessionChange(session);
-        } else {
-          setUser(null);
-          setIsAdmin(false);
-          setLoading(false);
+          // If we don't have a user or it's a different user, sync profile
+          if (!user || user.id !== session.user.id) {
+            setLoading(true);
+            await handleSessionChange(session);
+          } else {
+            setLoading(false);
+          }
         }
-      });
-      subscription = data.subscription;
-    }
+      } else if (event === 'INITIAL_SESSION') {
+         // handleSessionChange already called by initAuth if session exists
+         if (!session && isInitialized) {
+            setLoading(false);
+         }
+      }
+    });
 
     return () => {
-      if (subscription) subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
