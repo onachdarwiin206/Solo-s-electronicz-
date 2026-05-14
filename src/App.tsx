@@ -35,6 +35,8 @@ export default function App() {
 
   const [view, setView] = useState<View>('shop');
   const prevUserRef = useRef<any>(null);
+  const prevIsAdminRef = useRef<boolean>(false);
+  const modalWasOpenRef = useRef<boolean>(false);
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
@@ -126,28 +128,50 @@ export default function App() {
       window.removeEventListener('openAuth', handleOpenAuth);
     };
   }, []);
+  
+  // Auth Redirection Logic
+  useEffect(() => {
+    if (isAuthModalOpen || isAdminModalOpen) {
+      modalWasOpenRef.current = true;
+    }
+  }, [isAuthModalOpen, isAdminModalOpen]);
 
   useEffect(() => {
     if (authResolving) return;
 
-    const justLoggedIn = !prevUserRef.current && user;
-    prevUserRef.current = user;
-
-    if (justLoggedIn) {
+    const loggedInTransition = !prevUserRef.current && user;
+    const adminTransition = !prevIsAdminRef.current && isAdmin;
+    
+    // Check if we should redirect
+    // We redirect if there's a transition AND either the modal was open (just logged in)
+    // OR we are on a page that usually expects a redirect upon entry (like shop when user is found)
+    if (loggedInTransition || adminTransition) {
       if (isAdmin) {
         setView('admin');
-      } else {
-        setView('tracking');
+        setIsAdminModalOpen(false);
+        setIsAuthModalOpen(false);
+        modalWasOpenRef.current = false;
+      } else if (user) {
+        // Only redirect to tracking if we're not on a specific dashboard already
+        // and we were actually attempting a login (modal was open)
+        if (modalWasOpenRef.current || view === 'shop' || view === 'marketing' || view === 'product-detail') {
+          setView('tracking');
+          setIsAuthModalOpen(false);
+          setIsAdminModalOpen(false);
+          modalWasOpenRef.current = false;
+        }
       }
-      setIsAuthModalOpen(false);
-      setIsAdminModalOpen(false);
     }
 
+    prevUserRef.current = user;
+    prevIsAdminRef.current = isAdmin;
+
+    // Protection logic
     if (view === 'admin' && !isAdmin) {
       setView('shop');
     }
     
-    if ((view === 'tracking' || view === 'profile') && !user) {
+    if ((view === 'tracking' || view === 'profile') && !user && !authResolving) {
       setIsAuthModalOpen(true);
     }
   }, [user, isAdmin, authResolving, view]);
