@@ -177,7 +177,31 @@ export function SignIn({ onSuccess, onSwitchToSignUp, initialEmail = '', signupS
           >
             <div className="flex justify-between items-center px-6">
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Access Key (Password)</label>
-              <button type="button" className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest transition-colors opacity-60 hover:opacity-100">
+              <button 
+                type="button" 
+                onClick={async () => {
+                  if (!email) {
+                    setError("Please enter your Hardware Identifier (Email) first to initiate recovery.");
+                    return;
+                  }
+                  setLoading(true);
+                  setError(null);
+                  try {
+                    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/reset-password`,
+                    });
+                    if (resetError) throw resetError;
+                    setMagicLinkSent(true); 
+                    // Reuse magicLinkSent or add a specific one? 
+                    // Let's add a specific success message for clarity.
+                  } catch (err: any) {
+                    setError(err.message || "Recovery transmission failed.");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest transition-colors opacity-60 hover:opacity-100"
+              >
                 Recovery Link?
               </button>
             </div>

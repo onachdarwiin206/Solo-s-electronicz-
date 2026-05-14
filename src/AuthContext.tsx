@@ -7,6 +7,8 @@ type AuthType = {
   user: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  isRecovering: boolean;
+  clearRecoveryState: () => void;
   loginWithGoogleAdmin: () => Promise<boolean>;
   loginWithPin: (pin: string) => boolean;
   logout: () => Promise<void>;
@@ -16,6 +18,8 @@ const AuthContext = createContext<AuthType>({
   user: null,
   loading: true,
   isAdmin: false,
+  isRecovering: false,
+  clearRecoveryState: () => {},
   loginWithGoogleAdmin: async () => false,
   loginWithPin: () => false,
   logout: async () => {}
@@ -26,6 +30,7 @@ const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isRecovering, setIsRecovering] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -75,6 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(true);
           await handleSessionChange(session);
         }
+      } else if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovering(true);
       } else if (event === 'INITIAL_SESSION') {
          if (!session && isInitialized) {
             setLoading(false);
@@ -98,42 +105,81 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     setLoading(true);
     const { user: supaUser } = session;
+    const ownerEmail = 'onachdarwiin@gmail.com'.toLowerCase();
+    const currentEmail = supaUser.email?.toLowerCase();
     
     try {
-      // 1. Fetch profile
-      const { data: profile, error } = await supabase
+      console.log(`[Auth] 🔍 Verifying Identity for: ${currentEmail}`);
+      
+      // 1. Check explicitly if email is in 'admins' table OR is the owner
+      const isOwner = currentEmail === ownerEmail;
+      let isAdminByTable = false;
+
+      const { data: adminRow, error: adminError } = await supabase
+        .from('admins')
+        .select('email')
+        .eq('email', supaUser.email)
+        .maybeSingle();
+
+      if (adminError) {
+        console.warn("[Auth] Admins table check failed:", adminError.message);
+      } else if (adminRow) {
+        isAdminByTable = true;
+      }
+
+      // 2. Fetch or Create profile
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', supaUser.id)
         .maybeSingle();
 
-      // 2. Check explicitly if email is in 'admins' table as requested
-      const { data: adminRow } = await supabase
-        .from('admins')
-        .select('id')
-        .eq('email', supaUser.email)
-        .maybeSingle();
+      const isUserAdmin = (profile?.role === 'admin') || isAdminByTable || isOwner;
+      console.log(`[Auth] 🛡️ Permissions: Admin=${isUserAdmin}, Owner=${isOwner}`);
 
-      const isUserAdmin = (profile?.role === 'admin') || !!adminRow;
+      if (profileError) {
+         console.error("[Auth] Profiles query failed:", profileError);
+      }
 
       if (profile) {
-        setUser({ id: supaUser.id, ...profile } as any);
+        // Sync role if it changed or if owner, but handle RLS failures gracefully
+        if (isUserAdmin && profile.role !== 'admin') {
+          try {
+            await supabase.from('profiles').update({ role: 'admin' }).eq('id', supaUser.id);
+          } catch (e) {
+            console.warn("[Auth] Role update failed (likely RLS), using in-memory elevation.");
+          }
+          setUser({ id: supaUser.id, ...profile, role: 'admin' } as any);
+        } else {
+          setUser({ id: supaUser.id, ...profile } as any);
+        }
         setIsAdmin(isUserAdmin);
       } else {
         // Create profile if missing
+        console.log("[Auth] 🆕 Creating new hardware profile...");
         const fallbackProfile = {
           id: supaUser.id,
-          name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
+          name: supaUser.user_metadata.full_name || supaUser.user_metadata.name || supaUser.email?.split('@')[0] || 'User',
           email: supaUser.email || '',
           role: isUserAdmin ? 'admin' : 'customer'
         };
         
-        await supabase.from('profiles').upsert(fallbackProfile);
+        const { error: upsertError } = await supabase.from('profiles').upsert(fallbackProfile);
+        if (upsertError) {
+          console.error("[Auth] 🛑 Profile Initialization Failed:", upsertError.message);
+        }
+        
         setUser({ ...fallbackProfile } as any);
         setIsAdmin(isUserAdmin);
       }
     } catch (err: any) {
-      console.error("[Auth] Profile Sync Exception:", err.message);
+      console.error("[Auth] 💥 Fatal Sync Exception:", err.message);
+      // Fail-safe protection for owner
+      if (currentEmail === ownerEmail) {
+        console.log("[Auth] 👑 Emergency Owner Access Granted.");
+        setIsAdmin(true);
+        setUser({ id: supaUser.id, email: supaUser.email, name: 'Main Owner', role: 'admin' } as any);
+      }
     } finally {
       setLoading(false);
     }
@@ -169,15 +215,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isAdmin]);
 
   const loginWithGoogleAdmin = async () => {
+    setLoading(true);
     await loginWithGoogle();
+    // We don't return immediately because the popup happens async
+    // AuthProvider's onAuthStateChange will handle the result.
     return true;
   };
 
   const loginWithPin = (pin: string) => {
-    // Legacy support for Pin login while transitioning to full RLS
-    // In production, this should check a secure hash or be removed entirely
     if (pin === "8585") {
       setIsAdmin(true);
+      // Set a placeholder user so that Admin features aren't locked
+      setUser({ id: 'legacy-admin', name: 'Authorized PIN Admin', email: 'pin-admin@solo.com', role: 'admin' } as any);
       return true;
     }
     return false;
@@ -196,6 +245,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         loading,
         isAdmin,
+        isRecovering,
+        clearRecoveryState: () => setIsRecovering(false),
         loginWithGoogleAdmin,
         loginWithPin,
         logout

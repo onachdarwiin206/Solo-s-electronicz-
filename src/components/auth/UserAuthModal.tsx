@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
@@ -18,6 +18,14 @@ export default function UserAuthModal({ isOpen, onClose, onSuccess }: UserAuthMo
   const [preFilledEmail, setPreFilledEmail] = useState('');
   const [showSignupSuccess, setShowSignupSuccess] = useState(false);
   const { user, loading: authResolving } = useAuth();
+
+  // Reactive close when identity is synced
+  useEffect(() => {
+    if (user && isOpen) {
+      if (onSuccess) onSuccess();
+      onClose();
+    }
+  }, [user, isOpen, onClose, onSuccess]);
 
   const handleSignupSuccess = (email: string) => {
     setPreFilledEmail(email);

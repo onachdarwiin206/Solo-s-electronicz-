@@ -1,8 +1,13 @@
-import { motion } from 'motion/react';
-import { ArrowLeft, ShoppingCart, MessageCircle, BadgeCheck, Star, Shield, Zap, Truck } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  ArrowLeft, ShoppingCart, MessageCircle, BadgeCheck, Star, 
+  Shield, Zap, Truck, ChevronLeft, ChevronRight, Play, Maximize2
+} from 'lucide-react';
 import { Product } from '../../types';
 import { ReviewSystem } from '../reviews/ReviewSystem';
 import { OptimizedImage } from '../ui/OptimizedImage';
+import { cn } from '../../lib/utils';
 
 interface ProductDetailProps {
   product: Product;
@@ -13,89 +18,234 @@ interface ProductDetailProps {
 const WHATSAPP_NUMBER = "256793405517";
 
 export default function ProductDetail({ product, onBack, onAddToCart }: ProductDetailProps) {
+  const [activeMedia, setActiveMedia] = useState(0);
+
+  const allMedia = [
+    ...(product.images || []),
+    product.image,
+    ...(product.videos || []),
+    product.video_url
+  ].filter(Boolean) as string[];
+
+  // Remove duplicates while preserving order
+  const uniqueMedia = Array.from(new Set(allMedia));
+
   const handleWhatsAppBuy = () => {
     const message = `*Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I'm interested in this unit. Is it available for delivery in Lira?`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
+  const currentMedia = uniqueMedia[activeMedia];
+  const isVideo = currentMedia?.includes('video') || currentMedia?.includes('.mp4');
+
+  const nextMedia = () => setActiveMedia((prev) => (prev + 1) % uniqueMedia.length);
+  const prevMedia = () => setActiveMedia((prev) => (prev - 1 + uniqueMedia.length) % uniqueMedia.length);
+
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <button onClick={onBack} className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest group">
-        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-        Back to Tech Feed
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className="max-w-7xl mx-auto py-8 md:py-12 px-4 sm:px-6 lg:px-8"
+    >
+      <button 
+        onClick={onBack} 
+        className="mb-8 flex items-center gap-3 text-gray-500 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] group bg-white/5 px-6 py-3 rounded-full border border-white/10"
+      >
+        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+        Return to Hardware Feed
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-20">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-20 items-start">
+        {/* Media Gallery Section */}
         <div className="space-y-6">
-          <div className="aspect-square rounded-[2rem] overflow-hidden bg-white/5 border border-white/10 relative group">
-            {product.video_url ? (
-              <video src={product.video_url} className="w-full h-full object-cover" autoPlay muted loop playsInline controls />
-            ) : (
-              <OptimizedImage src={product.image} className="w-full h-full object-cover" alt={product.name} />
+          <div className="aspect-square rounded-[2.5rem] overflow-hidden bg-white/5 border border-white/10 relative group shadow-2xl">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeMedia}
+                initial={{ opacity: 0, scale: 1.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4 }}
+                className="w-full h-full"
+              >
+                {isVideo ? (
+                  <video 
+                    src={currentMedia} 
+                    className="w-full h-full object-cover" 
+                    autoPlay 
+                    muted 
+                    loop 
+                    playsInline 
+                    controls 
+                  />
+                ) : (
+                  <OptimizedImage src={currentMedia} className="w-full h-full object-cover" alt={product.name} />
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            {uniqueMedia.length > 1 && (
+              <>
+                <button 
+                  onClick={prevMedia}
+                  className="absolute left-6 top-1/2 -translate-y-1/2 p-4 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button 
+                  onClick={nextMedia}
+                  className="absolute right-6 top-1/2 -translate-y-1/2 p-4 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </>
             )}
+
             {product.is_verified && (
-              <div className="absolute top-6 left-6 flex items-center gap-2 px-3 py-1.5 bg-green-500/90 backdrop-blur rounded-full text-[8px] font-black uppercase tracking-widest text-white">
-                <BadgeCheck size={12} /> Verified Hardware
+              <div className="absolute top-8 left-8 flex items-center gap-3 px-5 py-2.5 bg-green-500/90 backdrop-blur rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-2xl border border-green-400/30">
+                <BadgeCheck size={16} /> Verified Unit
+              </div>
+            )}
+
+            {isVideo && (
+              <div className="absolute bottom-8 right-8 p-4 bg-blue-500/80 backdrop-blur-xl rounded-full text-white shadow-2xl border border-blue-400/30">
+                <Play size={20} fill="currentColor" />
               </div>
             )}
           </div>
+
+          {/* Thumbnails */}
+          {uniqueMedia.length > 1 && (
+            <div className="flex gap-4 overflow-x-auto no-scrollbar py-2">
+              {uniqueMedia.map((media, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveMedia(idx)}
+                  className={cn(
+                    "relative w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ring-offset-4 ring-offset-black",
+                    activeMedia === idx 
+                      ? "border-blue-500 ring-2 ring-blue-500/50 scale-105" 
+                      : "border-white/10 grayscale opacity-60 hover:grayscale-0 hover:opacity-100"
+                  )}
+                >
+                  {media.includes('video') || media.includes('.mp4') ? (
+                    <div className="w-full h-full bg-blue-500/20 flex items-center justify-center">
+                       <Play size={24} className="text-blue-500" />
+                    </div>
+                  ) : (
+                    <OptimizedImage src={media} className="w-full h-full object-cover" alt={`${product.name} gallery ${idx}`} />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* Product Details Section */}
         <div className="flex flex-col">
-          <div className="mb-8">
-            <span className="px-3 py-1 bg-white/5 border border-white/10 text-gray-400 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">
-              {product.category}
-            </span>
-            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mt-4 mb-2 uppercase italic leading-none">
+          <div className="mb-10">
+            <div className="flex items-center gap-4 mb-6">
+              <span className="px-4 py-1.5 bg-blue-600/20 border border-blue-500/30 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
+                {product.category}
+              </span>
+              {(product.stock || 0) > 0 ? (
+                <span className="px-4 py-1.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
+                  {product.stock} Units Syncing
+                </span>
+              ) : (
+                <span className="px-4 py-1.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
+                  Depleted
+                </span>
+              )}
+            </div>
+            
+            <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-4 uppercase italic leading-[0.9]">
               {product.name}
             </h1>
-            <div className="flex items-center gap-4 mt-4">
-              <div className="flex text-amber-500">
+            
+            <div className="flex items-center gap-6 mt-8">
+              <div className="flex text-amber-500 gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={12} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
+                  <Star key={i} size={16} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
                 ))}
               </div>
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Premium Performance</span>
+              <div className="h-4 w-px bg-white/10" />
+              <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest font-mono">ID: {product.id.slice(0, 12)}</span>
             </div>
           </div>
 
-          <div className="mb-12">
-            <p className="text-4xl font-black text-white font-mono tracking-tighter">UGX {product.price.toLocaleString()}</p>
-            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">Official Regional Price | Lira Delivery Included</p>
+          <div className="mb-12 p-8 bg-white/5 rounded-[2rem] border border-white/10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl -mr-16 -mt-16 group-hover:bg-blue-600/20 transition-all" />
+            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 italic">Solo Regional Authorization Price</div>
+            <div className="flex items-baseline gap-3">
+              <p className="text-6xl font-black text-white font-mono tracking-tighter italic">UGX {product.price.toLocaleString()}</p>
+            </div>
+            <p className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] mt-3">Lira Logistics Included • Instant Delivery Area</p>
           </div>
 
-          <div className="space-y-8 mb-12">
+          <div className="space-y-10 mb-12">
             <div>
-              <h3 className="text-[10px] font-black text-white uppercase tracking-widest mb-3 flex items-center gap-2"><Shield size={12} className="text-blue-500" /> Engineering Specs</h3>
-              <p className="text-gray-400 text-sm leading-relaxed font-medium">{product.description}</p>
+              <h3 className="text-[11px] font-black text-white/50 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
+                <Shield size={16} className="text-blue-500" /> Technical Dossier
+              </h3>
+              <p className="text-gray-400 text-lg leading-relaxed font-medium font-serif italic border-l-4 border-blue-500/30 pl-6">
+                {product.description}
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                 <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Zap size={10} className="text-yellow-500" /> Grade</h4>
-                 <p className="text-white font-black text-xs uppercase italic">Direct Import</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 hover:border-white/10 transition-all">
+                 <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                   <Zap size={14} className="text-yellow-500" /> Grade
+                 </h4>
+                 <p className="text-white font-black text-sm uppercase italic tracking-tighter">Direct Import</p>
+                 <span className="text-[9px] text-gray-500 font-bold uppercase block mt-1">A+ Inventory</span>
               </div>
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                 <h4 className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Truck size={10} className="text-blue-500" /> Availability</h4>
-                 <p className="text-white font-black text-xs uppercase italic">{product.stock > 0 ? 'Ready for Lira' : 'Restocking'}</p>
+              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 hover:border-white/10 transition-all">
+                 <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                   <Truck size={14} className="text-blue-500" /> Logistics
+                 </h4>
+                 <p className="text-white font-black text-sm uppercase italic tracking-tighter">
+                   {(product.stock || 0) > 0 ? 'Ready for Lira' : 'Restocking Pool'}
+                 </p>
+                 <span className="text-[9px] text-gray-500 font-bold uppercase block mt-1">Instant Dispatch</span>
+              </div>
+              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 hover:border-white/10 transition-all">
+                 <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                   <Maximize2 size={14} className="text-emerald-500" /> Warranty
+                 </h4>
+                 <p className="text-white font-black text-sm uppercase italic tracking-tighter">12 Months</p>
+                 <span className="text-[9px] text-gray-500 font-bold uppercase block mt-1">Solo Assurance</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-auto flex flex-col sm:flex-row gap-4">
-            <button onClick={() => onAddToCart(product)} className="flex-1 py-5 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 text-xs uppercase tracking-widest group">
-              <ShoppingCart size={18} className="group-hover:rotate-12 transition-transform" /> Add to Basket
+          <div className="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <button 
+              onClick={() => onAddToCart(product)} 
+              disabled={(product.stock || 0) <= 0}
+              className="py-6 bg-white hover:bg-blue-600 text-black hover:text-white font-black rounded-3xl flex items-center justify-center gap-4 transition-all active:scale-95 text-[12px] uppercase tracking-[0.25em] shadow-2xl disabled:opacity-50 group"
+            >
+              <ShoppingCart size={22} className="group-hover:rotate-12 transition-transform" /> 
+              Commit to Basket
             </button>
-            <button onClick={handleWhatsAppBuy} className="flex-1 py-5 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-green-900/20 text-xs uppercase tracking-widest">
-              <MessageCircle size={18} fill="currentColor" /> Live Inquiry
+            <button 
+              onClick={handleWhatsAppBuy} 
+              className="py-6 bg-green-600 hover:bg-green-500 text-white font-black rounded-3xl flex items-center justify-center gap-4 transition-all active:scale-95 shadow-xl shadow-green-900/40 text-[12px] uppercase tracking-[0.25em]"
+            >
+              <MessageCircle size={22} fill="currentColor" /> 
+              Live Procurement
             </button>
           </div>
         </div>
       </div>
 
-      <div className="pt-20 border-t border-white/10">
-        <ReviewSystem product={product} />
+      {/* Review Section */}
+      <div className="pt-24 border-t border-white/10">
+        <div className="max-w-4xl">
+          <ReviewSystem product={product} />
+        </div>
       </div>
     </motion.div>
   );

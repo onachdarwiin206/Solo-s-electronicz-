@@ -22,14 +22,15 @@ const ProductDetail = lazy(() => import('./components/shop/ProductDetail'));
 const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal'));
 import AdminLoginModal from './components/auth/LoginModal';
 import UserAuthModal from './components/auth/UserAuthModal';
-import UserProfile from './components/profile/UserProfile';
+const UserProfile = lazy(() => import('./components/profile/UserProfile'));
+const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
 
-type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail';
+type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail' | 'reset-password';
 
 const WHATSAPP_NUMBER = "256793405517";
 
 export default function App() {
-  const { user, isAdmin, loading: authResolving } = useAuth();
+  const { user, isAdmin, isRecovering, loading: authResolving } = useAuth();
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -156,16 +157,22 @@ export default function App() {
 
     // 2. Protection Logic (Triggered on view changes or logged-out state)
     // Only auto-open modal if user explicitly navigated to a protected zone
-    if (view === 'admin' && !isAdmin) {
+    if (view === 'admin' && !isAdmin && !authResolving) {
       setView('shop');
       setIsAdminModalOpen(true);
-    } else if ((view === 'tracking' || view === 'profile') && !user) {
+    } else if ((view === 'tracking' || view === 'profile') && !user && !authResolving) {
       setIsAuthModalOpen(true);
     }
 
     prevUserRef.current = user;
     prevIsAdminRef.current = isAdmin;
   }, [user, isAdmin, authResolving, view]);
+
+  useEffect(() => {
+    if (isRecovering && view !== 'reset-password') {
+      setView('reset-password');
+    }
+  }, [isRecovering, view]);
 
   useEffect(() => {
     const handleNav = (e: any) => { if (e.detail) setView(e.detail); };
@@ -376,6 +383,7 @@ _Your order is now being processed._
                     </ProtectedRoute>
                   )}
                   {view === 'marketing' && <MarketingPortal />}
+                  {view === 'reset-password' && <div className="max-w-md mx-auto px-4"><ResetPassword onSuccess={() => setView('shop')} /></div>}
                   {view === 'admin' && (
                     <ProtectedRoute requireAdmin>
                       <AdminDashboard products={products} />

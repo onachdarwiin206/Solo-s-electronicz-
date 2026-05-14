@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Lock, AlertCircle, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
@@ -14,19 +14,34 @@ export default function AdminLoginModal({ isOpen, onClose, onSuccess }: AdminLog
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pin, setPin] = useState('');
-  const { loginWithGoogleAdmin, loginWithPin, user, loading: authResolving } = useAuth();
+  const { loginWithGoogleAdmin, loginWithPin, isAdmin, loading: authResolving } = useAuth();
+
+  // Automatically close if admin status is confirmed by AuthContext
+  useEffect(() => {
+    if (isAdmin && isOpen) {
+      if (onSuccess) onSuccess();
+      onClose();
+    }
+  }, [isAdmin, isOpen, onClose, onSuccess]);
+
+  // Handle failed auth verification
+  useEffect(() => {
+    if (!authResolving && loading && !isAdmin) {
+      setError("ACCESS DENIED: IDENTITY VERIFIED BUT PERMISSIONS REVOKED. YOUR ACCOUNT IS NOT IN THE AUTHORIZED ADMIN WHITELIST.");
+      setLoading(false);
+    }
+  }, [authResolving, loading, isAdmin]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
-    const success = await loginWithGoogleAdmin();
-    if (success) {
-      if (onSuccess) onSuccess();
-      onClose();
-    } else {
-      setError("Restricted Access: Your account is not in the authorized 5-person admin whitelist.");
+    try {
+      await loginWithGoogleAdmin();
+      // We wait for AuthContext to verify and either isAdmin triggers close or the useEffect above triggers error
+    } catch (err: any) {
+      setError("AUTHENTICATION BRIDGE FAILED: " + err.message);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handlePinSubmit = (e: FormEvent) => {

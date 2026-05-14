@@ -100,10 +100,29 @@ drop policy if exists "Public profiles are viewable by everyone." on public.prof
 create policy "Public profiles are viewable by everyone." on public.profiles for select using (true);
 
 drop policy if exists "Users can update own profile." on public.profiles;
+-- We allow users to update their own row, but we add a check to ensure they don't change their role
+-- Note: In Supabase RLS, we can't easily check 'affected columns' in the 'using' clause besides comparing new vs old
+-- A common pattern is to just allow the update but have a database trigger that flattens any role change attempts from non-admins
 create policy "Users can update own profile." on public.profiles for update using (auth.uid() = id);
 
 drop policy if exists "Users can insert own profile." on public.profiles;
 create policy "Users can insert own profile." on public.profiles for insert with check (auth.uid() = id);
+
+-- Secure role management trigger
+create or replace function public.preserve_role_integrity()
+returns trigger as $$
+begin
+  if (not public.is_admin()) then
+    new.role := old.role; -- Revert role change if not an admin
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_profile_update_integrity on public.profiles;
+create trigger on_profile_update_integrity
+  before update on public.profiles
+  for each row execute procedure public.preserve_role_integrity();
 
 -- Products Policies
 drop policy if exists "Products viewable by everyone." on public.products;
