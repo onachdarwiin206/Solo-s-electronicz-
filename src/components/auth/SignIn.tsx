@@ -50,6 +50,7 @@ export function SignIn({ onSuccess, onSwitchToSignUp, initialEmail = '', signupS
     setError(null);
 
     try {
+      sessionStorage.setItem('auth_redirect_pending', 'true');
       const { error: authError } = await supabase.auth.signInWithOtp({
         email,
         options: {

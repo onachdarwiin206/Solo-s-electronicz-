@@ -41,6 +41,7 @@ export const logoutUser = async () => {
 };
 
 export const loginWithGoogle = async () => {
+  sessionStorage.setItem('auth_redirect_pending', 'true');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {

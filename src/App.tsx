@@ -129,51 +129,42 @@ export default function App() {
     };
   }, []);
   
-  // Auth Redirection Logic
-  useEffect(() => {
-    if (isAuthModalOpen || isAdminModalOpen) {
-      modalWasOpenRef.current = true;
-    }
-  }, [isAuthModalOpen, isAdminModalOpen]);
-
+  // Auth Redirection & Protection Logic
   useEffect(() => {
     if (authResolving) return;
 
-    const loggedInTransition = !prevUserRef.current && user;
+    const loggedInTransition = !prevUserRef.current && !!user;
     const adminTransition = !prevIsAdminRef.current && isAdmin;
+    const isRedirectPending = sessionStorage.getItem('auth_redirect_pending') === 'true';
     
-    // Check if we should redirect
-    // We redirect if there's a transition AND either the modal was open (just logged in)
-    // OR we are on a page that usually expects a redirect upon entry (like shop when user is found)
-    if (loggedInTransition || adminTransition) {
-      if (isAdmin) {
+    // 1. Redirection Logic (Triggered on login)
+    if (loggedInTransition || adminTransition || isRedirectPending) {
+      if (isAdmin && (isRedirectPending || view === 'shop' || view === 'marketing')) {
+        console.info("[Auth] Role: Admin. Navigating to Command Center.");
         setView('admin');
         setIsAdminModalOpen(false);
         setIsAuthModalOpen(false);
-        modalWasOpenRef.current = false;
-      } else if (user) {
-        // Only redirect to tracking if we're not on a specific dashboard already
-        // and we were actually attempting a login (modal was open)
-        if (modalWasOpenRef.current || view === 'shop' || view === 'marketing' || view === 'product-detail') {
-          setView('tracking');
-          setIsAuthModalOpen(false);
-          setIsAdminModalOpen(false);
-          modalWasOpenRef.current = false;
-        }
+        sessionStorage.removeItem('auth_redirect_pending');
+      } else if (user && (isRedirectPending || view === 'shop' || view === 'marketing' || view === 'product-detail')) {
+        console.info("[Auth] Role: Customer. Navigating to User Tracking.");
+        setView('tracking');
+        setIsAdminModalOpen(false);
+        setIsAuthModalOpen(false);
+        sessionStorage.removeItem('auth_redirect_pending');
       }
+    }
+
+    // 2. Protection Logic (Triggered on view changes or logged-out state)
+    // Only auto-open modal if user explicitly navigated to a protected zone
+    if (view === 'admin' && !isAdmin) {
+      setView('shop');
+      setIsAdminModalOpen(true);
+    } else if ((view === 'tracking' || view === 'profile') && !user) {
+      setIsAuthModalOpen(true);
     }
 
     prevUserRef.current = user;
     prevIsAdminRef.current = isAdmin;
-
-    // Protection logic
-    if (view === 'admin' && !isAdmin) {
-      setView('shop');
-    }
-    
-    if ((view === 'tracking' || view === 'profile') && !user && !authResolving) {
-      setIsAuthModalOpen(true);
-    }
   }, [user, isAdmin, authResolving, view]);
 
   useEffect(() => {
@@ -411,8 +402,16 @@ _Your order is now being processed._
           <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
           <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
           
-          <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} />
-          <UserAuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+          <AdminLoginModal 
+            isOpen={isAdminModalOpen} 
+            onClose={() => setIsAdminModalOpen(false)} 
+            onSuccess={() => { setView('admin'); setIsAdminModalOpen(false); }}
+          />
+          <UserAuthModal 
+            isOpen={isAuthModalOpen} 
+            onClose={() => setIsAuthModalOpen(false)} 
+            onSuccess={() => { setView('tracking'); setIsAuthModalOpen(false); }}
+          />
           <Suspense fallback={null}>
             <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
           </Suspense>

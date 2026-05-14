@@ -49,6 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await handleSessionChange(session);
         } else {
           setLoading(false);
+          setIsAdmin(false);
         }
       } catch (e) {
         console.error("[Auth] Init Error:", e);
@@ -68,20 +69,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         setIsAdmin(false);
         setLoading(false);
+        sessionStorage.removeItem('auth_redirect_pending');
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session) {
-          // If we don't have a user or it's a different user, sync profile
-          if (!user || user.id !== session.user.id) {
-            setLoading(true);
-            await handleSessionChange(session);
-          } else {
-            setLoading(false);
-          }
+          setLoading(true);
+          await handleSessionChange(session);
         }
       } else if (event === 'INITIAL_SESSION') {
-         // handleSessionChange already called by initAuth if session exists
          if (!session && isInitialized) {
             setLoading(false);
+            setIsAdmin(false);
          }
       }
     });
@@ -103,51 +100,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { user: supaUser } = session;
     
     try {
-      // Fetch profile from 'profiles' table
+      // 1. Fetch profile
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', supaUser.id)
-        .single();
+        .maybeSingle();
+
+      // 2. Check explicitly if email is in 'admins' table as requested
+      const { data: adminRow } = await supabase
+        .from('admins')
+        .select('id')
+        .eq('email', supaUser.email)
+        .maybeSingle();
+
+      const isUserAdmin = (profile?.role === 'admin') || !!adminRow;
 
       if (profile) {
         setUser({ id: supaUser.id, ...profile } as any);
-        setIsAdmin(profile.role === 'admin');
-      } else if (error) {
-        if (error.code === 'PGRST116') {
-          // Profile not found, create one
-          const fallbackProfile = {
-            id: supaUser.id,
-            name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
-            email: supaUser.email || '',
-            role: 'customer'
-          };
-          
-          const { data: created, error: createError } = await supabase
-            .from('profiles')
-            .upsert(fallbackProfile)
-            .select()
-            .single();
-            
-          if (!createError && created) {
-            setUser(created as any);
-            setIsAdmin(created.role === 'admin');
-          } else {
-            console.warn("[Auth] Profile creation failed (check RLS):", createError?.message);
-            // Fallback to minimal identity
-            setUser({ id: supaUser.id, name: fallbackProfile.name, email: fallbackProfile.email, role: 'customer' } as any);
-          }
-        } else if (error.code === '42P01') {
-          console.warn("[Auth] 'profiles' table not found. Using memory-only profile.");
-          setUser({ 
-            id: supaUser.id, 
-            name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
-            email: supaUser.email || '',
-            role: 'customer'
-          } as any);
-        } else {
-          console.error("[Auth] Profile Fetch Error:", error.message);
-        }
+        setIsAdmin(isUserAdmin);
+      } else {
+        // Create profile if missing
+        const fallbackProfile = {
+          id: supaUser.id,
+          name: supaUser.user_metadata.full_name || supaUser.email?.split('@')[0] || 'User',
+          email: supaUser.email || '',
+          role: isUserAdmin ? 'admin' : 'customer'
+        };
+        
+        await supabase.from('profiles').upsert(fallbackProfile);
+        setUser({ ...fallbackProfile } as any);
+        setIsAdmin(isUserAdmin);
       }
     } catch (err: any) {
       console.error("[Auth] Profile Sync Exception:", err.message);

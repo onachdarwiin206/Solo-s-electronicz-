@@ -10,13 +10,14 @@ import { AuthFeatureWall } from './AuthFeatureWall';
 interface UserAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
+export default function UserAuthModal({ isOpen, onClose, onSuccess }: UserAuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [preFilledEmail, setPreFilledEmail] = useState('');
   const [showSignupSuccess, setShowSignupSuccess] = useState(false);
-  const { user } = useAuth();
+  const { user, loading: authResolving } = useAuth();
 
   const handleSignupSuccess = (email: string) => {
     setPreFilledEmail(email);
@@ -25,10 +26,9 @@ export default function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
   };
 
   const handleLoginSuccess = () => {
+    if (onSuccess) onSuccess();
     onClose();
   };
-
-  if (user) return null;
 
   return (
     <AnimatePresence>
@@ -60,34 +60,47 @@ export default function UserAuthModal({ isOpen, onClose }: UserAuthModalProps) {
 
                 <div className="relative overflow-hidden min-h-[400px]">
                   <AnimatePresence mode="wait">
-                    {isLogin ? (
-                      <motion.div
-                        key="login"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
+                    {(user || authResolving) ? (
+                      <motion.div 
+                        key="syncing"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex flex-col items-center justify-center py-20 text-center"
                       >
-                        <SignIn 
-                          onSuccess={handleLoginSuccess}
-                          onSwitchToSignUp={() => { setIsLogin(false); setShowSignupSuccess(false); }}
-                          initialEmail={preFilledEmail}
-                          signupSuccess={showSignupSuccess}
-                        />
+                         <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-6" />
+                         <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Syncing Identity...</h3>
+                         <p className="text-gray-500 text-xs mt-2 uppercase tracking-widest font-mono">Verifying hardware signature via cloud</p>
                       </motion.div>
                     ) : (
-                      <motion.div
-                        key="signup"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <SignUp 
-                          onSuccess={handleSignupSuccess}
-                          onSwitchToSignIn={() => { setIsLogin(true); setShowSignupSuccess(false); }}
-                        />
-                      </motion.div>
+                      isLogin ? (
+                        <motion.div
+                          key="login"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <SignIn 
+                            onSuccess={handleLoginSuccess}
+                            onSwitchToSignUp={() => { setIsLogin(false); setShowSignupSuccess(false); }}
+                            initialEmail={preFilledEmail}
+                            signupSuccess={showSignupSuccess}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="signup"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <SignUp 
+                            onSuccess={handleSignupSuccess}
+                            onSwitchToSignIn={() => { setIsLogin(true); setShowSignupSuccess(false); }}
+                          />
+                        </motion.div>
+                      )
                     )}
                   </AnimatePresence>
                 </div>
