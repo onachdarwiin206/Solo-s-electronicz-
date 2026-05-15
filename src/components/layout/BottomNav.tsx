@@ -12,7 +12,6 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
   const tabs = [
     { id: 'shop', label: 'Shop', icon: Home },
     { id: 'tracking', label: 'Track', icon: Package },
-    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (

@@ -66,5 +66,6 @@ export interface Review {
   user_name: string;
   rating: number;
   comment: string;
+  status?: 'pending' | 'approved' | 'rejected';
   created_at: string;
 }

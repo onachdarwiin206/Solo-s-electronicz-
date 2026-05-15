@@ -55,6 +55,9 @@ export function Footer({ t, onCategorySelect, onAdminPanelClick }: FooterProps) 
           <div>
             <h3 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Shop</h3>
             <ul className="space-y-4 text-sm text-gray-400 font-mono">
+              <li className="hover:text-blue-500 transition-colors cursor-pointer font-bold flex items-center gap-2" onClick={() => onCategorySelect(null)}>
+                <span>&laquo;</span> Return Home
+              </li>
               <li className="hover:text-white transition-colors cursor-pointer" onClick={() => onCategorySelect('Phones')}>Latest Phones</li>
               <li className="hover:text-white transition-colors cursor-pointer" onClick={() => onCategorySelect('Computers')}>Workstations</li>
               <li className="hover:text-white transition-colors cursor-pointer" onClick={() => onCategorySelect('Electronics')}>Smart Devices</li>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import imageCompression from 'browser-image-compression';
-import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
-import { Product, Category, Order, OrderStatus } from '../../types';
+import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle, User } from 'lucide-react';
+import { Product, Category, Order, OrderStatus, Review } from '../../types';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
@@ -57,9 +57,70 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
 
 export default function AdminDashboard({ products: initialProducts }: AdminDashboardProps) {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'admins'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'reviews' | 'admins'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  
+  // Order filtering states
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<OrderStatus | 'all'>('all');
+  const [dateRange, setDateRange] = useState<{ start: string, end: string }>({ start: '', end: '' });
+
+  const fetchReviews = async () => {
+    if (!isSupabaseConfigured) return;
+    setLoadingReviews(true);
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error) setReviews(data as Review[]);
+    } catch (e) {
+      console.error("Reviews fetch error:", e);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const updateReviewStatus = async (reviewId: string, status: 'approved' | 'rejected') => {
+    try {
+      await supabase.from('reviews').update({ status }).eq('id', reviewId);
+      fetchReviews();
+    } catch (e) {
+      console.error("Review status update error:", e);
+    }
+  };
+
+  const deleteReview = async (reviewId: string) => {
+    if (!confirm('Are you sure you want to delete this review?')) return;
+    try {
+      await supabase.from('reviews').delete().eq('id', reviewId);
+      fetchReviews();
+    } catch (e) {
+      console.error("Review delete error:", e);
+    }
+  };
+
+  const filteredOrders = orders.filter(o => {
+    const matchesSearch = 
+      o.customer_name?.toLowerCase().includes(orderSearch.toLowerCase()) ||
+      o.customer_phone?.includes(orderSearch) ||
+      o.id.toLowerCase().includes(orderSearch.toLowerCase());
+    
+    const matchesStatus = orderStatusFilter === 'all' ? true : o.status === orderStatusFilter;
+    
+    const orderDate = new Date(o.created_at);
+    const matchesStart = dateRange.start ? orderDate >= new Date(dateRange.start) : true;
+    const matchesEnd = dateRange.end ? orderDate <= new Date(dateRange.end + 'T23:59:59') : true;
+
+    return matchesSearch && matchesStatus && matchesStart && matchesEnd;
+  });
+
+  useEffect(() => {
+    if (activeTab === 'reviews') fetchReviews();
+  }, [activeTab]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -499,8 +560,8 @@ _Thank you for choosing Solo Electronics!_
             </motion.div>
           )}
 
-          <div className="flex gap-2">
-            {['inventory', 'orders', 'admins'].map((tab) => (
+          <div className="flex gap-2 flex-wrap">
+            {['inventory', 'orders', 'reviews', 'admins'].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all", activeTab === tab ? "bg-blue-600 text-white" : "bg-white/5 text-gray-500 border border-white/10 hover:bg-white/10")}>{tab}</button>
             ))}
           </div>
@@ -839,13 +900,59 @@ _Thank you for choosing Solo Electronics!_
 
       {activeTab === 'orders' && (
         <div className="space-y-6">
+          {/* Order Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white/5 p-6 rounded-3xl border border-white/10 mb-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Search Orders</label>
+              <input 
+                type="text" 
+                placeholder="Name, Phone, ID..." 
+                value={orderSearch}
+                onChange={e => setOrderSearch(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Status</label>
+              <select 
+                value={orderStatusFilter}
+                onChange={e => setOrderStatusFilter(e.target.value as any)}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-blue-500"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="delivering">Delivering</option>
+                <option value="delivered">Delivered</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">From Date</label>
+              <input 
+                type="date" 
+                value={dateRange.start}
+                onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">To Date</label>
+              <input 
+                type="date" 
+                value={dateRange.end}
+                onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
           {loadingOrders ? (
             <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
-          ) : orders.length === 0 ? (
-            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">No Orders</div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">No Orders Found</div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <div key={order.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl">
                   <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
                     <div>
@@ -881,6 +988,75 @@ _Thank you for choosing Solo Electronics!_
                        <p className="text-white font-black text-xl italic tracking-tighter mb-4">UGX {order.total.toLocaleString()}</p>
                        <button onClick={() => shareReceiptToCustomer(order)} className="px-6 py-2 bg-green-600/10 hover:bg-green-600/20 text-green-500 text-[9px] font-black uppercase tracking-widest rounded-xl border border-green-500/20">Send Receipt</button>
                     </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'reviews' && (
+        <div className="space-y-6">
+           {loadingReviews ? (
+            <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
+          ) : reviews.length === 0 ? (
+            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">No Reviews Found</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {reviews.map((review) => (
+                <div key={review.id} className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] hover:bg-white/[0.07] transition-all">
+                  <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500">
+                        <User size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-white uppercase italic tracking-tighter">{review.user_name}</h4>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black">{format(new Date(review.created_at), 'PPP')}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                       <div className="flex text-amber-500 px-3 py-1 bg-black/40 rounded-full border border-white/5 h-fit">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} />
+                        ))}
+                      </div>
+                      <div className={cn(
+                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                        review.status === 'approved' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : 
+                        review.status === 'rejected' ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                        "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                      )}>
+                        {review.status || 'pending'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6 p-4 bg-black/20 rounded-2xl border border-white/5">
+                    <p className="text-gray-300 text-sm italic">"{review.comment}"</p>
+                    <p className="text-[10px] text-blue-500 font-bold mt-2 uppercase tracking-widest">Product ID: {review.product_id}</p>
+                  </div>
+
+                  <div className="flex gap-3 justify-end items-center">
+                    <button 
+                      onClick={() => updateReviewStatus(review.id, 'approved')}
+                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-900/20"
+                    >
+                      Approve
+                    </button>
+                    <button 
+                      onClick={() => updateReviewStatus(review.id, 'rejected')}
+                      className="px-6 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-500/20 transition-all"
+                    >
+                      Reject
+                    </button>
+                    <button 
+                      onClick={() => deleteReview(review.id)}
+                      className="p-2 text-gray-700 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
               ))}

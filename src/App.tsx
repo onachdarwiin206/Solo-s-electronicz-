@@ -13,7 +13,7 @@ import { Product, CartItem, PaymentMethod } from './types';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
-import { ShieldCheck, ChevronRight, X, UserCog, Loader2 } from 'lucide-react';
+import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home } from 'lucide-react';
 
 const OrderTracking = lazy(() => import('./components/tracking/OrderTracking'));
 const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal'));
@@ -21,18 +21,17 @@ const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 const ProductDetail = lazy(() => import('./components/shop/ProductDetail'));
 const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal'));
 import AdminLoginModal from './components/auth/LoginModal';
-import UserAuthModal from './components/auth/UserAuthModal';
 const UserProfile = lazy(() => import('./components/profile/UserProfile'));
 const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
+const AuthPage = lazy(() => import('./components/auth/AuthPage'));
 
-type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'profile' | 'product-detail' | 'reset-password';
+type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth';
 
 const WHATSAPP_NUMBER = "256793405517";
 
 export default function App() {
-  const { user, isAdmin, isRecovering, loading: authResolving } = useAuth();
+  const { user, isAdmin, isRecovering, loading: authResolving, toggleWishlist: authToggleWishlist, toggleLike: authToggleLike } = useAuth();
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const [view, setView] = useState<View>('shop');
   const prevUserRef = useRef<any>(null);
@@ -119,13 +118,11 @@ export default function App() {
 
   useEffect(() => {
     const handleOpenAdmin = () => setIsAdminModalOpen(true);
-    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    const handleOpenAuth = () => setView('auth');
     window.addEventListener('openAdmin', handleOpenAdmin);
-    window.addEventListener('openLogin', handleOpenAuth);
     window.addEventListener('openAuth', handleOpenAuth);
     return () => {
       window.removeEventListener('openAdmin', handleOpenAdmin);
-      window.removeEventListener('openLogin', handleOpenAuth);
       window.removeEventListener('openAuth', handleOpenAuth);
     };
   }, []);
@@ -144,13 +141,11 @@ export default function App() {
         console.info("[Auth] Role: Admin. Navigating to Command Center.");
         setView('admin');
         setIsAdminModalOpen(false);
-        setIsAuthModalOpen(false);
         sessionStorage.removeItem('auth_redirect_pending');
       } else if (user && (isRedirectPending || view === 'shop' || view === 'marketing' || view === 'product-detail')) {
         console.info("[Auth] Role: Customer. Navigating to User Tracking.");
         setView('tracking');
         setIsAdminModalOpen(false);
-        setIsAuthModalOpen(false);
         sessionStorage.removeItem('auth_redirect_pending');
       }
     }
@@ -160,8 +155,6 @@ export default function App() {
     if (view === 'admin' && !isAdmin && !authResolving) {
       setView('shop');
       setIsAdminModalOpen(true);
-    } else if ((view === 'tracking' || view === 'profile') && !user && !authResolving) {
-      setIsAuthModalOpen(true);
     }
 
     prevUserRef.current = user;
@@ -196,8 +189,11 @@ export default function App() {
 
   const filteredProducts = useMemo(() => products.filter(p => {
     const matchesCategory = category ? p.category === category : true;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery?.toLowerCase() ?? '';
+    const matchesSearch = (
+      (p.name?.toLowerCase() ?? '').includes(q) || 
+      (p.description?.toLowerCase() ?? '').includes(q)
+    );
     return matchesCategory && matchesSearch;
   }), [products, category, searchQuery]);
 
@@ -279,12 +275,31 @@ _Your order is now being processed._
     }
   };
 
-  const toggleWishlist = (productId: string) => {
-    setWishlist(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
+  const handleToggleWishlist = async (productId: string) => {
+    if (user && user.id !== 'legacy-admin') {
+      await authToggleWishlist(productId);
+    } else {
+      setWishlist(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
+    }
   };
 
-  const toggleLike = (productId: string) => {
-    setLikes(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
+  const handleToggleLike = async (productId: string) => {
+    if (user && user.id !== 'legacy-admin') {
+      await authToggleLike(productId);
+    } else {
+      setLikes(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
+    }
+  };
+
+  // Helper to check if item is wishlisted/liked (handles both local and auth state)
+  const isItemWishlisted = (id: string) => {
+    if (user && user.id !== 'legacy-admin') return user.wishlist?.includes(id) || false;
+    return wishlist.includes(id);
+  };
+
+  const isItemLiked = (id: string) => {
+    if (user && user.id !== 'legacy-admin') return user.likes?.includes(id) || false;
+    return likes.includes(id);
   };
 
   return (
@@ -309,7 +324,7 @@ _Your order is now being processed._
             isAdmin={isAdmin}
             currentLanguage={language}
             onLanguageChange={setLanguage}
-            onAuthClick={() => setIsAuthModalOpen(true)}
+            onAuthClick={() => setView('auth')}
             t={t}
           />
 
@@ -356,10 +371,10 @@ _Your order is now being processed._
                                 onAddToCart={addToCart} 
                                 onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
                                 onQuickView={(p) => setQuickViewProduct(p)}
-                                isWishlisted={wishlist.includes(product.id)}
-                                onToggleWishlist={toggleWishlist}
-                                isLiked={likes.includes(product.id)}
-                                onToggleLike={toggleLike}
+                                isWishlisted={isItemWishlisted(product.id)}
+                                onToggleWishlist={handleToggleWishlist}
+                                isLiked={isItemLiked(product.id)}
+                                onToggleLike={handleToggleLike}
                               />
                             ))
                           )}
@@ -369,20 +384,20 @@ _Your order is now being processed._
                   )}
 
                   {view === 'product-detail' && selectedProduct && (
-                    <ProductDetail product={selectedProduct} onBack={() => setView('shop')} onAddToCart={addToCart} />
+                    <ProductDetail 
+                      product={selectedProduct} 
+                      onBack={() => setView('shop')} 
+                      onAddToCart={addToCart}
+                      isWishlisted={isItemWishlisted(selectedProduct.id)}
+                      onToggleWishlist={handleToggleWishlist}
+                      isLiked={isItemLiked(selectedProduct.id)}
+                      onToggleLike={handleToggleLike}
+                    />
                   )}
 
-                  {view === 'tracking' && (
-                    <ProtectedRoute>
-                      <OrderTracking />
-                    </ProtectedRoute>
-                  )}
-                  {view === 'profile' && (
-                    <ProtectedRoute>
-                      <UserProfile />
-                    </ProtectedRoute>
-                  )}
+                  {view === 'tracking' && <OrderTracking />}
                   {view === 'marketing' && <MarketingPortal />}
+                  {view === 'auth' && <AuthPage onSuccess={() => setView(user?.role === 'admin' ? 'admin' : 'shop')} />}
                   {view === 'reset-password' && <div className="max-w-md mx-auto px-4"><ResetPassword onSuccess={() => setView('shop')} /></div>}
                   {view === 'admin' && (
                     <ProtectedRoute requireAdmin>
@@ -396,6 +411,18 @@ _Your order is now being processed._
             {isAdmin && view !== 'admin' && (
               <div className="fixed bottom-32 left-8 z-[90]">
                 <button onClick={() => setView('admin')} className="bg-red-600 p-4 rounded-full text-white shadow-2xl flex items-center gap-3 pr-6"><UserCog size={24} /><span className="text-sm font-black uppercase tracking-widest">Admin Control</span></button>
+              </div>
+            )}
+
+            {(view !== 'shop' || category) && (
+              <div className="fixed bottom-32 right-8 z-[90]">
+                <button 
+                  onClick={() => { setView('shop'); setCategory(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+                  className="bg-blue-600 p-4 rounded-full text-white shadow-2xl flex items-center gap-3 pl-6 pr-6 hover:bg-blue-500 transition-all group"
+                >
+                  <Home size={24} className="group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-black uppercase tracking-widest hidden md:inline">Return to Landing</span>
+                </button>
               </div>
             )}
 
@@ -414,11 +441,6 @@ _Your order is now being processed._
             isOpen={isAdminModalOpen} 
             onClose={() => setIsAdminModalOpen(false)} 
             onSuccess={() => { setView('admin'); setIsAdminModalOpen(false); }}
-          />
-          <UserAuthModal 
-            isOpen={isAuthModalOpen} 
-            onClose={() => setIsAuthModalOpen(false)} 
-            onSuccess={() => { setView('tracking'); setIsAuthModalOpen(false); }}
           />
           <Suspense fallback={null}>
             <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />

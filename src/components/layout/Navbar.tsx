@@ -227,10 +227,10 @@ export function Navbar({
                 )}
               </button>
             </Tooltip>
-            
-            <Tooltip content={user ? "Manage Hardware Profile" : "Access Personal Cloud"}>
+
+            <Tooltip content={user ? "Review Hardware Orders" : "Access Personal Cloud"}>
               <button 
-                onClick={user ? () => window.dispatchEvent(new CustomEvent('changeView', { detail: 'profile' })) : onAuthClick}
+                onClick={user ? () => window.dispatchEvent(new CustomEvent('changeView', { detail: 'tracking' })) : onAuthClick}
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border",
                   user 
@@ -294,6 +294,15 @@ export function Navbar({
       {/* Mobile menu */}
       <div className={cn("md:hidden bg-black/95 border-b border-white/10 overflow-hidden transition-all duration-300 ease-in-out", isOpen ? "max-h-96" : "max-h-0")}>
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <button
+            onClick={() => {
+              onCategorySelect(null);
+              setIsOpen(false);
+            }}
+            className="block w-full text-left px-3 py-2 rounded-md text-base font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 hover:bg-white/10 italic"
+          >
+            Home / Landing
+          </button>
           {navItems.map((item) => (
             <button
               key={item.name}

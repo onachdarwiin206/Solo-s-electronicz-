@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { UserProfile } from './types';
-import { loginWithGoogle, logoutUser } from './auth';
+import { signUp as supaSignUp, login as supaLogin, logoutUser, sendResetPasswordEmail, AuthResponse } from './auth';
 
 type AuthType = {
   user: UserProfile | null;
@@ -9,7 +9,11 @@ type AuthType = {
   isAdmin: boolean;
   isRecovering: boolean;
   clearRecoveryState: () => void;
-  loginWithGoogleAdmin: () => Promise<boolean>;
+  signUp: (email: string, password: string, fullName: string, whatsapp: string) => Promise<AuthResponse>;
+  login: (email: string, password: string) => Promise<AuthResponse>;
+  resetPassword: (email: string) => Promise<AuthResponse>;
+  toggleWishlist: (productId: string) => Promise<boolean>;
+  toggleLike: (productId: string) => Promise<boolean>;
   loginWithPin: (pin: string) => boolean;
   logout: () => Promise<void>;
 };
@@ -20,7 +24,11 @@ const AuthContext = createContext<AuthType>({
   isAdmin: false,
   isRecovering: false,
   clearRecoveryState: () => {},
-  loginWithGoogleAdmin: async () => false,
+  signUp: async () => ({ success: false, error: 'Not implemented' }),
+  login: async () => ({ success: false, error: 'Not implemented' }),
+  resetPassword: async () => ({ success: false, error: 'Not implemented' }),
+  toggleWishlist: async () => false,
+  toggleLike: async () => false,
   loginWithPin: () => false,
   logout: async () => {}
 });
@@ -105,81 +113,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     setLoading(true);
     const { user: supaUser } = session;
-    const ownerEmail = 'onachdarwiin@gmail.com'.toLowerCase();
-    const currentEmail = supaUser.email?.toLowerCase();
     
     try {
-      console.log(`[Auth] 🔍 Verifying Identity for: ${currentEmail}`);
-      
-      // 1. Check explicitly if email is in 'admins' table OR is the owner
-      const isOwner = currentEmail === ownerEmail;
-      let isAdminByTable = false;
-
-      const { data: adminRow, error: adminError } = await supabase
-        .from('admins')
-        .select('email')
-        .eq('email', supaUser.email)
-        .maybeSingle();
-
-      if (adminError) {
-        console.warn("[Auth] Admins table check failed:", adminError.message);
-      } else if (adminRow) {
-        isAdminByTable = true;
-      }
-
-      // 2. Fetch or Create profile
+      // Fetch profile - created by DB trigger for robustness
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', supaUser.id)
-        .maybeSingle();
-
-      const isUserAdmin = (profile?.role === 'admin') || isAdminByTable || isOwner;
-      console.log(`[Auth] 🛡️ Permissions: Admin=${isUserAdmin}, Owner=${isOwner}`);
+        .single();
 
       if (profileError) {
-         console.error("[Auth] Profiles query failed:", profileError);
-      }
-
-      if (profile) {
-        // Sync role if it changed or if owner, but handle RLS failures gracefully
-        if (isUserAdmin && profile.role !== 'admin') {
-          try {
-            await supabase.from('profiles').update({ role: 'admin' }).eq('id', supaUser.id);
-          } catch (e) {
-            console.warn("[Auth] Role update failed (likely RLS), using in-memory elevation.");
-          }
-          setUser({ id: supaUser.id, ...profile, role: 'admin' } as any);
-        } else {
-          setUser({ id: supaUser.id, ...profile } as any);
-        }
-        setIsAdmin(isUserAdmin);
+        console.warn("[Auth] Profile fetch failed:", profileError.message);
+        setUser({ 
+          id: supaUser.id, 
+          email: supaUser.email || '', 
+          name: supaUser.user_metadata?.full_name || 'User',
+          role: 'customer'
+        } as any);
+        setIsAdmin(false);
       } else {
-        // Create profile if missing
-        console.log("[Auth] 🆕 Creating new hardware profile...");
-        const fallbackProfile = {
-          id: supaUser.id,
-          name: supaUser.user_metadata.full_name || supaUser.user_metadata.name || supaUser.email?.split('@')[0] || 'User',
-          email: supaUser.email || '',
-          role: isUserAdmin ? 'admin' : 'customer'
-        };
-        
-        const { error: upsertError } = await supabase.from('profiles').upsert(fallbackProfile);
-        if (upsertError) {
-          console.error("[Auth] 🛑 Profile Initialization Failed:", upsertError.message);
-        }
-        
-        setUser({ ...fallbackProfile } as any);
-        setIsAdmin(isUserAdmin);
+        setUser({ id: supaUser.id, ...profile } as any);
+        setIsAdmin(profile.role === 'admin');
       }
     } catch (err: any) {
-      console.error("[Auth] 💥 Fatal Sync Exception:", err.message);
-      // Fail-safe protection for owner
-      if (currentEmail === ownerEmail) {
-        console.log("[Auth] 👑 Emergency Owner Access Granted.");
-        setIsAdmin(true);
-        setUser({ id: supaUser.id, email: supaUser.email, name: 'Main Owner', role: 'admin' } as any);
-      }
+      console.error("[Auth] Sync Exception:", err.message);
     } finally {
       setLoading(false);
     }
@@ -214,14 +171,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAdmin]);
 
-  const loginWithGoogleAdmin = async () => {
-    setLoading(true);
-    await loginWithGoogle();
-    // We don't return immediately because the popup happens async
-    // AuthProvider's onAuthStateChange will handle the result.
-    return true;
-  };
-
   const loginWithPin = (pin: string) => {
     if (pin === "8585") {
       setIsAdmin(true);
@@ -239,6 +188,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     sessionStorage.removeItem('admin_last_active');
   };
 
+  const toggleWishlist = async (productId: string) => {
+    if (!user) return false;
+    const currentWishlist = user.wishlist || [];
+    const isWishlisted = currentWishlist.includes(productId);
+    const newWishlist = isWishlisted 
+      ? currentWishlist.filter(id => id !== productId)
+      : [...currentWishlist, productId];
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ wishlist: newWishlist })
+        .eq('id', user.id);
+      if (!error) {
+        setUser({ ...user, wishlist: newWishlist });
+        return true;
+      }
+    } catch (e) {
+      console.error("Wishlist toggle error:", e);
+    }
+    return false;
+  };
+
+  const toggleLike = async (productId: string) => {
+    if (!user) return false;
+    const currentLikes = user.likes || [];
+    const isLiked = currentLikes.includes(productId);
+    const newLikes = isLiked 
+      ? currentLikes.filter(id => id !== productId)
+      : [...currentLikes, productId];
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ likes: newLikes })
+        .eq('id', user.id);
+      if (!error) {
+        setUser({ ...user, likes: newLikes });
+        // Also update likes count in products table
+        await supabase.rpc('toggle_product_like', { 
+          p_id: productId, 
+          increment: !isLiked 
+        });
+        return true;
+      }
+    } catch (e) {
+      console.error("Likes toggle error:", e);
+    }
+    return false;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -247,7 +247,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAdmin,
         isRecovering,
         clearRecoveryState: () => setIsRecovering(false),
-        loginWithGoogleAdmin,
+        signUp: supaSignUp,
+        login: supaLogin,
+        resetPassword: sendResetPasswordEmail,
+        toggleWishlist,
+        toggleLike,
         loginWithPin,
         logout
       }}

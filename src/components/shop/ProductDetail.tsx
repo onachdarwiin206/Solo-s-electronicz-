@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, ShoppingCart, MessageCircle, BadgeCheck, Star, 
-  Shield, Zap, Truck, ChevronLeft, ChevronRight, Play, Maximize2
+  Shield, Zap, Truck, ChevronLeft, ChevronRight, Play, Maximize2,
+  Bookmark, Heart
 } from 'lucide-react';
 import { Product } from '../../types';
 import { ReviewSystem } from '../reviews/ReviewSystem';
@@ -13,11 +14,23 @@ interface ProductDetailProps {
   product: Product;
   onBack: () => void;
   onAddToCart: (product: Product) => void;
+  isWishlisted?: boolean;
+  onToggleWishlist?: (id: string) => void;
+  isLiked?: boolean;
+  onToggleLike?: (id: string) => void;
 }
 
 const WHATSAPP_NUMBER = "256793405517";
 
-export default function ProductDetail({ product, onBack, onAddToCart }: ProductDetailProps) {
+export default function ProductDetail({ 
+  product, 
+  onBack, 
+  onAddToCart,
+  isWishlisted = false,
+  onToggleWishlist,
+  isLiked = false,
+  onToggleLike
+}: ProductDetailProps) {
   const [activeMedia, setActiveMedia] = useState(0);
 
   const allMedia = [
@@ -145,7 +158,7 @@ export default function ProductDetail({ product, onBack, onAddToCart }: ProductD
         {/* Product Details Section */}
         <div className="flex flex-col">
           <div className="mb-10">
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex flex-wrap items-center gap-4 mb-6">
               <span className="px-4 py-1.5 bg-blue-600/20 border border-blue-500/30 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
                 {product.category}
               </span>
@@ -158,6 +171,28 @@ export default function ProductDetail({ product, onBack, onAddToCart }: ProductD
                   Depleted
                 </span>
               )}
+
+              <div className="flex gap-2 ml-auto">
+                <button 
+                  onClick={() => onToggleWishlist?.(product.id)}
+                  className={cn(
+                    "p-3 rounded-2xl transition-all border",
+                    isWishlisted ? "bg-blue-600 border-blue-500 text-white" : "bg-white/5 border-white/10 text-gray-500 hover:text-white"
+                  )}
+                >
+                  <Bookmark size={18} fill={isWishlisted ? "currentColor" : "none"} />
+                </button>
+                <button 
+                  onClick={() => onToggleLike?.(product.id)}
+                  className={cn(
+                    "p-3 rounded-2xl transition-all border flex items-center gap-2",
+                    isLiked ? "bg-pink-600 border-pink-500 text-white" : "bg-white/5 border-white/10 text-gray-500 hover:text-white"
+                  )}
+                >
+                  <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+                  {product.likes_count !== undefined && <span className="text-[10px] font-black">{product.likes_count}</span>}
+                </button>
+              </div>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-4 uppercase italic leading-[0.9]">
