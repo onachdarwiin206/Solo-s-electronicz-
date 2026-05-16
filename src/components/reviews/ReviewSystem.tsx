@@ -28,11 +28,31 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('reviews')
         .select('*')
-        .eq('product_id', product.id)
-        .order('created_at', { ascending: false });
+        .eq('product_id', product.id);
+      
+      // Only show approved reviews to regular users
+      if (!isAdmin) {
+        query = query.eq('status', 'approved');
+      }
+
+      let { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        // Fallback if status column is missing
+        if (error.message?.includes('status') && !isAdmin) {
+          console.warn("[Supabase] Fallback: reviews.status column missing, showing all reviews.");
+          const fallback = await supabase
+            .from('reviews')
+            .select('*')
+            .eq('product_id', product.id)
+            .order('created_at', { ascending: false });
+          data = fallback.data;
+          error = fallback.error;
+        }
+      }
 
       if (error) {
         if (error.code === '42P01' || error.message?.includes('not found')) {

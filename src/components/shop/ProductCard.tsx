@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye, Star, MessageCircle, Info } from 'lucide-react';
+import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye, Star, MessageCircle, Info, Zap } from 'lucide-react';
 import { Product } from '../../types';
 import { cn } from '../../lib/utils';
 import { Tooltip } from '../ui/Tooltip';
@@ -15,7 +15,6 @@ interface ProductCardProps {
   onToggleLike?: (id: string) => void;
   onClick?: () => void;
   onQuickView?: (product: Product) => void;
-  key?: string | number;
 }
 
 const WHATSAPP_NUMBER = "256793405517";
@@ -70,15 +69,12 @@ export function ProductCard({
   };
 
   return (
-    <div className="relative">
+    <div className="relative isolate">
       <motion.div
-        layout
         ref={cardRef}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -8 }}
+        whileHover={{ y: -8, transition: { duration: 0.2 } }}
         onClick={onClick}
-        className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 shadow-2xl cursor-pointer"
+        className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/50 transition-colors shadow-2xl cursor-pointer"
       >
         <div className="aspect-square overflow-hidden relative">
           {product.video_url ? (
@@ -164,8 +160,22 @@ export function ProductCard({
             )}
           </div>
 
-          <div className="absolute top-4 left-4 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase text-white border border-blue-400/30">
-            {product.category}
+          <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
+            <div className="bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase text-white border border-blue-400/30">
+              {product.category}
+            </div>
+            {product.price > 1000000 && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/80 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-black border border-yellow-400/30">
+                <BadgeCheck size={12} fill="currentColor" />
+                Official Store
+              </div>
+            )}
+            {product.price < 500000 && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-orange-500/80 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-white border border-orange-400/30">
+                <Zap size={12} fill="currentColor" />
+                Free Delivery
+              </div>
+            )}
           </div>
         </div>
 

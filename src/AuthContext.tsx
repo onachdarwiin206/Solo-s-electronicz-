@@ -54,15 +54,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let isInitialized = false;
 
-    // First, check the current session immediately
+    // First, check the current user immediately for maximum security
     const initAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await handleSessionChange(session);
+        // getUser() is more secure than getSession() as it verifies the token with Supabase
+        const { data: { user: supaUser }, error } = await supabase.auth.getUser();
+        
+        if (supaUser) {
+          // If user exists, fetch session to get full session object if needed
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await handleSessionChange(session);
+          } else {
+            // Fallback if session is missing but user exists (edge case)
+            setLoading(false);
+          }
         } else {
           setLoading(false);
           setIsAdmin(false);
+          setUser(null);
         }
       } catch (e) {
         console.error("[Auth] Init Error:", e);

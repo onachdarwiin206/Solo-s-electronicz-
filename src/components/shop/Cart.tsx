@@ -25,12 +25,19 @@ const DISTRICTS = [
   { name: 'Other', fee: 15000 },
 ];
 
+const CARRIERS = [
+  { id: 'mtn', name: 'MTN MoMo', color: 'bg-yellow-400 text-black border-yellow-500' },
+  { id: 'airtel', name: 'Airtel Money', color: 'bg-red-600 text-white border-red-700' },
+];
+
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, t }: CartProps) {
   const [district, setDistrict] = useState(DISTRICTS[0].name);
   const [deliveryFee, setDeliveryFee] = useState(DISTRICTS[0].fee);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [carrier, setCarrier] = useState(CARRIERS[0].id);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
@@ -66,6 +73,20 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleMomoSubmit = async () => {
+    if (!validate()) return;
+    setIsProcessing(true);
+    // Simulate MoMo prompt
+    setTimeout(async () => {
+      const orderId = await onCheckout('mobile_money', district, deliveryFee, customerPhone, customerAddress, customerName);
+      if (orderId) {
+        setLastOrderId(orderId);
+        setIsSuccess(true);
+      }
+      setIsProcessing(false);
+    }, 2000);
   };
 
   const handleWhatsAppCheckout = async () => {
@@ -126,6 +147,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
             <div className="flex-1 overflow-y-auto p-6 no-scrollbar space-y-8">
               {items.length > 0 ? (
                 <>
+                  {/* Hardware Selection */}
                   <div className="space-y-4">
                     <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Hardware Selection</h3>
                     <div className="space-y-4">
@@ -176,8 +198,45 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     </div>
                   </div>
 
+                  {/* Payment Protocol */}
                   <div className="space-y-4">
-                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Zone & Logistics</h3>
+                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Payment Protocol</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                       <button onClick={() => setPaymentMethod('cod')} className={cn("p-4 rounded-2xl border text-left transition-all", paymentMethod === 'cod' ? "bg-blue-600/20 border-blue-500" : "bg-white/5 border-white/10")}>
+                          <p className="text-[10px] font-bold text-white uppercase">Cash on Delivery</p>
+                          <p className="text-[8px] text-gray-500 mt-1 uppercase">Pay at your door</p>
+                       </button>
+                       <button onClick={() => setPaymentMethod('mobile_money')} className={cn("p-4 rounded-2xl border text-left transition-all", paymentMethod === 'mobile_money' ? "bg-yellow-500/20 border-yellow-500" : "bg-white/5 border-white/10")}>
+                          <p className="text-[10px] font-bold text-white uppercase">Mobile Money</p>
+                          <p className="text-[8px] text-yellow-500 mt-1 uppercase tracking-widest font-black">MTN / Airtel</p>
+                       </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {paymentMethod === 'mobile_money' && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                           <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-4">
+                              <div className="flex gap-2">
+                                 {CARRIERS.map(c => (
+                                   <button key={c.id} onClick={() => setCarrier(c.id)} className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase transition-all", carrier === c.id ? c.color : "bg-black/40 border-white/10 text-gray-500")}>
+                                      {c.name}
+                                   </button>
+                                 ))}
+                              </div>
+                              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center">
+                                 <p className="text-[9px] text-blue-400 font-bold uppercase leading-relaxed">
+                                    You will receive a numeric prompt on your phone <br/> to authorize <span className="text-white">UGX {grandTotal.toLocaleString()}</span>
+                                 </p>
+                              </div>
+                           </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Logistics */}
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Logistics & Zone</h3>
                     <div className="grid grid-cols-2 gap-2">
                       {DISTRICTS.map((d) => (
                         <button key={d.name} onClick={() => setDistrict(d.name)} className={cn("p-4 rounded-2xl border text-left transition-all", district === d.name ? "bg-blue-600/20 border-blue-500" : "bg-white/5 border-white/10")}>
@@ -186,6 +245,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                         </button>
                       ))}
                     </div>
+                    
                     <div className="space-y-3 pt-4">
                       <div className="relative group">
                          <input type="text" placeholder="Full Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" />
@@ -216,18 +276,33 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 </div>
                 
                 <div className="flex flex-col gap-3">
-                  <button 
-                    onClick={() => handleCheckout('cod')}
-                    disabled={isProcessing}
-                    className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-900/40 active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs"
-                  >
-                    {isProcessing ? <Loader2 className="animate-spin" size={20} /> : (
-                      <>
-                        <ShieldCheck size={20} />
-                        Sync Direct Order
-                      </>
-                    )}
-                  </button>
+                  {paymentMethod === 'mobile_money' ? (
+                    <button 
+                      onClick={handleMomoSubmit}
+                      disabled={isProcessing}
+                      className="w-full py-5 bg-yellow-500 hover:bg-yellow-400 text-black font-black rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-yellow-900/40 active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs"
+                    >
+                      {isProcessing ? <Loader2 className="animate-spin text-black" size={20} /> : (
+                        <>
+                          <ShieldCheck size={20} strokeWidth={3} />
+                          Authorize MoMo Payment
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => handleCheckout('cod')}
+                      disabled={isProcessing}
+                      className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-900/40 active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs"
+                    >
+                      {isProcessing ? <Loader2 className="animate-spin" size={20} /> : (
+                        <>
+                          <ShieldCheck size={20} />
+                          Sync Direct Order
+                        </>
+                      )}
+                    </button>
+                  )}
 
                   <button 
                     onClick={handleWhatsAppCheckout}

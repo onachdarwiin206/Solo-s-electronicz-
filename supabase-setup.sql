@@ -7,6 +7,7 @@ create table if not exists public.profiles (
   role text default 'customer' check (role in ('customer', 'admin')),
   avatar_url text,
   wishlist text[] default '{}',
+  likes text[] default '{}',
   orders_count int default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -40,6 +41,7 @@ create table if not exists public.reviews (
   user_name text,
   rating int check (rating >= 1 and rating <= 5),
   comment text,
+  status text default 'approved',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -317,6 +319,16 @@ create index if not exists idx_orders_user_id on public.orders(user_id);
 create index if not exists idx_reviews_product_id on public.reviews(product_id);
 create index if not exists idx_carts_user_id on public.carts(user_id);
 create index if not exists idx_wishlists_user_id on public.wishlists(user_id);
+
+--- RPC FUNCTIONS ---
+create or replace function public.toggle_product_like(p_id text, increment boolean)
+returns void as $$
+begin
+  update public.products
+  set likes_count = case when increment then likes_count + 1 else likes_count - 1 end
+  where id = p_id;
+end;
+$$ language plpgsql security definer;
 
 --- STORAGE BUCKET POLICIES (Run if needed) ---
 -- These usually need to be run in the SQL editor since buckets are system-level

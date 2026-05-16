@@ -29,11 +29,23 @@ export default function UserProfile() {
         if (ordersData) setOrders(ordersData as Order[]);
 
         // Fetch user profile for wishlist and likes arrays
-        const { data: profile } = await supabase
+        const { data: profile, error: pErr } = await supabase
           .from('profiles')
           .select('wishlist, likes')
           .eq('id', user.id)
           .single();
+
+        if (pErr && pErr.message?.includes('likes')) {
+          // Fallback if likes column missing
+          const { data: fallback } = await supabase
+            .from('profiles')
+            .select('wishlist')
+            .eq('id', user.id)
+            .single();
+          if (fallback) {
+            (profile as any) = { ...fallback, likes: [] };
+          }
+        }
 
         if (profile) {
           if (profile.wishlist?.length > 0) {

@@ -6,6 +6,8 @@ import { BottomNav } from './components/layout/BottomNav';
 import { Hero } from './components/home/Hero';
 import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
+import { CategoryBar } from './components/shop/CategoryBar';
+import { FlashSales } from './components/shop/FlashSales';
 import { Footer } from './components/layout/Footer';
 import { INITIAL_PRODUCTS } from './constants';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -340,10 +342,24 @@ _Your order is now being processed._
                 <Suspense fallback={<div className="flex items-center justify-center py-40"><Loader2 className="animate-spin text-blue-500" size={48} /></div>}>
                   {view === 'shop' && (
                     <>
-                      {!category && (
+                      {!category && !searchQuery && (
                         <Hero onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
                       )}
+                      
+                      <div className="sticky top-16 z-40">
+                         <CategoryBar onCategorySelect={(cat) => setCategory(cat)} selectedCategory={category} />
+                      </div>
+
                       <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        {!category && !searchQuery && products.length > 0 && (
+                          <FlashSales 
+                            products={products} 
+                            onAddToCart={addToCart} 
+                            onProductClick={(p) => { setSelectedProduct(p); setView('product-detail'); }} 
+                            onQuickView={(p) => setQuickViewProduct(p)}
+                          />
+                        )}
+
                         <div className="flex justify-between items-end mb-12">
                            <h2 className="text-4xl font-black tracking-tighter uppercase italic">{category || 'Hardware Feed'}</h2>
                            <div className="flex items-center gap-4">
@@ -351,34 +367,53 @@ _Your order is now being processed._
                               <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filteredProducts.length} Results</span>
                            </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                          {loadingProducts ? (
-                            [...Array(6)].map((_, i) => (
-                              <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
-                                 <div className="aspect-square bg-white/5" />
-                                 <div className="p-6 space-y-4">
-                                    <div className="h-6 bg-white/5 rounded-full w-3/4" />
-                                    <div className="h-4 bg-white/5 rounded-full w-1/4" />
-                                    <div className="h-12 bg-white/5 rounded-2xl w-full" />
-                                 </div>
+
+                        {filteredProducts.length === 0 && !loadingProducts ? (
+                          <div className="py-40 text-center bg-white/5 border border-white/10 rounded-[3rem]">
+                            <div className="max-w-md mx-auto space-y-6">
+                              <ShieldCheck className="mx-auto text-blue-500 opacity-20" size={80} />
+                              <div className="space-y-2">
+                                <h3 className="text-2xl font-black uppercase italic tracking-tighter">No Units Detected</h3>
+                                <p className="text-gray-500 text-sm font-medium">The hardware pool is empty for this query. Try a different sector or search term.</p>
                               </div>
-                            ))
-                          ) : (
-                            filteredProducts.map(product => (
-                              <ProductCard 
-                                key={product.id} 
-                                product={product} 
-                                onAddToCart={addToCart} 
-                                onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
-                                onQuickView={(p) => setQuickViewProduct(p)}
-                                isWishlisted={isItemWishlisted(product.id)}
-                                onToggleWishlist={handleToggleWishlist}
-                                isLiked={isItemLiked(product.id)}
-                                onToggleLike={handleToggleLike}
-                              />
-                            ))
-                          )}
-                        </div>
+                              <button 
+                                onClick={() => { setCategory(null); setSearchQuery(''); }}
+                                className="px-8 py-4 bg-blue-600 text-white font-black text-[12px] uppercase italic rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
+                              >
+                                Reset Sector Feed
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {loadingProducts ? (
+                              [...Array(6)].map((_, i) => (
+                                <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
+                                   <div className="aspect-square bg-white/5" />
+                                   <div className="p-6 space-y-4">
+                                      <div className="h-6 bg-white/5 rounded-full w-3/4" />
+                                      <div className="h-4 bg-white/5 rounded-full w-1/4" />
+                                      <div className="h-12 bg-white/5 rounded-2xl w-full" />
+                                   </div>
+                                </div>
+                              ))
+                            ) : (
+                              filteredProducts.map(product => (
+                                <ProductCard 
+                                  key={product.id} 
+                                  product={product} 
+                                  onAddToCart={addToCart} 
+                                  onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
+                                  onQuickView={(p) => setQuickViewProduct(p)}
+                                  isWishlisted={isItemWishlisted(product.id)}
+                                  onToggleWishlist={handleToggleWishlist}
+                                  isLiked={isItemLiked(product.id)}
+                                  onToggleLike={handleToggleLike}
+                                />
+                              ))
+                            )}
+                          </div>
+                        )}
                       </section>
                     </>
                   )}
