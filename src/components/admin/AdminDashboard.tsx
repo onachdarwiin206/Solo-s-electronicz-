@@ -523,7 +523,7 @@ _Thank you for choosing Solo Electronics!_
   return (
     <div className="max-w-7xl mx-auto py-20 px-4 text-white">
       <button 
-        onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))}
+        onClick={() => window.history.back()}
         className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest group"
       >
         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />

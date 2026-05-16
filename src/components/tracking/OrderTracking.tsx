@@ -61,7 +61,7 @@ export default function OrderTracking() {
 
   return (
     <div className="max-w-3xl mx-auto py-20 px-4">
-      <button onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }))} className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest group">
+      <button onClick={() => window.history.back()} className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest group">
         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
         Return to Shop
       </button>

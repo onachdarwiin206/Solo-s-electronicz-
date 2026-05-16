@@ -169,6 +169,57 @@ export default function App() {
     }
   }, [isRecovering, view]);
 
+  // Browser Navigation & History API Management
+  useEffect(() => {
+    // Initialize history state on first load if not present
+    if (!window.history.state) {
+      window.history.replaceState({ view: 'shop' }, '', '');
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      let handled = false;
+
+      // 1. Handle Overlays (Close them if open)
+      if (cartOpen) { setCartOpen(false); handled = true; }
+      if (quickViewProduct) { setQuickViewProduct(null); handled = true; }
+      if (showTerms) { setShowTerms(false); handled = true; }
+      if (isAdminModalOpen) { setIsAdminModalOpen(false); handled = true; }
+      
+      // 2. Handle Filtered Categories within Shop
+      if (category && view === 'shop') {
+        setCategory(null);
+        handled = true;
+      }
+
+      // 3. Update View State if provided in history
+      if (event.state?.view && event.state.view !== view) {
+        setView(event.state.view);
+        handled = true;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [cartOpen, quickViewProduct, showTerms, isAdminModalOpen, category, view]);
+
+  // Sync View state forward to History
+  useEffect(() => {
+    const currentState = window.history.state;
+    if (currentState && currentState.view !== view && !currentState.overlay) {
+      window.history.pushState({ view }, '', '');
+    }
+  }, [view]);
+
+  // Push "Overlay" state to History when modals open to allow "Back" to close them
+  useEffect(() => {
+    const isAnyOverlayOpen = cartOpen || !!quickViewProduct || showTerms || isAdminModalOpen || (!!category && view === 'shop');
+    const currentState = window.history.state;
+    
+    if (isAnyOverlayOpen && !currentState?.overlay) {
+      window.history.pushState({ view, overlay: true }, '', '');
+    }
+  }, [cartOpen, quickViewProduct, showTerms, isAdminModalOpen, category, view]);
+
   useEffect(() => {
     const handleNav = (e: any) => { if (e.detail) setView(e.detail); };
     window.addEventListener('changeView', handleNav);
@@ -351,6 +402,7 @@ _Your order is now being processed._
                       </div>
 
                       <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        {/* Deactivated for now: 
                         {!category && !searchQuery && products.length > 0 && (
                           <FlashSales 
                             products={products} 
@@ -359,6 +411,7 @@ _Your order is now being processed._
                             onQuickView={(p) => setQuickViewProduct(p)}
                           />
                         )}
+                        */}
 
                         <div className="flex justify-between items-end mb-12">
                            <h2 className="text-4xl font-black tracking-tighter uppercase italic">{category || 'Hardware Feed'}</h2>
@@ -421,7 +474,7 @@ _Your order is now being processed._
                   {view === 'product-detail' && selectedProduct && (
                     <ProductDetail 
                       product={selectedProduct} 
-                      onBack={() => setView('shop')} 
+                      onBack={() => window.history.back()} 
                       onAddToCart={addToCart}
                       isWishlisted={isItemWishlisted(selectedProduct.id)}
                       onToggleWishlist={handleToggleWishlist}
