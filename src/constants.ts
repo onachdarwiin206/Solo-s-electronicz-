@@ -28,7 +28,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 2200000,
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1546435770-a3e426da471b?q=75&w=800&auto=format&fit=crop',
-    stock: 100
+    stock: 100,
+    featured: true
   },
   {
     id: 'p4',
@@ -37,7 +38,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 5400000,
     category: 'Computers',
     image: 'https://images.unsplash.com/photo-1544006659-f0b21884cb1d?q=75&w=800&auto=format&fit=crop',
-    stock: 30
+    stock: 30,
+    featured: true
   },
   {
     id: 'p5',

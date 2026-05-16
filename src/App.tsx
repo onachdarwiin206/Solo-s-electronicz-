@@ -346,7 +346,7 @@ _Your order is now being processed._
                         <Hero onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
                       )}
                       
-                      <div className="sticky top-16 z-40">
+                      <div className="z-40">
                          <CategoryBar onCategorySelect={(cat) => setCategory(cat)} selectedCategory={category} />
                       </div>
 
