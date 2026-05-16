@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye, Star, MessageCircle, Info, Zap } from 'lucide-react';
+import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye, Star, MessageCircle, Info, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../../types';
 import { cn } from '../../lib/utils';
 import { Tooltip } from '../ui/Tooltip';
@@ -31,7 +31,20 @@ export function ProductCard({
 }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [isFlying, setIsFlying] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const images = product.images && product.images.length > 0 ? product.images : [product.image];
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   const getStockStatus = () => {
     const stock = product.stock || 0;
@@ -76,7 +89,7 @@ export function ProductCard({
         onClick={onClick}
         className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/50 transition-colors shadow-2xl cursor-pointer"
       >
-        <div className="aspect-square overflow-hidden relative">
+        <div className="aspect-square overflow-hidden relative group/image">
           {product.video_url ? (
             <video
               src={product.video_url}
@@ -87,11 +100,53 @@ export function ProductCard({
               playsInline
             />
           ) : (
-            <OptimizedImage
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentImageIndex}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-full h-full"
+              >
+                <OptimizedImage
+                  src={images[currentImageIndex]}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+              </motion.div>
+            </AnimatePresence>
+          )}
+
+          {/* Carousel Controls */}
+          {images.length > 1 && !product.video_url && (
+            <>
+              <button 
+                onClick={handlePrevImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full opacity-0 group-hover/image:opacity-100 transition-opacity z-10"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button 
+                onClick={handleNextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full opacity-0 group-hover/image:opacity-100 transition-opacity z-10"
+              >
+                <ChevronRight size={16} />
+              </button>
+              
+              {/* Pagination Dots */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                {images.map((_, idx) => (
+                  <div 
+                    key={idx}
+                    className={cn(
+                      "w-1 h-1 rounded-full transition-all",
+                      idx === currentImageIndex ? "bg-blue-500 w-3" : "bg-white/40"
+                    )}
+                  />
+                ))}
+              </div>
+            </>
           )}
           
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />

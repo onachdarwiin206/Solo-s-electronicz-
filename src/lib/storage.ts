@@ -39,10 +39,15 @@ export async function uploadFile(
 }
 
 export function getPublicUrl(bucket: string, path: string): string | null {
-  if (!path || path.trim() === '') return null;
+  if (typeof path !== 'string' || !path || path.trim() === '') return null;
   const cleanPath = path.replace(/^\/+/, '');
-  const { data } = supabase.storage.from(bucket).getPublicUrl(cleanPath);
-  return data.publicUrl;
+  try {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(cleanPath);
+    return data.publicUrl;
+  } catch (e) {
+    console.error("[Storage] Error getting public URL:", e);
+    return null;
+  }
 }
 
 export async function deleteFile(bucket: string, path: string): Promise<boolean> {

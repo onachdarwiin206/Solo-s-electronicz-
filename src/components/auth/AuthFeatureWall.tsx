@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Cpu, Shield, Zap, Globe, Smartphone, Headphones, Watch, Camera, HardDrive, Wifi } from 'lucide-react';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 const FEATURES = [
   { icon: Cpu, text: 'Custom Silicon' },
@@ -57,7 +58,7 @@ export function AuthFeatureWall() {
              <div className="flex -space-x-3 mb-4">
                 {[1,2,3,4].map(n => (
                   <div key={n} className="w-8 h-8 rounded-full border-2 border-neutral-900 bg-neutral-800 flex items-center justify-center overflow-hidden">
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${n}`} alt="User" />
+                    <OptimizedImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${n}`} alt="User" />
                   </div>
                 ))}
                 <div className="w-8 h-8 rounded-full border-2 border-neutral-900 bg-blue-600 flex items-center justify-center text-[8px] font-black">

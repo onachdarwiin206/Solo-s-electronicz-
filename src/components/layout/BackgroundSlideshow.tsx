@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 const BACKGROUNDS = [
   'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=60&w=1200&auto=format&fit=crop', // Deep Blue
@@ -30,11 +31,10 @@ export function BackgroundSlideshow() {
           className="absolute inset-0"
         >
           <div className="absolute inset-0 bg-black/60 z-10" />
-          <img 
+          <OptimizedImage 
             src={BACKGROUNDS[index]} 
             alt="Background" 
-            className="w-full h-full object-cover"
-            {...({ "fetchPriority": index === 0 ? "high" : "low" } as any)}
+            className="w-full h-full"
           />
         </motion.div>
       </AnimatePresence>

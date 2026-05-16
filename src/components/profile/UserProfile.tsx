@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { Order, Product } from '../../types';
 import { format } from 'date-fns';
 import { cn } from '../../lib/utils';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 export default function UserProfile() {
   const { user, logout } = useAuth();
@@ -99,7 +100,7 @@ export default function UserProfile() {
             onClick={() => window.dispatchEvent(new CustomEvent('openProduct', { detail: p }))}
           >
             <div className="aspect-[4/5] rounded-[2rem] overflow-hidden bg-black/20 border border-white/5 mb-4 relative">
-              <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              <OptimizedImage src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
             </div>
             <h4 className="text-xs font-black uppercase tracking-widest text-white mb-1">{p.name}</h4>
             <p className="text-[10px] font-bold text-blue-500 font-mono">UGX {p.price.toLocaleString()}</p>
@@ -250,7 +251,7 @@ export default function UserProfile() {
                       <div className="grid grid-cols-4 md:grid-cols-6 gap-4">
                         {order.items.map((item, idx) => (
                           <div key={idx} className="aspect-square bg-black/40 rounded-xl overflow-hidden border border-white/5 group-hover:border-white/10 transition-colors">
-                            <img 
+                            <OptimizedImage 
                               src={item.image} 
                               alt={item.name} 
                               className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" 
