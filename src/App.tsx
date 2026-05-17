@@ -9,7 +9,7 @@ import { Cart } from './components/shop/Cart';
 import { CategoryBar } from './components/shop/CategoryBar';
 import { FlashSales } from './components/shop/FlashSales';
 import { Footer } from './components/layout/Footer';
-import { INITIAL_PRODUCTS } from './constants';
+import { INITIAL_PRODUCTS, PRODUCT_CATEGORIES } from './constants';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Product, CartItem, PaymentMethod } from './types';
 import { useAuth } from './AuthContext';
@@ -250,6 +250,16 @@ export default function App() {
     return matchesCategory && matchesSearch;
   }), [products, category, searchQuery]);
 
+  const groupedMainProducts = useMemo(() => {
+    if (category || searchQuery) return null;
+    return products.reduce((acc, product) => {
+      const cat = product.category || 'Uncategorized';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(product);
+      return acc;
+    }, {} as Record<string, Product[]>);
+  }, [products, category, searchQuery]);
+
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
@@ -422,19 +432,97 @@ _Your order is now being processed._
                         </div>
 
                         {filteredProducts.length === 0 && !loadingProducts ? (
-                          <div className="py-40 text-center bg-white/5 border border-white/10 rounded-[3rem]">
-                            <div className="max-w-md mx-auto space-y-6">
-                              <ShieldCheck className="mx-auto text-blue-500 opacity-20" size={80} />
-                              <div className="space-y-2">
-                                <h3 className="text-2xl font-black uppercase italic tracking-tighter">No Units Detected</h3>
-                                <p className="text-gray-500 text-sm font-medium">The hardware pool is empty for this query. Try a different sector or search term.</p>
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="py-40 text-center bg-white/5 border border-white/10 rounded-[4rem] relative overflow-hidden backdrop-blur-xl"
+                          >
+                             <div className="absolute inset-0 bg-blue-600/5 animate-pulse" />
+                             <div className="relative z-10 max-w-md mx-auto space-y-8 px-6">
+                              <div className="w-24 h-24 bg-blue-600/10 rounded-full flex items-center justify-center mx-auto border border-blue-500/20">
+                                <ShieldCheck className="text-blue-500" size={48} />
+                              </div>
+                              <div className="space-y-3">
+                                <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">Sector Offline</h3>
+                                <p className="text-gray-400 text-sm font-medium leading-relaxed">
+                                  The hardware pool is currently empty for this specific sector. Our sourcing engineers are working on replenishment.
+                                </p>
                               </div>
                               <button 
                                 onClick={() => { setCategory(null); setSearchQuery(''); }}
-                                className="px-8 py-4 bg-blue-600 text-white font-black text-[12px] uppercase italic rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
+                                className="w-full py-5 bg-blue-600 text-white font-black text-sm uppercase italic rounded-3xl shadow-[0_15px_40px_rgba(37,99,235,0.4)] active:scale-95 transition-all hover:bg-blue-500"
                               >
-                                Reset Sector Feed
+                                Reboot Hardware Feed
                               </button>
+                            </div>
+                          </motion.div>
+                        ) : groupedMainProducts && !loadingProducts ? (
+                          <div className="space-y-32">
+                            {Object.entries(groupedMainProducts)
+                              .sort(([a], [b]) => {
+                                const idxA = PRODUCT_CATEGORIES.indexOf(a as any);
+                                const idxB = PRODUCT_CATEGORIES.indexOf(b as any);
+                                if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+                                if (idxA === -1) return 1;
+                                if (idxB === -1) return -1;
+                                return idxA - idxB;
+                              })
+                              .map(([cat, catProducts]) => (
+                              <motion.section 
+                                key={cat} 
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-100px" }}
+                                className="space-y-12"
+                              >
+                                <div className="flex items-center gap-6 group">
+                                  <div className="flex flex-col">
+                                    <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white group-hover:text-blue-500 transition-colors">{cat}</h3>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{catProducts.length} Units Active</span>
+                                    </div>
+                                  </div>
+                                  <div className="h-px flex-1 bg-gradient-to-r from-blue-500/30 to-transparent" />
+                                  <button 
+                                    onClick={() => setCategory(cat)}
+                                    className="px-6 py-3 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-white hover:bg-blue-600 transition-all shadow-xl"
+                                  >
+                                    View Full Sector →
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+                                  {catProducts.slice(0, 3).map(product => (
+                                    <ProductCard 
+                                      key={product.id} 
+                                      product={product} 
+                                      onAddToCart={addToCart} 
+                                      onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
+                                      onQuickView={(p) => setQuickViewProduct(p)}
+                                      isWishlisted={isItemWishlisted(product.id)}
+                                      onToggleWishlist={handleToggleWishlist}
+                                      isLiked={isItemLiked(product.id)}
+                                      onToggleLike={handleToggleLike}
+                                    />
+                                  ))}
+                                </div>
+                              </motion.section>
+                            ))}
+                            
+                            {/* Category Quick Badges footer */}
+                            <div className="py-20 border-t border-white/5">
+                               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 text-center mb-10">Direct Sector Access</p>
+                               <div className="flex flex-wrap justify-center gap-4">
+                                  {PRODUCT_CATEGORIES.map(cat => (
+                                    <button
+                                      key={cat}
+                                      onClick={() => setCategory(cat)}
+                                      className="px-8 py-4 bg-white/5 border border-white/10 rounded-3xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:border-blue-500/50 hover:bg-white/10 transition-all"
+                                    >
+                                      {cat}
+                                    </button>
+                                  ))}
+                               </div>
                             </div>
                           </div>
                         ) : (

@@ -5,7 +5,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  category: string;
+  category: Category | string;
   image: string;
   images?: string[];
   video_url?: string;
@@ -22,7 +22,17 @@ export interface Product {
   client_updated_at?: number;
 }
 
-export type Category = 'Phones' | 'Computers' | 'Electronics' | 'Accessories';
+export type Category = 
+  | 'Phones & Tablets'
+  | 'Computers & Laptops'
+  | 'Gaming & Consoles'
+  | 'TVs & Audio'
+  | 'Accessories'
+  | 'Networking'
+  | 'Home Appliances'
+  | 'Smart Devices'
+  | 'Cameras & Security'
+  | 'Deals & Offers';
 
 export interface UserProfile {
   id: string;

@@ -74,12 +74,22 @@ export function OptimizedImage({ src, alt, className, fallback, bucket = 'produc
     setResolvedUrl(fallback || DEFAULT_PLACEHOLDER);
   };
 
-  return (
-    <div className={cn("relative overflow-hidden group/optimg", className)}>
-      {error && !resolvedUrl ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/5 text-gray-700">
-          <ImageOff size={24} />
+  const SoloFallback = () => (
+    <div className="absolute inset-0 bg-neutral-900 flex flex-col items-center justify-center overflow-hidden border border-white/5">
+      <div className="w-full relative overflow-hidden whitespace-nowrap py-2 bg-blue-600/10 border-y border-blue-500/20">
+        <div className="animate-marquee inline-block">
+          <span className="text-[10px] font-black uppercase tracking-tighter text-blue-500 px-4">Solo's Electronics — Global Tech Hub — Solo's Electronics — Premium Hardware — </span>
+          <span className="text-[10px] font-black uppercase tracking-tighter text-blue-500 px-4">Solo's Electronics — Global Tech Hub — Solo's Electronics — Premium Hardware — </span>
         </div>
+      </div>
+      <div className="mt-2 text-[8px] font-black uppercase text-gray-600 tracking-widest opacity-50">Visual Pending</div>
+    </div>
+  );
+
+  return (
+    <div className={cn("relative overflow-hidden group/optimg bg-neutral-900", className)}>
+      {((error && !resolvedUrl) || (!loading && !resolvedUrl)) ? (
+        <SoloFallback />
       ) : (
         <img 
           src={resolvedUrl || DEFAULT_PLACEHOLDER} 

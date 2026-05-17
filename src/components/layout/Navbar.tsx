@@ -70,9 +70,11 @@ export function Navbar({
 
   const navItems = [
     { name: 'All Devices', category: null },
-    { name: 'Phones', category: 'Phones' },
-    { name: 'Computers', category: 'Computers' },
-    { name: 'Electronics', category: 'Electronics' },
+    { name: 'Phones', category: 'Phones & Tablets' },
+    { name: 'Computers', category: 'Computers & Laptops' },
+    { name: 'Gaming', category: 'Gaming & Consoles' },
+    { name: 'Audio', category: 'TVs & Audio' },
+    { name: 'Accessories', category: 'Accessories' },
   ];
 
   const languages: { code: Language; label: string; sub: string }[] = [

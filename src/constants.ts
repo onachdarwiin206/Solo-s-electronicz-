@@ -1,5 +1,18 @@
 import { Product } from './types';
 
+export const PRODUCT_CATEGORIES = [
+  'Phones & Tablets',
+  'Computers & Laptops',
+  'Gaming & Consoles',
+  'TVs & Audio',
+  'Accessories',
+  'Networking',
+  'Home Appliances',
+  'Smart Devices',
+  'Cameras & Security',
+  'Deals & Offers'
+] as const;
+
 export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'p1',

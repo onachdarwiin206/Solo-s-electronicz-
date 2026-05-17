@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import imageCompression from 'browser-image-compression';
 import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle, User } from 'lucide-react';
 import { Product, Category, Order, OrderStatus, Review } from '../../types';
+import { PRODUCT_CATEGORIES } from '../../constants';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
@@ -190,7 +191,7 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
     name: '',
     description: '',
     price: 0,
-    category: 'Phones',
+    category: 'Phones & Tablets',
     image: '',
     images: [],
     videos: [],
@@ -198,6 +199,19 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
     featured: false,
     is_verified: true
   });
+
+  // Derived categories for suggestions
+  const suggestedCategories = Array.from(new Set([
+    ...PRODUCT_CATEGORIES,
+    ...initialProducts.map(p => p.category)
+  ])).sort();
+
+  const groupedProducts = initialProducts.reduce((acc, product) => {
+    const cat = product.category || 'Uncategorized';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(product);
+    return acc;
+  }, {} as Record<string, Product[]>);
 
   const fetchOrders = async () => {
     if (!isSupabaseConfigured) {
@@ -473,7 +487,7 @@ _Thank you for choosing Solo Electronics!_
     setIsAdding(false); 
     setEditingId(null);
     setUploadSessionId(uuidv4());
-    setNewProduct({ name: '', description: '', price: 0, category: 'Phones', image: '', images: [], videos: [], stock: 0, featured: false, is_verified: true });
+    setNewProduct({ name: '', description: '', price: 0, category: 'Phones & Tablets', image: '', images: [], videos: [], stock: 0, featured: false, is_verified: true });
     
     // Revoke object URLs to prevent memory leaks
     uploadingMedia.forEach(m => {
@@ -634,14 +648,17 @@ _Thank you for choosing Solo Electronics!_
                             <Tag className="absolute left-4 top-4 text-gray-600" size={18} />
                             <select 
                               value={newProduct.category} 
-                              onChange={e => setNewProduct({ ...newProduct, category: e.target.value as Category })} 
+                              onChange={e => setNewProduct({ ...newProduct, category: e.target.value })} 
                               className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white font-bold outline-none focus:border-blue-500 appearance-none transition-all"
                             >
-                              <option value="Phones">Phones</option>
-                              <option value="Computers">Computers</option>
-                              <option value="Electronics">Electronics</option>
-                              <option value="Accessories">Accessories</option>
+                              <option value="" disabled>Select Category</option>
+                              {PRODUCT_CATEGORIES.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
                             </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 uppercase text-[8px] font-black">
+                              Selection Required
+                            </div>
                           </div>
 
                           <textarea 
@@ -879,22 +896,44 @@ _Thank you for choosing Solo Electronics!_
       )}
 
       {activeTab === 'inventory' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {initialProducts.map(p => (
-            <div key={p.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl flex items-center gap-6 relative group overflow-hidden">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-                <OptimizedImage src={p.image} alt={p.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-white font-black uppercase italic tracking-tighter truncate">{p.name}</h4>
-                <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
-                <div className="flex items-center gap-4 mt-2">
-                    <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase">Edit</button>
-                    <button onClick={() => handleDelete(p.id)} className="text-[10px] font-black text-red-500/50 hover:text-red-500 uppercase">Remove</button>
+        <div className="space-y-12">
+          {Object.entries(groupedProducts).length === 0 ? (
+            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">
+              No Inventory Items Detected
+            </div>
+          ) : (
+            Object.entries(groupedProducts).sort(([a], [b]) => a.localeCompare(b)).map(([cat, catProducts]) => (
+              <div key={cat} className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">{cat}</h3>
+                  <div className="h-0.5 flex-1 bg-white/5" />
+                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{catProducts.length} Units</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {catProducts.map(p => (
+                    <div key={p.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl flex items-center gap-6 relative group overflow-hidden hover:bg-white/[0.07] transition-all">
+                      <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-black/40">
+                        <OptimizedImage src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-black uppercase italic tracking-tighter truncate">{p.name}</h4>
+                        <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
+                        <div className="flex items-center gap-4 mt-2">
+                            <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase transition-colors">Edit Specification</button>
+                            <button onClick={() => handleDelete(p.id)} className="text-[10px] font-black text-red-500/50 hover:text-red-500 uppercase transition-colors">Decommission</button>
+                        </div>
+                      </div>
+                      {p.stock <= 5 && (
+                        <div className="absolute top-2 right-2 px-2 py-0.5 bg-red-500/20 text-red-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-red-500/20">
+                          Low Stock: {p.stock}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
 
