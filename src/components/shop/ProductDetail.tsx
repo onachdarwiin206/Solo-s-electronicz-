@@ -33,6 +33,14 @@ export default function ProductDetail({
 }: ProductDetailProps) {
   const [activeMedia, setActiveMedia] = useState(0);
 
+  useState(() => {
+    // Save to recently viewed
+    const stored = localStorage.getItem('recently_viewed');
+    let items: string[] = stored ? JSON.parse(stored) : [];
+    items = [product.id, ...items.filter(id => id !== product.id)].slice(0, 5);
+    localStorage.setItem('recently_viewed', JSON.stringify(items));
+  });
+
   const allMedia = [
     ...(product.images || []),
     product.image,
@@ -61,13 +69,23 @@ export default function ProductDetail({
       animate={{ opacity: 1 }} 
       className="max-w-7xl mx-auto py-8 md:py-12 px-4 sm:px-6 lg:px-8"
     >
-      <button 
-        onClick={onBack} 
-        className="mb-8 flex items-center gap-3 text-gray-500 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] group bg-white/5 px-6 py-3 rounded-full border border-white/10"
-      >
-        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-        Return to Hardware Feed
-      </button>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <button 
+          onClick={onBack} 
+          className="flex items-center gap-3 text-gray-500 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] group bg-white/5 px-6 py-3 rounded-full border border-white/10 w-fit"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+          Return to Feed
+        </button>
+
+        <nav className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-500">
+          <span className="hover:text-blue-500 cursor-pointer" onClick={onBack}>Home</span>
+          <ChevronRight size={12} />
+          <span className="hover:text-blue-500 cursor-pointer" onClick={onBack}>{product.category}</span>
+          <ChevronRight size={12} />
+          <span className="text-white italic">{product.name}</span>
+        </nav>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-20 items-start">
         {/* Media Gallery Section */}
@@ -224,9 +242,20 @@ export default function ProductDetail({
               <h3 className="text-[11px] font-black text-white/50 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
                 <Shield size={16} className="text-blue-500" /> Technical Dossier
               </h3>
-              <p className="text-gray-400 text-lg leading-relaxed font-medium font-serif italic border-l-4 border-blue-500/30 pl-6">
+              <p className="text-gray-400 text-lg leading-relaxed font-medium font-serif italic border-l-4 border-blue-500/30 pl-6 mb-8">
                 {product.description}
               </p>
+              
+              {product.specifications && (
+                <div className="grid grid-cols-1 gap-3 mt-8">
+                  {product.specifications.split('\n').filter(s => s.trim()).map((spec, idx) => (
+                    <div key={idx} className="flex items-center gap-4 group/spec">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full group-hover/spec:scale-150 transition-transform" />
+                      <span className="text-sm text-gray-400 font-medium group-hover/spec:text-white transition-colors uppercase tracking-widest">{spec}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Lock, AlertCircle, Loader2, ArrowRight, ShieldCheck, Mail, ChevronRight } from 'lucide-react';
-import { useAuth } from '../../AuthContext';
+import { useAuth, ADMIN_EMAILS, ADMIN_PIN } from '../../AuthContext';
 import { cn } from '../../lib/utils';
 
 interface AdminLoginModalProps {
@@ -33,6 +33,16 @@ export default function AdminLoginModal({ isOpen, onClose, onSuccess }: AdminLog
     setError(null);
     setLoading(true);
 
+    // Personalized Admin Check: If email is in list and password matches PIN, we can bypass Supabase
+    if (ADMIN_EMAILS.includes(email.toLowerCase()) && password === ADMIN_PIN) {
+      const success = loginWithPin(password, email);
+      if (success) {
+        if (onSuccess) onSuccess();
+        onClose();
+        return;
+      }
+    }
+
     try {
       const res = await login(email, password);
       if (res.success) {
@@ -55,7 +65,7 @@ export default function AdminLoginModal({ isOpen, onClose, onSuccess }: AdminLog
       setError("INCOMPLETE PROTOCOL: 4-DIGIT PIN REQUIRED");
       return;
     }
-    const success = loginWithPin(pin);
+    const success = loginWithPin(pin, email);
     if (success) {
       if (onSuccess) onSuccess();
       onClose();

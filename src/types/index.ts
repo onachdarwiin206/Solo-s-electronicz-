@@ -8,6 +8,7 @@ export interface Product {
   category: Category | string;
   image: string;
   images?: string[];
+  specifications?: string;
   video_url?: string;
   videos?: string[];
   video_duration?: number;

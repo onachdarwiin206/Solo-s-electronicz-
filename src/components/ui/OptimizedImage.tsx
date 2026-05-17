@@ -16,7 +16,7 @@ export function OptimizedImage({ src, alt, className, fallback, bucket = 'produc
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  const DEFAULT_PLACEHOLDER = "https://images.unsplash.com/photo-1560393464-5c69a73c5770?q=80&w=800&auto=format&fit=crop";
+  const DEFAULT_PLACEHOLDER = "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&auto=format&fit=crop";
 
   useEffect(() => {
     // 5. Add console debugging

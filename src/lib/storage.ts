@@ -7,10 +7,11 @@ export async function uploadFile(
   path: string
 ): Promise<string | null> {
   try {
+    // Basic check removed to allow PIN-authorized admins to attempt uploads.
+    // Supabase RLS policies will still protect the bucket.
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.warn("[Storage] No Supabase session found. You must be signed in via Google to upload files.");
-      throw new Error("Supabase Authentication required for storage operations. Please sign in via Google.");
+      console.warn("[Storage] No active Supabase session. Attempting upload anyway (may require bucket to be public or anonymous access allowed).");
     }
 
     const extension = file.name.split('.').pop();

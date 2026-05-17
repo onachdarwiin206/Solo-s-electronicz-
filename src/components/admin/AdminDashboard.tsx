@@ -190,6 +190,7 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     description: '',
+    specifications: '',
     price: 0,
     category: 'Phones & Tablets',
     image: '',
@@ -421,10 +422,11 @@ _Thank you for choosing Solo Electronics!_
       const data: any = {
         name,
         description,
+        specifications: newProduct.specifications || '',
         price,
         stock,
         category: newProduct.category,
-        image: finalImages[0], // Use the first image as main
+        image: finalImages[0] || '', // Use the first image as main
         video_url: finalVideos[0] || '',
         images: finalImages,
         videos: finalVideos,
@@ -667,6 +669,14 @@ _Thank you for choosing Solo Electronics!_
                             onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} 
                             rows={4} 
                             className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-white outline-none focus:border-blue-500 text-sm leading-relaxed transition-all" 
+                          />
+
+                          <textarea 
+                            placeholder="Detailed Specifications (Optional - One per line)" 
+                            value={newProduct.specifications} 
+                            onChange={e => setNewProduct({ ...newProduct, specifications: e.target.value })} 
+                            rows={3} 
+                            className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-white outline-none focus:border-blue-500 text-sm leading-relaxed transition-all mt-4" 
                           />
                         </div>
                       </div>

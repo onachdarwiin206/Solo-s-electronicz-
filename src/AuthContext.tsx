@@ -14,7 +14,7 @@ type AuthType = {
   resetPassword: (email: string) => Promise<AuthResponse>;
   toggleWishlist: (productId: string) => Promise<boolean>;
   toggleLike: (productId: string) => Promise<boolean>;
-  loginWithPin: (pin: string) => boolean;
+  loginWithPin: (pin: string, email?: string) => boolean;
   logout: () => Promise<void>;
 };
 
@@ -32,6 +32,9 @@ const AuthContext = createContext<AuthType>({
   loginWithPin: () => false,
   logout: async () => {}
 });
+
+export const ADMIN_EMAILS = ['onachdarwiin@gmail.com', 'wanchaaaron@gmail.com'];
+export const ADMIN_PIN = "8585";
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
@@ -132,18 +135,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', supaUser.id)
         .single();
 
+      const isDefaultAdmin = ADMIN_EMAILS.includes(supaUser.email?.toLowerCase() || '');
+
       if (profileError) {
         console.warn("[Auth] Profile fetch failed:", profileError.message);
         setUser({ 
           id: supaUser.id, 
           email: supaUser.email || '', 
           name: supaUser.user_metadata?.full_name || 'User',
-          role: 'customer'
+          role: isDefaultAdmin ? 'admin' : 'customer'
         } as any);
-        setIsAdmin(false);
+        setIsAdmin(isDefaultAdmin);
       } else {
-        setUser({ id: supaUser.id, ...profile } as any);
-        setIsAdmin(profile.role === 'admin');
+        const finalRole = isDefaultAdmin ? 'admin' : profile.role;
+        setUser({ id: supaUser.id, ...profile, role: finalRole } as any);
+        setIsAdmin(finalRole === 'admin');
       }
     } catch (err: any) {
       console.error("[Auth] Sync Exception:", err.message);
@@ -181,11 +187,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAdmin]);
 
-  const loginWithPin = (pin: string) => {
-    if (pin === "8585") {
+  const loginWithPin = (pin: string, email?: string) => {
+    if (pin === ADMIN_PIN) {
+      const normalizedEmail = email?.toLowerCase();
+      
+      // If an email is provided, it MUST be one of the admin emails
+      if (normalizedEmail && !ADMIN_EMAILS.includes(normalizedEmail)) {
+        return false;
+      }
+
       setIsAdmin(true);
-      // Set a placeholder user so that Admin features aren't locked
-      setUser({ id: 'legacy-admin', name: 'Authorized PIN Admin', email: 'pin-admin@solo.com', role: 'admin' } as any);
+      
+      // Use existing user if they are one of the admins, otherwise set placeholder
+      if (user && (ADMIN_EMAILS.includes(user.email.toLowerCase()) || user.id === 'legacy-admin')) {
+        setUser({ ...user, role: 'admin' });
+      } else {
+        const targetEmail = normalizedEmail || ADMIN_EMAILS[0];
+        setUser({ 
+          id: 'legacy-admin', 
+          name: 'Authorized Admin', 
+          email: targetEmail, 
+          role: 'admin' 
+        } as any);
+      }
       return true;
     }
     return false;

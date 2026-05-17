@@ -12,6 +12,76 @@ create table if not exists public.profiles (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 1.5 Create Categories Enum
+DO $$ BEGIN
+    CREATE TYPE public.electronics_category AS ENUM (
+        'Phones & Tablets',
+        'Computers & Laptops',
+        'Gaming & Consoles',
+        'TVs & Audio',
+        'Accessories',
+        'Networking',
+        'Home Appliances',
+        'Smart Devices',
+        'Cameras & Security',
+        'Deals & Offers'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- 1.6 Migration: Normalize and Convert category to ENUM
+DO $$ 
+BEGIN
+    -- Only proceed if the column exists and is not yet the ENUM type
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public'
+        AND table_name = 'products' 
+        AND column_name = 'category' 
+        AND data_type = 'text'
+    ) THEN
+        -- 1. Normalize existing values to match ENUM labels
+        UPDATE public.products
+        SET category = 
+          CASE 
+            WHEN trim(lower(category)) IN ('phones', 'phone', 'phones & tablets', 'tablet phones') THEN 'Phones & Tablets'
+            WHEN trim(lower(category)) IN ('computers', 'laptops', 'computers & laptops') THEN 'Computers & Laptops'
+            WHEN trim(lower(category)) IN ('gaming', 'consoles', 'gaming & consoles') THEN 'Gaming & Consoles'
+            WHEN trim(lower(category)) IN ('tvs', 'tv', 'audio', 'tvs & audio', 'tv & audio') THEN 'TVs & Audio'
+            WHEN trim(lower(category)) IN ('accessories') THEN 'Accessories'
+            WHEN trim(lower(category)) IN ('networking') THEN 'Networking'
+            WHEN trim(lower(category)) IN ('home appliances') THEN 'Home Appliances'
+            WHEN trim(lower(category)) IN ('smart devices') THEN 'Smart Devices'
+            WHEN trim(lower(category)) IN ('cameras & security') THEN 'Cameras & Security'
+            WHEN trim(lower(category)) IN ('deals & offers') THEN 'Deals & Offers'
+            ELSE 'Phones & Tablets' -- Default fallback
+          END;
+
+        -- 2. Cast the column to the ENUM type
+        ALTER TABLE public.products
+          ALTER COLUMN category TYPE public.electronics_category
+          USING category::public.electronics_category;
+          
+        -- 3. Set default and not null
+        ALTER TABLE public.products 
+          ALTER COLUMN category SET NOT NULL,
+          ALTER COLUMN category SET DEFAULT 'Phones & Tablets';
+    END IF;
+END $$;
+
+-- 1.7 Migration: Add missing columns to orders
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name='orders' AND column_name='estimated_delivery') THEN
+        ALTER TABLE public.orders ADD COLUMN estimated_delivery text;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name='orders' AND column_name='tracking_logs') THEN
+        ALTER TABLE public.orders ADD COLUMN tracking_logs jsonb default '[]'::jsonb;
+    END IF;
+END $$;
+
 -- 2. PRODUCTS Table
 create table if not exists public.products (
   id text primary key,
@@ -19,10 +89,11 @@ create table if not exists public.products (
   description text,
   price decimal(12,2) not null,
   image text not null,
+  specifications text,
   video_url text,
   images text[] default '{}',
   videos text[] default '{}',
-  category text,
+  category public.electronics_category NOT NULL DEFAULT 'Phones & Tablets',
   stock_status text default 'in_stock',
   is_verified boolean default false,
   likes_count int default 0,
@@ -57,6 +128,8 @@ create table if not exists public.orders (
   delivery_address text,
   district text,
   payment_method text,
+  estimated_delivery text,
+  tracking_logs jsonb default '[]'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );

@@ -299,10 +299,26 @@ export default function App() {
     };
 
     try {
-      const { error } = await supabase.from('orders').insert(orderData);
+      let { error } = await supabase.from('orders').insert(orderData);
+      
+      // Fallback for missing columns (if user hasn't run the latest migration script)
+      if (error && (error.message?.includes('estimated_delivery') || error.message?.includes('tracking_logs') || error.code === 'PGRST204')) {
+        console.warn("[Supabase] Extended order columns missing. Falling back to legacy schema.");
+        const { 
+          id, user_id, customer_name, customer_phone, items, total, 
+          status, delivery_address, district, payment_method, created_at 
+        } = orderData;
+        const legacyData = { 
+          id, user_id, customer_name, customer_phone, items, total, 
+          status, delivery_address, district, payment_method, created_at 
+        };
+        const { error: retryError } = await supabase.from('orders').insert(legacyData);
+        error = retryError;
+      }
+
       if (error) {
         if (error.code === '42P01' || error.message?.includes('not found')) {
-          console.warn("[Supabase] Orders table mission. Persistence unavailable.");
+          console.warn("[Supabase] Orders table missing. Persistence unavailable.");
         } else {
           throw error;
         }
