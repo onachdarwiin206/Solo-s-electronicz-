@@ -99,6 +99,7 @@ export function OptimizedImage({ src, alt, className, fallback, bucket = 'produc
             className?.includes('object-contain') ? 'object-contain' : 'object-cover'
           )}
           referrerPolicy="no-referrer"
+          loading="lazy"
           onError={handleError}
         />
       )}

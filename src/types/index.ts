@@ -52,6 +52,12 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+export interface TrackingLog {
+  status: OrderStatus;
+  message: string;
+  timestamp: string;
+}
+
 export interface Order {
   id: string;
   user_id: string;
@@ -65,6 +71,8 @@ export interface Order {
   created_at: string;
   receipt_id?: string;
   payment_method?: PaymentMethod;
+  estimated_delivery?: string;
+  tracking_logs?: TrackingLog[];
 }
 
 export type PaymentMethod = 'cod' | 'mobile_money';

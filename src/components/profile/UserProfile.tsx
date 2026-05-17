@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { User, Mail, MapPin, Package, Settings, LogOut, ShieldCheck, Clock, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { User, Mail, MapPin, Package, Settings, LogOut, ShieldCheck, Clock, CheckCircle, Truck, Zap, Calendar, ArrowLeft, Info } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Order, Product } from '../../types';
-import { format } from 'date-fns';
+import { Order, Product, OrderStatus } from '../../types';
+import { format, addDays } from 'date-fns';
 import { cn } from '../../lib/utils';
 import { OptimizedImage } from '../ui/OptimizedImage';
 
@@ -15,6 +15,17 @@ export default function UserProfile() {
   const [likedProducts, setLikedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'likes'>('orders');
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+
+  const getStatusConfig = (status: OrderStatus) => {
+    switch (status) {
+      case 'pending': return { label: 'Awaiting Verification', color: 'text-amber-500', bg: 'bg-amber-500/10', icon: Clock, progress: 20 };
+      case 'confirmed': return { label: 'Order Confirmed', color: 'text-blue-500', bg: 'bg-blue-500/10', icon: ShieldCheck, progress: 40 };
+      case 'delivering': return { label: 'In Transit', color: 'text-indigo-500', bg: 'bg-indigo-500/10', icon: Truck, progress: 75 };
+      case 'delivered': return { label: 'Deployment Complete', color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: CheckCircle, progress: 100 };
+      default: return { label: 'Unknown', color: 'text-gray-500', bg: 'bg-gray-500/10', icon: Info, progress: 0 };
+    }
+  };
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -110,6 +121,110 @@ export default function UserProfile() {
     );
   };
 
+  const OrderStatusTracker = ({ order }: { order: Order }) => {
+    const config = getStatusConfig(order.status);
+    const StatusIcon = config.icon;
+    const estDelivery = order.estimated_delivery || format(addDays(new Date(order.created_at), 3), 'PPP');
+    
+    const steps = [
+      { id: 'pending', label: 'Processing', date: format(new Date(order.created_at), 'MMM dd') },
+      { id: 'confirmed', label: 'Confirmed', date: format(addDays(new Date(order.created_at), 1), 'MMM dd') },
+      { id: 'delivering', label: 'In Transit', date: 'Ongoing' },
+      { id: 'delivered', label: 'Delivered', date: order.status === 'delivered' ? 'Complete' : 'Pending' }
+    ];
+
+    const currentStepIndex = ['pending', 'confirmed', 'delivering', 'delivered'].indexOf(order.status);
+
+    return (
+      <div className="bg-black/40 border border-white/10 rounded-[3rem] p-8 md:p-12 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600" />
+        
+        <button 
+          onClick={() => setTrackingOrder(null)}
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white mb-8 transition-colors"
+        >
+          <ArrowLeft size={14} /> Back to Logs
+        </button>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12">
+          <div>
+            <div className="flex items-center gap-4 mb-4">
+              <div className={cn("p-4 rounded-3xl", config.bg)}>
+                <StatusIcon className={config.color} size={32} />
+              </div>
+              <div>
+                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">{config.label}</h3>
+                <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Order ID: {order.id}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/5 border border-white/5 rounded-3xl p-6 text-right">
+            <div className="flex items-center gap-3 justify-end text-blue-500 mb-1">
+              <Calendar size={16} />
+              <p className="text-[10px] font-black uppercase tracking-widest">Estimated Deployment</p>
+            </div>
+            <p className="text-xl font-black text-white italic lowercase tracking-tighter">{estDelivery}</p>
+          </div>
+        </div>
+
+        {/* Tracking Line */}
+        <div className="relative py-12 mb-12">
+          <div className="absolute top-1/2 left-0 w-full h-1 bg-white/5 -translate-y-1/2" />
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${config.progress}%` }}
+            className="absolute top-1/2 left-0 h-1 bg-blue-600 -translate-y-1/2 shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+          />
+          
+          <div className="relative flex justify-between">
+            {steps.map((step, idx) => {
+              const isCompleted = idx <= currentStepIndex;
+              const isCurrent = idx === currentStepIndex;
+              
+              return (
+                <div key={step.id} className="flex flex-col items-center gap-4 group">
+                  <div className={cn(
+                    "w-6 h-6 rounded-full border-4 transition-all duration-500 z-10",
+                    isCompleted ? "bg-blue-600 border-blue-400 scale-125" : "bg-neutral-900 border-neutral-700"
+                  )}>
+                    {isCurrent && <div className="w-full h-full rounded-full animate-ping bg-blue-400/50" />}
+                  </div>
+                  <div className="text-center">
+                    <p className={cn(
+                      "text-[9px] font-black uppercase tracking-widest",
+                      isCompleted ? "text-white" : "text-gray-600"
+                    )}>
+                      {step.label}
+                    </p>
+                    <p className="text-[8px] font-bold text-gray-500 mt-1">{step.date}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Items Summary */}
+        <div className="space-y-4">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-6">Hardware Payload</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {order.items.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-4 bg-white/5 border border-white/5 p-4 rounded-2xl group hover:border-white/10 transition-colors">
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/40 border border-white/5">
+                  <OptimizedImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h5 className="text-xs font-black text-white uppercase italic tracking-tighter truncate max-w-[150px]">{item.name}</h5>
+                  <p className="text-[10px] font-bold text-blue-500 font-mono">x{item.quantity} Units</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-20 px-4">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -194,7 +309,9 @@ export default function UserProfile() {
           <div className="space-y-8">
             {activeTab === 'orders' && (
               <div className="space-y-6">
-                {loading ? (
+                {trackingOrder ? (
+                  <OrderStatusTracker order={trackingOrder} />
+                ) : loading ? (
                   [...Array(3)].map((_, i) => (
                     <div key={i} className="h-40 bg-white/5 rounded-[2.5rem] border border-white/10 animate-pulse" />
                   ))
@@ -245,6 +362,12 @@ export default function UserProfile() {
                             {order.status === 'delivered' && <CheckCircle size={10} />}
                             {order.status}
                           </div>
+                          <button 
+                            onClick={() => setTrackingOrder(order)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600/10 hover:bg-blue-600 transition-all text-blue-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest border border-blue-500/20"
+                          >
+                            <Zap size={10} /> Track Deployment
+                          </button>
                         </div>
                       </div>
 

@@ -42,6 +42,7 @@ export default function OrderTracking() {
 
   const getEstimatedDelivery = () => {
     if (!trackingData) return null;
+    if (trackingData.estimated_delivery) return trackingData.estimated_delivery;
     
     switch (trackingData.status) {
       case 'pending':

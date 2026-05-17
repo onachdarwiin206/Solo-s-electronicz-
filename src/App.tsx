@@ -12,6 +12,7 @@ import { Footer } from './components/layout/Footer';
 import { INITIAL_PRODUCTS, PRODUCT_CATEGORIES } from './constants';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Product, CartItem, PaymentMethod } from './types';
+import { format, addDays } from 'date-fns';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
@@ -276,6 +277,8 @@ export default function App() {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const total = subtotal + deliveryFee;
     const orderId = `SOLO-ORD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const createdAt = new Date().toISOString();
+    const estDelivery = format(addDays(new Date(createdAt), 3), 'PPP');
 
     const orderData = {
       id: orderId,
@@ -288,7 +291,11 @@ export default function App() {
       delivery_address: address,
       district,
       payment_method: method,
-      created_at: new Date().toISOString()
+      created_at: createdAt,
+      estimated_delivery: estDelivery,
+      tracking_logs: [
+        { status: 'pending', message: 'Order initialized in the hardware pool.', timestamp: createdAt }
+      ]
     };
 
     try {

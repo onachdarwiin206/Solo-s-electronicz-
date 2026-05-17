@@ -777,8 +777,8 @@ _Thank you for choosing Solo Electronics!_
                             {(item.localPreview || item.url) && (
                               <>
                                 {item.type === 'image' ? (
-                                  <img 
-                                    src={item.localPreview || item.url} 
+                                  <OptimizedImage 
+                                    src={item.localPreview || item.url || ''} 
                                     alt="Preview" 
                                     className={cn("w-full h-full object-cover", item.status === 'uploading' && "opacity-50 blur-[2px]")} 
                                   />
