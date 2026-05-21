@@ -116,13 +116,13 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
 
   return (
     <div className="space-y-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-border">
         <div>
-          <h3 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Technical Feedback</h3>
-          <p className="text-gray-500 text-sm font-medium uppercase tracking-widest">Post-Purchase Performance Logs</p>
+          <h3 className="text-3xl font-black italic uppercase tracking-tighter mb-2 text-foreground">Technical Feedback</h3>
+          <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">Post-Purchase Performance Logs</p>
         </div>
         
-        <div className="flex items-center gap-6 bg-white/5 p-6 rounded-3xl border border-white/10">
+        <div className="flex items-center gap-6 bg-foreground/5 p-6 rounded-3xl border border-border">
           <div className="text-center">
             <div className="text-4xl font-black text-amber-500 mb-1">
               {reviews.length > 0 
@@ -135,10 +135,10 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
               ))}
             </div>
           </div>
-          <div className="h-12 w-px bg-white/10" />
+          <div className="h-12 w-px bg-border" />
           <div>
-            <div className="text-2xl font-bold text-white">{reviews.length}</div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 whitespace-nowrap">Verified Reviews</div>
+            <div className="text-2xl font-bold text-foreground">{reviews.length}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Verified Reviews</div>
           </div>
         </div>
       </div>
@@ -147,28 +147,28 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
         {/* Form Column */}
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-6">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2rem] shadow-2xl overflow-hidden relative group">
+            <div className="bg-foreground/5 backdrop-blur-xl border border-border p-8 rounded-[2rem] shadow-2xl overflow-hidden relative group">
               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                 <Quote size={80} />
+                 <Quote size={80} className="text-foreground" />
               </div>
               
-              <h4 className="text-xl font-bold mb-6 italic uppercase">Submit Experience</h4>
+              <h4 className="text-xl font-bold mb-6 italic uppercase text-foreground">Submit Experience</h4>
               
               <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Your Identity</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Your Identity</label>
                   <input
                     type="text"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
                     required
                     placeholder="Enter your name..."
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-gray-700"
+                    className="w-full bg-background border border-border rounded-2xl p-4 text-foreground text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-muted-foreground/30"
                   />
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Rating Intensity</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Rating Intensity</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -183,7 +183,7 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
                           size={24} 
                           className={cn(
                             "transition-colors",
-                            (hoverRating || rating) >= star ? "text-amber-500" : "text-gray-700"
+                            (hoverRating || rating) >= star ? "text-amber-500" : "text-muted-foreground/30"
                           )}
                           fill={(hoverRating || rating) >= star ? "currentColor" : "none"}
                         />
@@ -193,13 +193,13 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Performance Log</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Performance Log</label>
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     required
                     placeholder="Describe your UX with this hardware..."
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px] resize-none placeholder:text-gray-700"
+                    className="w-full bg-background border border-border rounded-2xl p-4 text-foreground text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px] resize-none placeholder:text-muted-foreground/30"
                   />
                 </div>
 
@@ -220,9 +220,9 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
               </form>
             </div>
             
-            <div className="p-6 bg-white/5 border border-white/10 rounded-3xl flex items-start gap-4">
+            <div className="p-6 bg-foreground/5 border border-border rounded-3xl flex items-start gap-4">
                <AlertCircle size={20} className="text-blue-500 mt-1 flex-shrink-0" />
-               <p className="text-[11px] text-gray-500 leading-relaxed uppercase font-medium">
+               <p className="text-[11px] text-muted-foreground leading-relaxed uppercase font-medium">
                  Reviews are cloud-synced and verified. Your technical feedback helps the Solo engineering community.
                </p>
             </div>
@@ -234,16 +234,16 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-40 bg-white/5 animate-pulse rounded-3xl border border-white/10" />
+                <div key={i} className="h-40 bg-foreground/5 animate-pulse rounded-3xl border border-border" />
               ))}
             </div>
           ) : reviews.length === 0 ? (
-            <div className="bg-white/5 border border-white/10 p-12 rounded-[2rem] text-center">
-               <div className="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-700 border border-white/5">
+            <div className="bg-foreground/5 border border-border p-12 rounded-[2rem] text-center">
+               <div className="w-20 h-20 bg-foreground/10 rounded-full flex items-center justify-center mx-auto mb-6 text-muted-foreground border border-border">
                   <MessageSquare size={32} />
                </div>
-               <h4 className="text-xl font-bold uppercase italic text-gray-500 mb-2">No Active Logs</h4>
-               <p className="text-gray-600 text-xs uppercase tracking-widest font-bold">Be the first to provide technical feedback.</p>
+               <h4 className="text-xl font-bold uppercase italic text-muted-foreground mb-2">No Active Logs</h4>
+               <p className="text-muted-foreground text-xs uppercase tracking-widest font-bold">Be the first to provide technical feedback.</p>
             </div>
           ) : (
             reviews.map((review, index) => (
@@ -252,7 +252,7 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/5 backdrop-blur-sm border border-white/10 p-8 rounded-[2rem] hover:border-blue-500/30 transition-colors group"
+                className="bg-foreground/5 backdrop-blur-sm border border-border p-8 rounded-[2rem] hover:border-blue-500/30 transition-colors group"
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
                   <div className="flex items-center gap-4">
@@ -260,21 +260,21 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
                       <User size={20} />
                     </div>
                     <div>
-                      <h5 className="font-bold text-white uppercase tracking-tight">{review.user_name}</h5>
-                      <div className="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                      <h5 className="font-bold text-foreground uppercase tracking-tight">{review.user_name}</h5>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                          <Calendar size={12} />
                          {new Date(review.created_at).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
-                  <div className="flex text-amber-500 p-2 bg-black/40 rounded-xl border border-white/5">
+                  <div className="flex text-amber-500 p-2 bg-foreground/10 rounded-xl border border-border">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} />
                     ))}
                   </div>
                 </div>
                 
-                <p className="text-gray-300 text-sm leading-relaxed font-light pl-4 border-l-2 border-blue-500/30">
+                <p className="text-muted-foreground text-sm leading-relaxed font-light pl-4 border-l-2 border-blue-500/30">
                   {review.comment}
                 </p>
               </motion.div>

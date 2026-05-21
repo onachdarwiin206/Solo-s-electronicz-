@@ -38,7 +38,7 @@ const getCategoryIcon = (category: string) => {
 
 export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarProps) {
   return (
-    <div className="bg-black/50 backdrop-blur-md border-b border-white/5 py-6 overflow-x-auto no-scrollbar scroll-smooth">
+    <div className="bg-background/50 backdrop-blur-md border-b border-border py-6 overflow-x-auto no-scrollbar scroll-smooth">
       <div className="max-w-7xl mx-auto px-4 flex gap-4 min-w-max">
         <button
           onClick={() => onCategorySelect(null)}
@@ -46,18 +46,18 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
             "flex flex-col items-center gap-3 p-5 rounded-3xl transition-all border group min-w-[90px]",
             selectedCategory === null 
               ? "bg-blue-600 border-blue-400 shadow-[0_10px_30px_rgba(37,99,235,0.3)]" 
-              : "bg-white/5 border-white/5 hover:border-white/10"
+              : "bg-foreground/5 border-border hover:border-foreground/20"
           )}
         >
           <div className={cn(
             "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-            selectedCategory === null ? "bg-white text-blue-600 scale-110" : "bg-black/40 text-gray-500 group-hover:text-white"
+            selectedCategory === null ? "bg-white text-blue-600 scale-110" : "bg-foreground/10 text-muted-foreground group-hover:text-foreground"
           )}>
             <LayoutGrid size={24} />
           </div>
           <span className={cn(
             "text-[9px] font-black uppercase tracking-[0.15em]",
-            selectedCategory === null ? "text-white" : "text-gray-500 group-hover:text-gray-300"
+            selectedCategory === null ? "text-white" : "text-muted-foreground group-hover:text-foreground/80"
           )}>
             All Sectors
           </span>
@@ -74,18 +74,18 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
                 "flex flex-col items-center gap-3 p-5 rounded-3xl transition-all border group min-w-[120px]",
                 isActive 
                   ? "bg-blue-600 border-blue-400 shadow-[0_10px_30px_rgba(37,99,235,0.3)]" 
-                  : "bg-white/5 border-white/5 hover:border-white/10"
+                  : "bg-foreground/5 border-border hover:border-foreground/20"
               )}
             >
               <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-                isActive ? "bg-white text-blue-600 scale-110" : "bg-black/40 text-gray-500 group-hover:text-white"
+                isActive ? "bg-white text-blue-600 scale-110" : "bg-foreground/10 text-muted-foreground group-hover:text-foreground"
               )}>
                 <Icon size={24} />
               </div>
               <span className={cn(
                 "text-[9px] font-black uppercase tracking-[0.15em]",
-                isActive ? "text-white" : "text-gray-500 group-hover:text-gray-300"
+                isActive ? "text-white" : "text-muted-foreground group-hover:text-foreground/80"
               )}>
                 {cat}
               </span>

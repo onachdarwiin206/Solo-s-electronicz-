@@ -87,7 +87,7 @@ export function ProductCard({
         ref={cardRef}
         whileHover={{ y: -8, transition: { duration: 0.2 } }}
         onClick={onClick}
-        className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/50 transition-colors shadow-2xl cursor-pointer"
+        className="group relative bg-card backdrop-blur-sm border border-border rounded-3xl overflow-hidden hover:border-blue-500/50 transition-colors shadow-2xl cursor-pointer"
       >
         <div className="aspect-square overflow-hidden relative group/image">
           {product.video_url ? (
@@ -236,7 +236,7 @@ export function ProductCard({
 
         <div className="p-6">
           <div className="flex justify-between items-start mb-2 gap-2">
-            <h3 className="text-xl font-black text-white group-hover:text-blue-400 transition-colors line-clamp-1 italic uppercase tracking-tighter">
+            <h3 className="text-xl font-black text-foreground group-hover:text-blue-400 transition-colors line-clamp-1 italic uppercase tracking-tighter">
               {product.name}
             </h3>
             <p className="text-xl font-mono font-black text-blue-500 whitespace-nowrap">
@@ -250,12 +250,12 @@ export function ProductCard({
                 <Star key={i} size={10} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
               ))}
             </div>
-            <span className="text-[10px] font-mono text-gray-500 font-bold uppercase tracking-widest">
+            <span className="text-[10px] font-mono text-muted-foreground font-bold uppercase tracking-widest">
               {product.rating || 5}.0
             </span>
           </div>
 
-          <p className="text-sm text-gray-400 line-clamp-2 mb-6 font-medium leading-relaxed">
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-6 font-medium leading-relaxed">
             {product.description}
           </p>
           
@@ -263,7 +263,7 @@ export function ProductCard({
             <button
               onClick={handleAdd}
               disabled={isAdding || (product.stock || 0) <= 0}
-              className="py-4 bg-white/5 hover:bg-white/10 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all group/btn border border-white/10 shadow-xl active:scale-95 disabled:opacity-50 text-[10px] uppercase tracking-widest"
+              className="py-4 bg-foreground/5 hover:bg-foreground/10 text-foreground font-black rounded-2xl flex items-center justify-center gap-2 transition-all group/btn border border-border shadow-xl active:scale-95 disabled:opacity-50 text-[10px] uppercase tracking-widest"
             >
               {isAdding ? (
                 <Loader2 className="animate-spin" size={16} />

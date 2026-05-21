@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, ShoppingCart, MessageCircle, BadgeCheck, Star, 
@@ -33,13 +33,13 @@ export default function ProductDetail({
 }: ProductDetailProps) {
   const [activeMedia, setActiveMedia] = useState(0);
 
-  useState(() => {
+  useEffect(() => {
     // Save to recently viewed
     const stored = localStorage.getItem('recently_viewed');
     let items: string[] = stored ? JSON.parse(stored) : [];
     items = [product.id, ...items.filter(id => id !== product.id)].slice(0, 5);
     localStorage.setItem('recently_viewed', JSON.stringify(items));
-  });
+  }, [product.id]);
 
   const allMedia = [
     ...(product.images || []),
@@ -72,25 +72,25 @@ export default function ProductDetail({
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <button 
           onClick={onBack} 
-          className="flex items-center gap-3 text-gray-500 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] group bg-white/5 px-6 py-3 rounded-full border border-white/10 w-fit"
+          className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-all text-[11px] font-black uppercase tracking-[0.2em] group bg-foreground/5 px-6 py-3 rounded-full border border-border w-fit"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           Return to Feed
         </button>
 
-        <nav className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-500">
+        <nav className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
           <span className="hover:text-blue-500 cursor-pointer" onClick={onBack}>Home</span>
           <ChevronRight size={12} />
           <span className="hover:text-blue-500 cursor-pointer" onClick={onBack}>{product.category}</span>
           <ChevronRight size={12} />
-          <span className="text-white italic">{product.name}</span>
+          <span className="text-foreground italic">{product.name}</span>
         </nav>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 mb-20 items-start">
         {/* Media Gallery Section */}
         <div className="space-y-6">
-          <div className="aspect-square rounded-[2.5rem] overflow-hidden bg-white/5 border border-white/10 relative group shadow-2xl">
+          <div className="aspect-square rounded-[2.5rem] overflow-hidden bg-foreground/5 border border-border relative group shadow-2xl">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeMedia}
@@ -195,7 +195,7 @@ export default function ProductDetail({
                   onClick={() => onToggleWishlist?.(product.id)}
                   className={cn(
                     "p-3 rounded-2xl transition-all border",
-                    isWishlisted ? "bg-blue-600 border-blue-500 text-white" : "bg-white/5 border-white/10 text-gray-500 hover:text-white"
+                    isWishlisted ? "bg-blue-600 border-blue-500 text-white" : "bg-foreground/5 border-border text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Bookmark size={18} fill={isWishlisted ? "currentColor" : "none"} />
@@ -204,7 +204,7 @@ export default function ProductDetail({
                   onClick={() => onToggleLike?.(product.id)}
                   className={cn(
                     "p-3 rounded-2xl transition-all border flex items-center gap-2",
-                    isLiked ? "bg-pink-600 border-pink-500 text-white" : "bg-white/5 border-white/10 text-gray-500 hover:text-white"
+                    isLiked ? "bg-pink-600 border-pink-500 text-white" : "bg-foreground/5 border-border text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
@@ -213,7 +213,7 @@ export default function ProductDetail({
               </div>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-4 uppercase italic leading-[0.9]">
+            <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tighter mb-4 uppercase italic leading-[0.9]">
               {product.name}
             </h1>
             
@@ -223,26 +223,26 @@ export default function ProductDetail({
                   <Star key={i} size={16} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
                 ))}
               </div>
-              <div className="h-4 w-px bg-white/10" />
-              <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest font-mono">ID: {product.id.slice(0, 12)}</span>
+              <div className="h-4 w-px bg-border" />
+              <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest font-mono">ID: {product.id.slice(0, 12)}</span>
             </div>
           </div>
 
-          <div className="mb-12 p-8 bg-white/5 rounded-[2rem] border border-white/10 relative overflow-hidden group">
+          <div className="mb-12 p-8 bg-foreground/5 rounded-[2rem] border border-border relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl -mr-16 -mt-16 group-hover:bg-blue-600/20 transition-all" />
-            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 italic">Solo Regional Authorization Price</div>
+            <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 italic">Solo Regional Authorization Price</div>
             <div className="flex items-baseline gap-3">
-              <p className="text-6xl font-black text-white font-mono tracking-tighter italic">UGX {product.price.toLocaleString()}</p>
+              <p className="text-6xl font-black text-foreground font-mono tracking-tighter italic">UGX {product.price.toLocaleString()}</p>
             </div>
             <p className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] mt-3">Lira Logistics Included • Instant Delivery Area</p>
           </div>
 
           <div className="space-y-10 mb-12">
             <div>
-              <h3 className="text-[11px] font-black text-white/50 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
+              <h3 className="text-[11px] font-black text-foreground/50 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
                 <Shield size={16} className="text-blue-500" /> Technical Dossier
               </h3>
-              <p className="text-gray-400 text-lg leading-relaxed font-medium font-serif italic border-l-4 border-blue-500/30 pl-6 mb-8">
+              <p className="text-muted-foreground text-lg leading-relaxed font-medium font-serif italic border-l-4 border-blue-500/30 pl-6 mb-8">
                 {product.description}
               </p>
               
@@ -251,7 +251,7 @@ export default function ProductDetail({
                   {product.specifications.split('\n').filter(s => s.trim()).map((spec, idx) => (
                     <div key={idx} className="flex items-center gap-4 group/spec">
                       <div className="w-1.5 h-1.5 bg-blue-500 rounded-full group-hover/spec:scale-150 transition-transform" />
-                      <span className="text-sm text-gray-400 font-medium group-hover/spec:text-white transition-colors uppercase tracking-widest">{spec}</span>
+                      <span className="text-sm text-muted-foreground font-medium group-hover/spec:text-foreground transition-colors uppercase tracking-widest">{spec}</span>
                     </div>
                   ))}
                 </div>
@@ -259,28 +259,28 @@ export default function ProductDetail({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 hover:border-white/10 transition-all">
-                 <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <div className="p-6 bg-foreground/5 rounded-3xl border border-border hover:border-blue-500/30 transition-all">
+                 <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
                    <Zap size={14} className="text-yellow-500" /> Grade
                  </h4>
-                 <p className="text-white font-black text-sm uppercase italic tracking-tighter">Direct Import</p>
-                 <span className="text-[9px] text-gray-500 font-bold uppercase block mt-1">A+ Inventory</span>
+                 <p className="text-foreground font-black text-sm uppercase italic tracking-tighter">Direct Import</p>
+                 <span className="text-[9px] text-muted-foreground font-bold uppercase block mt-1">A+ Inventory</span>
               </div>
-              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 hover:border-white/10 transition-all">
-                 <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <div className="p-6 bg-foreground/5 rounded-3xl border border-border hover:border-blue-500/30 transition-all">
+                 <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
                    <Truck size={14} className="text-blue-500" /> Logistics
                  </h4>
-                 <p className="text-white font-black text-sm uppercase italic tracking-tighter">
+                 <p className="text-foreground font-black text-sm uppercase italic tracking-tighter">
                    {(product.stock || 0) > 0 ? 'Ready for Lira' : 'Restocking Pool'}
                  </p>
-                 <span className="text-[9px] text-gray-500 font-bold uppercase block mt-1">Instant Dispatch</span>
+                 <span className="text-[9px] text-muted-foreground font-bold uppercase block mt-1">Instant Dispatch</span>
               </div>
-              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 hover:border-white/10 transition-all">
-                 <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <div className="p-6 bg-foreground/5 rounded-3xl border border-border hover:border-blue-500/30 transition-all">
+                 <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
                    <Maximize2 size={14} className="text-emerald-500" /> Warranty
                  </h4>
-                 <p className="text-white font-black text-sm uppercase italic tracking-tighter">12 Months</p>
-                 <span className="text-[9px] text-gray-500 font-bold uppercase block mt-1">Solo Assurance</span>
+                 <p className="text-foreground font-black text-sm uppercase italic tracking-tighter">12 Months</p>
+                 <span className="text-[9px] text-muted-foreground font-bold uppercase block mt-1">Solo Assurance</span>
               </div>
             </div>
           </div>
@@ -289,7 +289,7 @@ export default function ProductDetail({
             <button 
               onClick={() => onAddToCart(product)} 
               disabled={(product.stock || 0) <= 0}
-              className="py-6 bg-white hover:bg-blue-600 text-black hover:text-white font-black rounded-3xl flex items-center justify-center gap-4 transition-all active:scale-95 text-[12px] uppercase tracking-[0.25em] shadow-2xl disabled:opacity-50 group"
+              className="py-6 bg-foreground hover:bg-blue-600 text-background hover:text-white font-black rounded-3xl flex items-center justify-center gap-4 transition-all active:scale-95 text-[12px] uppercase tracking-[0.25em] shadow-2xl disabled:opacity-50 group"
             >
               <ShoppingCart size={22} className="group-hover:rotate-12 transition-transform" /> 
               Commit to Basket
@@ -306,7 +306,7 @@ export default function ProductDetail({
       </div>
 
       {/* Review Section */}
-      <div className="pt-24 border-t border-white/10">
+      <div className="pt-24 border-t border-border">
         <div className="max-w-4xl">
           <ReviewSystem product={product} />
         </div>

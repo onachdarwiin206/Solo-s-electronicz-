@@ -15,7 +15,7 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-2xl border-t border-white/10 md:hidden p-2 pb-6">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-t border-border md:hidden p-2 pb-6">
       <div className="flex items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -27,7 +27,7 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
               onClick={() => onViewChange(tab.id as any)}
               className={cn(
                 "relative flex flex-col items-center gap-1 p-2 transition-all",
-                isActive ? "text-blue-500" : "text-gray-500"
+                isActive ? "text-blue-500" : "text-muted-foreground"
               )}
             >
               {isActive && (
@@ -40,7 +40,7 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
               <span className="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
               
               {tab.id === 'shop' && cartCount > 0 && (
-                <span className="absolute top-1 right-2 bg-blue-600 text-white text-[8px] font-black px-1 rounded-full border border-black min-w-[14px]">
+                <span className="absolute top-1 right-2 bg-blue-600 text-white text-[8px] font-black px-1 rounded-full border border-background min-w-[14px]">
                   {cartCount}
                 </span>
               )}

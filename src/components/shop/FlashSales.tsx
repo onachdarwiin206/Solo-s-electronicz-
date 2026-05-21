@@ -40,14 +40,14 @@ export function FlashSales({ products, onAddToCart, onProductClick, onQuickView 
             <Zap className="text-white fill-white" size={24} />
           </div>
           <div>
-            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Flash Sales</h2>
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-foreground">Flash Sales</h2>
             <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em]">Limited Hardware Pulse</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 bg-black/40 backdrop-blur-xl border border-white/10 p-4 rounded-3xl">
-          <Clock className="text-gray-500" size={16} />
-          <p className="text-xs font-mono font-bold text-gray-400 uppercase tracking-widest">Ending In:</p>
+        <div className="flex items-center gap-4 bg-foreground/5 backdrop-blur-xl border border-border p-4 rounded-3xl">
+          <Clock className="text-muted-foreground" size={16} />
+          <p className="text-xs font-mono font-bold text-muted-foreground uppercase tracking-widest">Ending In:</p>
           <div className="flex gap-2">
             {timeLeft.split(':').map((unit, i) => (
               <span key={i} className="bg-red-600 text-white font-black px-3 py-1.5 rounded-xl text-sm min-w-[40px] text-center shadow-lg shadow-red-500/20">

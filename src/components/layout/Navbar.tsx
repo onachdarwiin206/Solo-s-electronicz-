@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
 import { Tooltip } from '../ui/Tooltip';
 import { useAuth } from '../../AuthContext';
+import { ThemeToggle } from './ThemeToggle';
 
 interface NavbarProps {
   onCategorySelect: (category: string | null) => void;
@@ -89,7 +90,7 @@ export function Navbar({
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-md border-b border-white/10">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4 lg:gap-8 flex-1">
@@ -114,7 +115,7 @@ export function Navbar({
                   <button
                     key={item.name}
                     onClick={() => onCategorySelect(item.category)}
-                    className="px-3 py-2 rounded-md text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all font-mono uppercase tracking-tighter"
+                    className="px-3 py-2 rounded-md text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all font-mono uppercase tracking-tighter"
                   >
                     {item.name}
                   </button>
@@ -125,23 +126,24 @@ export function Navbar({
             {/* Search Bar - Desktop */}
             <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md">
               <div className="relative w-full group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={16} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-blue-500 transition-colors" size={16} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search architecture..."
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 pl-12 pr-4 text-xs text-white outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all font-mono"
+                  className="w-full bg-foreground/5 border border-border rounded-2xl py-2.5 pl-12 pr-4 text-xs text-foreground outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all font-mono placeholder:text-muted-foreground"
                 />
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
+            <ThemeToggle />
             <Tooltip content="Search Database">
               <button 
                 onClick={() => setShowSearch(!showSearch)}
-                className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
+                className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Search size={20} />
               </button>
@@ -150,7 +152,7 @@ export function Navbar({
             <Tooltip content="Track Hardware">
               <button 
                 onClick={onTrackingClick}
-                className="hidden sm:block p-2 text-gray-400 hover:text-white transition-colors"
+                className="hidden sm:block p-2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Package size={20} />
               </button>
@@ -160,7 +162,7 @@ export function Navbar({
             <div className="relative">
               <button 
                 onClick={() => setShowLang(!showLang)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-300 hover:text-white transition-all border border-white/5"
+                className="flex items-center gap-2 px-3 py-1.5 bg-foreground/5 hover:bg-foreground/10 rounded-full text-muted-foreground hover:text-foreground transition-all border border-border"
               >
                 <Globe size={16} className="text-blue-500" />
                 <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">
@@ -169,9 +171,9 @@ export function Navbar({
               </button>
 
               {showLang && (
-                <div className="absolute right-0 mt-3 w-64 bg-gray-900 border border-white/10 rounded-3xl p-4 shadow-2xl backdrop-blur-xl z-[100]">
+                <div className="absolute right-0 mt-3 w-64 bg-card border border-border rounded-3xl p-4 shadow-2xl backdrop-blur-xl z-[100]">
                   <div className="mb-3 px-2">
-                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Global Language Engine</p>
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Global Language Engine</p>
                   </div>
                   <div className="grid grid-cols-1 gap-1 max-h-[300px] overflow-y-auto no-scrollbar">
                     {languages.map((lang) => (
@@ -184,8 +186,8 @@ export function Navbar({
                         className={cn(
                           "flex items-center justify-between w-full p-2.5 rounded-xl transition-all text-left",
                           currentLanguage === lang.code 
-                            ? "bg-blue-600/20 text-white border border-blue-500/30" 
-                            : "hover:bg-white/5 text-gray-400 border border-transparent"
+                            ? "bg-blue-600/20 text-blue-500 border border-blue-500/30" 
+                            : "hover:bg-foreground/5 text-muted-foreground border border-transparent"
                         )}
                       >
                         <div>
@@ -202,14 +204,14 @@ export function Navbar({
 
             <Tooltip content="Saved Hardware">
               <button 
-                className="relative p-2 text-gray-400 hover:text-white transition-colors"
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => {
                    // Optional: feature to show wishlist modal if requested, for now just show count
                 }}
               >
                 <Bookmark size={20} />
                 {wishlistCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-black">
+                  <span className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-background">
                     {wishlistCount}
                   </span>
                 )}
@@ -219,11 +221,11 @@ export function Navbar({
             <Tooltip content="View Basket">
               <button 
                 onClick={onCartClick}
-                className="relative p-2 text-gray-400 hover:text-white transition-colors"
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ShoppingCart size={20} />
                 {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-black">
+                  <span className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-background">
                     {cartCount}
                   </span>
                 )}
@@ -237,7 +239,7 @@ export function Navbar({
                   "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border",
                   user 
                     ? "bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border-blue-500/20" 
-                    : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border-white/5"
+                    : "bg-foreground/5 hover:bg-foreground/10 text-muted-foreground hover:text-foreground border-border"
                 )}
               >
                 <User size={16} className={cn(!user && "text-blue-500")} />
@@ -259,7 +261,7 @@ export function Navbar({
 
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="xl:hidden p-2 rounded-md text-gray-400 hover:text-white focus:outline-none"
+              className="xl:hidden p-2 rounded-md text-muted-foreground hover:text-foreground focus:outline-none"
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -274,18 +276,18 @@ export function Navbar({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden bg-black/80 border-b border-white/5 overflow-hidden"
+            className="md:hidden bg-background/80 border-b border-border overflow-hidden"
           >
             <div className="p-4">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                 <input
                   autoFocus
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search for hardware..."
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm text-white outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-foreground/5 border border-border rounded-2xl py-3 pl-12 pr-4 text-sm text-foreground outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -294,14 +296,14 @@ export function Navbar({
       </AnimatePresence>
 
       {/* Mobile menu */}
-      <div className={cn("md:hidden bg-black/95 border-b border-white/10 overflow-hidden transition-all duration-300 ease-in-out", isOpen ? "max-h-96" : "max-h-0")}>
+      <div className={cn("md:hidden bg-background/95 border-b border-border overflow-hidden transition-all duration-300 ease-in-out", isOpen ? "max-h-[500px]" : "max-h-0")}>
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
           <button
             onClick={() => {
               onCategorySelect(null);
               setIsOpen(false);
             }}
-            className="block w-full text-left px-3 py-2 rounded-md text-base font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 hover:bg-white/10 italic"
+            className="block w-full text-left px-3 py-2 rounded-md text-base font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 hover:bg-foreground/10 italic"
           >
             Home / Landing
           </button>
@@ -312,7 +314,7 @@ export function Navbar({
                 onCategorySelect(item.category);
                 setIsOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10"
+              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10"
             >
               {item.name}
             </button>
@@ -322,12 +324,12 @@ export function Navbar({
               onTrackingClick();
               setIsOpen(false);
             }}
-            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10"
+            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10"
           >
             Track Order
           </button>
-          <div className="px-3 py-4 border-t border-white/5 mt-4">
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Select Region / Language</p>
+          <div className="px-3 py-4 border-t border-border mt-4">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">Select Region / Language</p>
             <div className="grid grid-cols-2 gap-2">
               {languages.map((lang) => (
                 <button 
@@ -340,7 +342,7 @@ export function Navbar({
                     "flex flex-col p-3 rounded-2xl border transition-all text-left", 
                     currentLanguage === lang.code 
                       ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/20" 
-                      : "bg-white/5 border-white/10 text-gray-400 hover:text-white"
+                      : "bg-foreground/5 border-border text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <span className="text-[10px] font-black uppercase tracking-tighter">{lang.label}</span>

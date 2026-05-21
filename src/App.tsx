@@ -500,16 +500,16 @@ _Your order is now being processed._
                               >
                                 <div className="flex items-center gap-6 group">
                                   <div className="flex flex-col">
-                                    <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white group-hover:text-blue-500 transition-colors">{cat}</h3>
+                                    <h3 className="text-4xl font-black italic uppercase tracking-tighter text-foreground group-hover:text-blue-500 transition-colors">{cat}</h3>
                                     <div className="flex items-center gap-2 mt-1">
                                       <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{catProducts.length} Units Active</span>
+                                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{catProducts.length} Units Active</span>
                                     </div>
                                   </div>
                                   <div className="h-px flex-1 bg-gradient-to-r from-blue-500/30 to-transparent" />
                                   <button 
                                     onClick={() => setCategory(cat)}
-                                    className="px-6 py-3 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-white hover:bg-blue-600 transition-all shadow-xl"
+                                    className="px-6 py-3 bg-foreground/5 border border-border rounded-full text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-foreground hover:bg-blue-600/20 transition-all shadow-xl"
                                   >
                                     View Full Sector →
                                   </button>
@@ -531,16 +531,59 @@ _Your order is now being processed._
                                 </div>
                               </motion.section>
                             ))}
+
+                            {/* Recently Viewed Section */}
+                            {(() => {
+                              const stored = typeof window !== 'undefined' ? localStorage.getItem('recently_viewed') : null;
+                              const recentlyViewedIds = stored ? JSON.parse(stored) : [];
+                              const recentlyViewedProducts = products.filter(p => recentlyViewedIds.includes(p.id))
+                                .sort((a, b) => recentlyViewedIds.indexOf(a.id) - recentlyViewedIds.indexOf(b.id));
+
+                              if (recentlyViewedProducts.length === 0) return null;
+
+                              return (
+                                <motion.section 
+                                  initial={{ opacity: 0 }}
+                                  whileInView={{ opacity: 1 }}
+                                  viewport={{ once: true }}
+                                  className="pt-20 border-t border-border space-y-12"
+                                >
+                                  <div className="flex items-center gap-6 group">
+                                    <div className="flex flex-col">
+                                      <h3 className="text-2xl font-black italic uppercase tracking-tighter text-foreground">Recently Deployed</h3>
+                                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Your interaction history</span>
+                                    </div>
+                                    <div className="h-px flex-1 bg-gradient-to-r from-blue-500/10 to-transparent" />
+                                  </div>
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                                    {recentlyViewedProducts.map(product => (
+                                      <div 
+                                        key={product.id} 
+                                        onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
+                                        className="cursor-pointer group/rv"
+                                      >
+                                        <div className="aspect-square bg-foreground/5 rounded-2xl overflow-hidden border border-border group-hover/rv:border-blue-500/30 transition-all mb-3 relative">
+                                           <img src={product.image} alt="" className="w-full h-full object-cover group-hover/rv:scale-110 transition-all duration-700" />
+                                           <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover/rv:opacity-100 transition-opacity" />
+                                        </div>
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover/rv:text-foreground truncate">{product.name}</h4>
+                                        <p className="text-[9px] font-mono text-blue-500/80">UGX {product.price.toLocaleString()}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </motion.section>
+                              );
+                            })()}
                             
                             {/* Category Quick Badges footer */}
-                            <div className="py-20 border-t border-white/5">
-                               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 text-center mb-10">Direct Sector Access</p>
+                            <div className="py-20 border-t border-border">
+                               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground text-center mb-10">Direct Sector Access</p>
                                <div className="flex flex-wrap justify-center gap-4">
                                   {PRODUCT_CATEGORIES.map(cat => (
                                     <button
                                       key={cat}
                                       onClick={() => setCategory(cat)}
-                                      className="px-8 py-4 bg-white/5 border border-white/10 rounded-3xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:border-blue-500/50 hover:bg-white/10 transition-all"
+                                      className="px-8 py-4 bg-foreground/5 border border-border rounded-3xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-blue-500/50 hover:bg-foreground/10 transition-all"
                                     >
                                       {cat}
                                     </button>

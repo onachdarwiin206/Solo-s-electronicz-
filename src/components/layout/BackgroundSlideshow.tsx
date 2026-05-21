@@ -30,7 +30,7 @@ export function BackgroundSlideshow() {
           transition={{ duration: 2, ease: "easeInOut" }}
           className="absolute inset-0"
         >
-          <div className="absolute inset-0 bg-black/60 z-10" />
+          <div className="absolute inset-0 bg-background/60 dark:bg-black/60 z-10 transition-colors duration-1000" />
           <OptimizedImage 
             src={BACKGROUNDS[index]} 
             alt="Background" 

@@ -25,7 +25,7 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
     <div className="w-full py-6">
       <div className="flex justify-between relative px-2">
         {/* Progress Line */}
-        <div className="absolute top-2 left-0 w-full h-0.5 bg-white/10" />
+        <div className="absolute top-2 left-0 w-full h-0.5 bg-foreground/10" />
         <div 
           className="absolute top-2 left-0 h-0.5 bg-blue-500 transition-all duration-1000" 
           style={{ width: `${(currentIndex / (stages.length - 1)) * 100}%` }}
@@ -39,12 +39,12 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
             <div key={stage} className="relative z-10 flex flex-col items-center">
               <div className={cn(
                 "w-4 h-4 rounded-full border-2 transition-all duration-500",
-                isCompleted ? "bg-blue-500 border-blue-500 scale-110" : "bg-gray-900 border-white/20",
-                isCurrent && "shadow-[0_0_12px_rgba(59,130,246,0.6)] border-white"
+                isCompleted ? "bg-blue-500 border-blue-500 scale-110" : "bg-background border-border",
+                isCurrent && "shadow-[0_0_12px_rgba(59,130,246,0.6)] border-foreground"
               )} />
               <span className={cn(
                 "text-[8px] font-black uppercase tracking-widest mt-3 transition-colors",
-                isCompleted ? "text-blue-400" : "text-gray-600"
+                isCompleted ? "text-blue-400" : "text-muted-foreground"
               )}>
                 {stage}
               </span>
@@ -501,20 +501,20 @@ _Thank you for choosing Solo Electronics!_
 
   const SetupMessage = () => (
     <div className="mb-12 p-8 bg-amber-500/10 border border-amber-500/20 rounded-[2rem] space-y-4">
-      <div className="flex items-center gap-3 text-amber-500 font-black italic uppercase italic tracking-tighter">
+      <div className="flex items-center gap-3 text-amber-500 font-black italic uppercase tracking-tighter">
         <AlertCircle size={24} />
         <h3 className="text-xl">System Initialization Required</h3>
       </div>
-      <p className="text-gray-400 text-sm leading-relaxed">
+      <p className="text-muted-foreground text-sm leading-relaxed">
         Required database tables or storage buckets were not detected. 
-        Please run the code from <code className="bg-white/5 px-1.5 py-0.5 rounded text-amber-400">supabase-setup.sql</code> in your 
+        Please run the code from <code className="bg-foreground/5 px-1.5 py-0.5 rounded text-amber-400">supabase-setup.sql</code> in your 
         <a href="https://supabase.com/dashboard/project/_/sql" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline mx-1">Supabase SQL Editor</a>.
       </p>
-      <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+      <div className="p-4 bg-foreground/5 rounded-xl border border-border">
         <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Important Security Note</p>
-        <p className="text-gray-500 text-[9px] leading-relaxed">
-          Storage uploads are protected by Row Level Security (RLS). You <strong>must</strong> be signed in via Google to upload assets. 
-          PIN login alone does not provide a secure Supabase session for file operations.
+        <p className="text-muted-foreground text-[9px] leading-relaxed">
+          Full management access (including storage) is now enabled for PIN login, but <strong>requires</strong> the updated RLS policies in <code className="text-blue-400">supabase-setup.sql</code>. 
+          Without these SQL updates, Supabase will reject your requests with a "Row Level Security" error.
         </p>
       </div>
       {missingTables.length > 0 && (
@@ -537,10 +537,10 @@ _Thank you for choosing Solo Electronics!_
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-20 px-4 text-white">
+    <div className="max-w-7xl mx-auto py-20 px-4 text-foreground">
       <button 
         onClick={() => window.history.back()}
-        className="mb-8 flex items-center gap-2 text-gray-500 hover:text-white transition-all text-sm font-black uppercase tracking-widest group"
+        className="mb-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-all text-sm font-black uppercase tracking-widest group"
       >
         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
         Exit Command Center
@@ -549,10 +549,10 @@ _Thank you for choosing Solo Electronics!_
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">Command Center</h2>
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+            <h2 className="text-4xl font-black text-foreground italic uppercase tracking-tighter">Command Center</h2>
+            <div className="flex items-center gap-2 px-3 py-1 bg-foreground/5 rounded-full border border-border">
                <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isSyncing ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]")} />
-               <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{isSyncing ? "SYNCED" : "OFFLINE"}</p>
+               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{isSyncing ? "SYNCED" : "OFFLINE"}</p>
             </div>
           </div>
           
@@ -560,25 +560,19 @@ _Thank you for choosing Solo Electronics!_
             <motion.div 
               initial={{ opacity: 0, x: -10 }} 
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3 px-5 py-3 bg-amber-500/10 rounded-2xl border border-amber-500/20 max-w-md"
+              className="flex items-center gap-3 px-5 py-3 bg-blue-500/10 rounded-2xl border border-blue-500/20 max-w-md"
             >
-              <AlertCircle size={20} className="text-amber-500 shrink-0" />
+              <ShieldCheck size={20} className="text-blue-500 shrink-0" />
               <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 leading-none">Authentication Upgrade Required</p>
-                <p className="text-[9px] text-gray-400 leading-tight">PIN login limits access. Connect your Google account to enable secure media uploads from your phone storage.</p>
-                <button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
-                  className="text-[10px] font-black uppercase text-blue-400 hover:text-blue-300 mt-1 block"
-                >
-                  Authorize Google Sync →
-                </button>
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 leading-none">PIN-Authorized Access Active</p>
+                <p className="text-[9px] text-muted-foreground leading-tight">You are logged in via PIN. Ensure the latest <code className="text-blue-400">supabase-setup.sql</code> policies are applied to your project to enable bypass for file uploads and inventory management.</p>
               </div>
             </motion.div>
           )}
 
           <div className="flex gap-2 flex-wrap">
             {['inventory', 'orders', 'reviews', 'admins'].map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all", activeTab === tab ? "bg-blue-600 text-white" : "bg-white/5 text-gray-500 border border-white/10 hover:bg-white/10")}>{tab}</button>
+              <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all", activeTab === tab ? "bg-blue-600 text-white" : "bg-foreground/5 text-muted-foreground border border-border hover:bg-foreground/10")}>{tab}</button>
             ))}
           </div>
         </div>
@@ -603,7 +597,7 @@ _Thank you for choosing Solo Electronics!_
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black overflow-y-auto"
+            className="fixed inset-0 z-[100] bg-background overflow-y-auto"
           >
             <div className="min-h-screen px-4 py-12">
               <div className="max-w-4xl mx-auto">
@@ -613,17 +607,17 @@ _Thank you for choosing Solo Electronics!_
                       <Plus className="text-white" size={24} />
                     </div>
                     <div>
-                      <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">
+                      <h2 className="text-3xl font-black text-foreground uppercase italic tracking-tighter">
                         {editingId ? 'Modify Inventory' : 'Add New Inventory'}
                       </h2>
-                      <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">
+                      <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">
                         {editingId ? `Editing ID: ${editingId}` : 'Step-by-step product initialization'}
                       </p>
                     </div>
                   </div>
                   <button 
                     onClick={resetForm}
-                    className="p-3 bg-white/5 border border-white/10 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                    className="p-3 bg-foreground/5 border border-border rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-all"
                   >
                     <X size={24} />
                   </button>
@@ -632,33 +626,33 @@ _Thank you for choosing Solo Electronics!_
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                   {/* Left Column: Form Info */}
                   <div className="space-y-8">
-                    <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6">
+                    <div className="bg-foreground/5 border border-border rounded-[2.5rem] p-8 space-y-6">
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-4">Basic Information</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-4">Basic Information</label>
                         <div className="space-y-4">
                           <div className="relative">
-                            <Package className="absolute left-4 top-4 text-gray-600" size={18} />
+                            <Package className="absolute left-4 top-4 text-muted-foreground/40" size={18} />
                             <input 
                               placeholder="Product Name" 
                               value={newProduct.name} 
                               onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} 
-                              className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white outline-none focus:border-blue-500 font-bold transition-all" 
+                              className="w-full bg-background border border-border rounded-2xl py-4 pl-12 pr-6 text-foreground outline-none focus:border-blue-500 font-bold transition-all" 
                             />
                           </div>
                           
                           <div className="relative">
-                            <Tag className="absolute left-4 top-4 text-gray-600" size={18} />
+                            <Tag className="absolute left-4 top-4 text-muted-foreground/40" size={18} />
                             <select 
                               value={newProduct.category} 
                               onChange={e => setNewProduct({ ...newProduct, category: e.target.value })} 
-                              className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white font-bold outline-none focus:border-blue-500 appearance-none transition-all"
+                              className="w-full bg-background border border-border rounded-2xl py-4 pl-12 pr-6 text-foreground font-bold outline-none focus:border-blue-500 appearance-none transition-all"
                             >
                               <option value="" disabled>Select Category</option>
                               {PRODUCT_CATEGORIES.map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                               ))}
                             </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 uppercase text-[8px] font-black">
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground uppercase text-[8px] font-black">
                               Selection Required
                             </div>
                           </div>
@@ -668,7 +662,7 @@ _Thank you for choosing Solo Electronics!_
                             value={newProduct.description} 
                             onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} 
                             rows={4} 
-                            className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-white outline-none focus:border-blue-500 text-sm leading-relaxed transition-all" 
+                            className="w-full bg-background border border-border rounded-2xl p-6 text-foreground outline-none focus:border-blue-500 text-sm leading-relaxed transition-all" 
                           />
 
                           <textarea 
@@ -676,49 +670,49 @@ _Thank you for choosing Solo Electronics!_
                             value={newProduct.specifications} 
                             onChange={e => setNewProduct({ ...newProduct, specifications: e.target.value })} 
                             rows={3} 
-                            className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-white outline-none focus:border-blue-500 text-sm leading-relaxed transition-all mt-4" 
+                            className="w-full bg-background border border-border rounded-2xl p-6 text-foreground outline-none focus:border-blue-500 text-sm leading-relaxed transition-all mt-4" 
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-[8px] font-black uppercase tracking-widest text-gray-700 ml-2">Unit Price (UGX)</label>
+                          <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 ml-2">Unit Price (UGX)</label>
                           <div className="relative">
-                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
+                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40" size={16} />
                             <input 
                               type="number" 
                               placeholder="0" 
                               value={newProduct.price || ''} 
                               onChange={e => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) || 0 })} 
-                              className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white font-mono outline-none focus:border-blue-500" 
+                              className="w-full bg-background border border-border rounded-2xl py-4 pl-12 pr-6 text-foreground font-mono outline-none focus:border-blue-500" 
                             />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[8px] font-black uppercase tracking-widest text-gray-700 ml-2">Stock Level</label>
+                          <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 ml-2">Stock Level</label>
                           <div className="relative">
-                            <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
+                            <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40" size={16} />
                             <input 
                               type="number" 
                               placeholder="0" 
                               value={newProduct.stock || ''} 
                               onChange={e => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) || 0 })} 
-                              className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white font-mono outline-none focus:border-blue-500" 
+                              className="w-full bg-background border border-border rounded-2xl py-4 pl-12 pr-6 text-foreground font-mono outline-none focus:border-blue-500" 
                             />
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
+                    <div className="bg-foreground/5 border border-border rounded-[2.5rem] p-8">
                        <div className="flex items-center justify-between mb-6">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-4">Featured Placement</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-4">Featured Placement</label>
                         <button 
                           onClick={() => setNewProduct(prev => ({ ...prev, featured: !prev.featured }))}
                           className={cn(
                             "w-12 h-6 rounded-full transition-all relative flex items-center px-1",
-                            newProduct.featured ? "bg-blue-600" : "bg-white/10"
+                            newProduct.featured ? "bg-blue-600" : "bg-foreground/10"
                           )}
                         >
                           <motion.div 
@@ -727,7 +721,7 @@ _Thank you for choosing Solo Electronics!_
                           />
                         </button>
                       </div>
-                      <p className="text-gray-500 text-[9px] uppercase tracking-widest leading-relaxed">
+                      <p className="text-muted-foreground text-[9px] uppercase tracking-widest leading-relaxed">
                         Enabling this will highlight the product on the main storefront banner and "Today's Picks" section.
                       </p>
                     </div>
@@ -735,14 +729,14 @@ _Thank you for choosing Solo Electronics!_
 
                   {/* Right Column: Media */}
                   <div className="space-y-8">
-                    <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6">
+                    <div className="bg-foreground/5 border border-border rounded-[2.5rem] p-8 space-y-6">
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-4">Media Assets (Select from Phone Storage)</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-4">Media Assets (Select from Phone Storage)</label>
                         
                         {!user ? (
-                          <div className="p-8 bg-blue-500/5 border-2 border-dashed border-white/10 rounded-3xl text-center space-y-4">
+                          <div className="p-8 bg-blue-500/5 border-2 border-dashed border-border rounded-3xl text-center space-y-4">
                               <ShieldCheck className="mx-auto text-blue-500 opacity-50" size={40} />
-                              <p className="text-[10px] font-bold text-gray-400 px-4 leading-relaxed uppercase tracking-widest">Upload functionality is locked. Sign in with Google to access phone storage and camera permissions.</p>
+                              <p className="text-[10px] font-bold text-muted-foreground px-4 leading-relaxed uppercase tracking-widest">Upload functionality is locked. Sign in with Google to access phone storage and camera permissions.</p>
                               <button 
                                 onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
                                 className="px-8 py-3 bg-blue-600 text-white font-black text-[10px] uppercase rounded-full shadow-lg shadow-blue-500/20"
@@ -757,7 +751,7 @@ _Thank you for choosing Solo Electronics!_
                               <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                               <ImageIcon size={32} className="text-blue-500 mb-3 group-hover:scale-110 transition-transform relative z-10" />
                               <span className="text-[11px] font-black uppercase text-blue-400 relative z-10">Add Photos</span>
-                              <span className="text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest relative z-10">Phone Gallery</span>
+                              <span className="text-[8px] font-bold text-muted-foreground mt-1 uppercase tracking-widest relative z-10">Phone Gallery</span>
                             </label>
                             
                             <div className="space-y-2">
@@ -765,14 +759,14 @@ _Thank you for choosing Solo Electronics!_
                                 <input type="file" className="hidden" accept="video/*" multiple onChange={(e) => handleFileUpload(e, 'video')} />
                                 <Video size={24} className="text-emerald-500 mb-1" />
                                 <span className="text-[9px] font-black uppercase text-emerald-400">Add Video</span>
-                                <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest">From Files</span>
+                                <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">From Files</span>
                               </label>
                               
                               <label className="group relative h-[92px] bg-amber-600/5 border-2 border-dashed border-amber-500/20 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-amber-600/10 transition-all">
                                 <input type="file" className="hidden" accept="video/*" capture="environment" onChange={(e) => handleFileUpload(e, 'video')} />
                                 <Video size={24} className="text-amber-500 mb-1" />
                                 <span className="text-[9px] font-black uppercase text-amber-400">Capture</span>
-                                <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest">Camera</span>
+                                <span className="text-[7px] font-bold text-muted-foreground uppercase tracking-widest">Camera</span>
                               </label>
                             </div>
                           </div>
@@ -782,7 +776,7 @@ _Thank you for choosing Solo Electronics!_
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 min-h-[120px]">
                         {/* Instant Previews (Local + Remote) */}
                         {uploadingMedia.map((item) => (
-                          <div key={item.id} className="relative aspect-square rounded-2xl overflow-hidden bg-white/5 border border-white/10 group/item">
+                          <div key={item.id} className="relative aspect-square rounded-2xl overflow-hidden bg-foreground/5 border border-border group/item">
                             {/* Local Preview is always shown first */}
                             {(item.localPreview || item.url) && (
                               <>
@@ -849,7 +843,7 @@ _Thank you for choosing Solo Electronics!_
                           // Filter out if it's already in the uploadingMedia list (by URL check if possible, or just skip local previews)
                           if (uploadingMedia.some(m => m.url === img)) return null;
                           return (
-                            <div key={`existing-img-${idx}`} className="relative aspect-square rounded-2xl overflow-hidden bg-white/5 border border-white/10 group/item">
+                            <div key={`existing-img-${idx}`} className="relative aspect-square rounded-2xl overflow-hidden bg-foreground/5 border border-border group/item">
                               <OptimizedImage src={img} alt="Existing" className="w-full h-full object-cover opacity-60" />
                               <button 
                                 onClick={() => setNewProduct(prev => ({ ...prev, images: prev.images?.filter((_, i) => i !== idx) }))}
@@ -862,8 +856,8 @@ _Thank you for choosing Solo Electronics!_
                         })}
                       </div>
 
-                      <div className="pt-6 border-t border-white/10 space-y-4">
-                        <div className="flex items-center justify-between text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] px-2 italic">
+                      <div className="pt-6 border-t border-border space-y-4">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] px-2 italic">
                           <span>Verification Seal</span>
                           <span className="text-emerald-500 flex items-center gap-1">
                             <CheckCircle size={10} />
@@ -891,7 +885,7 @@ _Thank you for choosing Solo Electronics!_
                         </div>
                         <div>
                           <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Global Accessibility</p>
-                          <p className="text-gray-500 text-[10px] leading-relaxed">
+                          <p className="text-muted-foreground text-[10px] leading-relaxed">
                             Once deployed, this inventory item will be synchronized across all edge nodes and customer portals globally.
                           </p>
                         </div>
@@ -908,28 +902,28 @@ _Thank you for choosing Solo Electronics!_
       {activeTab === 'inventory' && (
         <div className="space-y-12">
           {Object.entries(groupedProducts).length === 0 ? (
-            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">
+            <div className="py-20 text-center text-muted-foreground font-black uppercase tracking-widest bg-foreground/5 rounded-[3rem] border border-border">
               No Inventory Items Detected
             </div>
           ) : (
             Object.entries(groupedProducts).sort(([a], [b]) => a.localeCompare(b)).map(([cat, catProducts]) => (
               <div key={cat} className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">{cat}</h3>
-                  <div className="h-0.5 flex-1 bg-white/5" />
-                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{catProducts.length} Units</span>
+                  <h3 className="text-xl font-black text-foreground uppercase italic tracking-tighter">{cat}</h3>
+                  <div className="h-0.5 flex-1 bg-foreground/5" />
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{catProducts.length} Units</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {catProducts.map(p => (
-                    <div key={p.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl flex items-center gap-6 relative group overflow-hidden hover:bg-white/[0.07] transition-all">
-                      <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-black/40">
+                    <div key={p.id} className="bg-foreground/5 border border-border p-6 rounded-3xl flex items-center gap-6 relative group overflow-hidden hover:bg-foreground/[0.07] transition-all">
+                      <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-foreground/10">
                         <OptimizedImage src={p.image} alt={p.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-black uppercase italic tracking-tighter truncate">{p.name}</h4>
+                        <h4 className="text-foreground font-black uppercase italic tracking-tighter truncate">{p.name}</h4>
                         <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
                         <div className="flex items-center gap-4 mt-2">
-                            <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-gray-500 hover:text-white uppercase transition-colors">Edit Specification</button>
+                            <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-muted-foreground hover:text-foreground uppercase transition-colors">Edit Specification</button>
                             <button onClick={() => handleDelete(p.id)} className="text-[10px] font-black text-red-500/50 hover:text-red-500 uppercase transition-colors">Decommission</button>
                         </div>
                       </div>
@@ -950,23 +944,23 @@ _Thank you for choosing Solo Electronics!_
       {activeTab === 'orders' && (
         <div className="space-y-6">
           {/* Order Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white/5 p-6 rounded-3xl border border-white/10 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-foreground/5 p-6 rounded-3xl border border-border mb-8">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Search Orders</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Search Orders</label>
               <input 
                 type="text" 
                 placeholder="Name, Phone, ID..." 
                 value={orderSearch}
                 onChange={e => setOrderSearch(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-blue-500"
+                className="w-full bg-background border border-border rounded-2xl py-3 px-4 text-foreground text-sm outline-none focus:border-blue-500"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">Status</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Status</label>
               <select 
                 value={orderStatusFilter}
                 onChange={e => setOrderStatusFilter(e.target.value as any)}
-                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-blue-500"
+                className="w-full bg-background border border-border rounded-2xl py-3 px-4 text-foreground text-sm outline-none focus:border-blue-500"
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -976,21 +970,21 @@ _Thank you for choosing Solo Electronics!_
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">From Date</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">From Date</label>
               <input 
                 type="date" 
                 value={dateRange.start}
                 onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-blue-500"
+                className="w-full bg-background border border-border rounded-2xl py-3 px-4 text-foreground text-sm outline-none focus:border-blue-500"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-2">To Date</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">To Date</label>
               <input 
                 type="date" 
                 value={dateRange.end}
                 onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                className="w-full bg-black/40 border border-white/10 rounded-2xl py-3 px-4 text-white text-sm outline-none focus:border-blue-500"
+                className="w-full bg-background border border-border rounded-2xl py-3 px-4 text-foreground text-sm outline-none focus:border-blue-500"
               />
             </div>
           </div>
@@ -998,43 +992,43 @@ _Thank you for choosing Solo Electronics!_
           {loadingOrders ? (
             <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
           ) : filteredOrders.length === 0 ? (
-            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">No Orders Found</div>
+            <div className="py-20 text-center text-muted-foreground font-black uppercase tracking-widest bg-foreground/5 rounded-[3rem] border border-border">No Orders Found</div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
               {filteredOrders.map((order) => (
-                <div key={order.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl">
+                <div key={order.id} className="bg-foreground/5 border border-border p-6 rounded-3xl">
                   <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{order.id}</span>
-                        <span className="text-gray-500 text-xs font-bold">{format(new Date(order.created_at), 'MMM dd, HH:mm')}</span>
+                        <span className="text-muted-foreground text-xs font-bold">{format(new Date(order.created_at), 'MMM dd, HH:mm')}</span>
                       </div>
-                      <h4 className="text-lg font-bold text-white uppercase">{order.delivery_address}</h4>
+                      <h4 className="text-lg font-bold text-foreground uppercase">{order.delivery_address}</h4>
                       <p className="text-blue-500 font-mono text-sm">{order.customer_phone}</p>
                     </div>
-                    <div className="w-full lg:w-96 bg-black/20 rounded-2xl p-4 border border-white/5">
+                    <div className="w-full lg:w-96 bg-foreground/10 rounded-2xl p-4 border border-foreground/5">
                       <StatusProgress currentStatus={order.status} />
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {(['pending', 'confirmed', 'delivering', 'delivered'] as OrderStatus[]).map((status) => (
-                        <button key={status} onClick={() => updateOrderStatus(order.id, status)} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", order.status === status ? "bg-white text-black" : "bg-white/5 text-gray-500 hover:bg-white/10")}>{status}</button>
+                        <button key={status} onClick={() => updateOrderStatus(order.id, status)} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", order.status === status ? "bg-foreground text-background" : "bg-foreground/5 text-muted-foreground hover:bg-foreground/10")}>{status}</button>
                       ))}
                     </div>
                   </div>
-                  <div className="border-t border-white/5 pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="border-t border-border/5 pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {order.items.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0">
                           <OptimizedImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-white uppercase">{item.name}</p>
-                          <p className="text-[10px] text-gray-500">Qty: {item.quantity}</p>
+                          <p className="text-xs font-bold text-foreground uppercase">{item.name}</p>
+                          <p className="text-[10px] text-muted-foreground">Qty: {item.quantity}</p>
                         </div>
                       </div>
                     ))}
                     <div className="lg:col-start-4 text-right flex flex-col items-end">
-                       <p className="text-white font-black text-xl italic tracking-tighter mb-4">UGX {order.total.toLocaleString()}</p>
+                       <p className="text-foreground font-black text-xl italic tracking-tighter mb-4">UGX {order.total.toLocaleString()}</p>
                        <button onClick={() => shareReceiptToCustomer(order)} className="px-6 py-2 bg-green-600/10 hover:bg-green-600/20 text-green-500 text-[9px] font-black uppercase tracking-widest rounded-xl border border-green-500/20">Send Receipt</button>
                     </div>
                   </div>
@@ -1050,23 +1044,23 @@ _Thank you for choosing Solo Electronics!_
            {loadingReviews ? (
             <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
           ) : reviews.length === 0 ? (
-            <div className="py-20 text-center text-gray-500 font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/10">No Reviews Found</div>
+            <div className="py-20 text-center text-muted-foreground font-black uppercase tracking-widest bg-foreground/5 rounded-[3rem] border border-border">No Reviews Found</div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
               {reviews.map((review) => (
-                <div key={review.id} className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] hover:bg-white/[0.07] transition-all">
+                <div key={review.id} className="bg-foreground/5 border border-border p-8 rounded-[2.5rem] hover:bg-foreground/[0.07] transition-all">
                   <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500">
                         <User size={20} />
                       </div>
                       <div>
-                        <h4 className="font-black text-white uppercase italic tracking-tighter">{review.user_name}</h4>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black">{format(new Date(review.created_at), 'PPP')}</p>
+                        <h4 className="font-black text-foreground uppercase italic tracking-tighter">{review.user_name}</h4>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">{format(new Date(review.created_at), 'PPP')}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                       <div className="flex text-amber-500 px-3 py-1 bg-black/40 rounded-full border border-white/5 h-fit">
+                       <div className="flex text-amber-500 px-3 py-1 bg-background/40 rounded-full border border-border h-fit">
                         {[...Array(5)].map((_, i) => (
                           <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} />
                         ))}
@@ -1082,8 +1076,8 @@ _Thank you for choosing Solo Electronics!_
                     </div>
                   </div>
                   
-                  <div className="mb-6 p-4 bg-black/20 rounded-2xl border border-white/5">
-                    <p className="text-gray-300 text-sm italic">"{review.comment}"</p>
+                  <div className="mb-6 p-4 bg-background/20 rounded-2xl border border-border">
+                    <p className="text-muted-foreground text-sm italic">"{review.comment}"</p>
                     <p className="text-[10px] text-blue-500 font-bold mt-2 uppercase tracking-widest">Product ID: {review.product_id}</p>
                   </div>
 
@@ -1102,7 +1096,7 @@ _Thank you for choosing Solo Electronics!_
                     </button>
                     <button 
                       onClick={() => deleteReview(review.id)}
-                      className="p-2 text-gray-700 hover:text-red-500 transition-colors"
+                      className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -1115,17 +1109,17 @@ _Thank you for choosing Solo Electronics!_
       )}
 
       {activeTab === 'admins' && (
-        <div className="max-w-2xl bg-white/5 border border-white/10 rounded-[2.5rem] p-10">
-          <div className="flex items-center gap-4 mb-8"><ShieldCheck className="text-blue-500" size={24} /><div><h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Whitelist</h3></div></div>
+        <div className="max-w-2xl bg-foreground/5 border border-border rounded-[2.5rem] p-10">
+          <div className="flex items-center gap-4 mb-8"><ShieldCheck className="text-blue-500" size={24} /><div><h3 className="text-xl font-black text-foreground uppercase italic tracking-tighter">Whitelist</h3></div></div>
           <div className="space-y-6">
             <div className="flex gap-4">
-              <input placeholder="Email" value={newEmail} onChange={e => setNewEmail(e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none" />
+              <input placeholder="Email" value={newEmail} onChange={e => setNewEmail(e.target.value)} className="flex-1 bg-background border border-border rounded-2xl px-6 py-4 text-foreground outline-none" />
               <button onClick={handleAddEmail} className="px-8 bg-blue-600 text-white font-black text-[10px] uppercase rounded-2xl">Whitelist</button>
             </div>
             <div className="space-y-3">
               {allowedEmails.map((email) => (
-                <div key={email} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl">
-                  <span className="text-sm font-bold text-white">{email}</span>
+                <div key={email} className="flex justify-between items-center p-4 bg-foreground/5 border border-border rounded-2xl">
+                  <span className="text-sm font-bold text-foreground">{email}</span>
                   <button onClick={() => handleRemoveEmail(email)} className="text-red-500/50 hover:text-red-500"><Trash2 size={16} /></button>
                 </div>
               ))}

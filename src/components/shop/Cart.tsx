@@ -134,14 +134,14 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]" />
-          <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-black border-l border-white/10 z-[110] flex flex-col shadow-2xl">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/50">
-              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-2">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]" />
+          <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-background border-l border-border z-[110] flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-background/50">
+              <h2 className="text-2xl font-black text-foreground italic uppercase tracking-tighter flex items-center gap-2">
                 <ShoppingCart className="text-blue-500" />
                 Engineering Basket
               </h2>
-              <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white"><X size={24} /></button>
+              <button onClick={onClose} className="p-2 hover:bg-foreground/10 rounded-full text-foreground"><X size={24} /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 no-scrollbar space-y-8">
@@ -149,7 +149,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 <>
                   {/* Hardware Selection */}
                   <div className="space-y-4">
-                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Hardware Selection</h3>
+                    <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Hardware Selection</h3>
                     <div className="space-y-4">
                       <AnimatePresence initial={false}>
                         {items.map((item) => (
@@ -159,33 +159,33 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                             animate={{ opacity: 1, x: 0, height: 'auto' }}
                             exit={{ opacity: 0, x: -100, height: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className="flex gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 overflow-hidden"
+                            className="flex gap-4 p-4 bg-foreground/5 rounded-2xl border border-border overflow-hidden"
                           >
                             <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
                               <OptimizedImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1">
                               <div className="flex justify-between items-start">
-                                <h4 className="font-bold text-white text-sm leading-tight">{item.name}</h4>
+                                <h4 className="font-bold text-foreground text-sm leading-tight">{item.name}</h4>
                                 <Tooltip content="Eliminate Item" position="left">
-                                  <button onClick={() => onRemove(item.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1">
+                                  <button onClick={() => onRemove(item.id)} className="text-muted-foreground hover:text-red-500 transition-colors p-1">
                                     <Trash2 size={14} />
                                   </button>
                                 </Tooltip>
                               </div>
                               <div className="flex justify-between items-center mt-2">
                                 <p className="text-blue-500 font-mono text-xs font-bold">UGX {(item.price * item.quantity).toLocaleString()}</p>
-                                <div className="flex items-center gap-3 bg-white/5 rounded-lg p-1">
+                                <div className="flex items-center gap-3 bg-foreground/5 rounded-lg p-1">
                                   <button 
                                     onClick={() => onUpdateQuantity(item.id, -1)} 
-                                    className="p-1 hover:bg-white/10 text-gray-400 hover:text-white transition-all rounded-md"
+                                    className="p-1 hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-all rounded-md"
                                   >
                                     <Minus size={12} />
                                   </button>
-                                  <span className="text-white text-xs font-black w-4 text-center">{item.quantity}</span>
+                                  <span className="text-foreground text-xs font-black w-4 text-center">{item.quantity}</span>
                                   <button 
                                     onClick={() => onUpdateQuantity(item.id, 1)} 
-                                    className="p-1 hover:bg-white/10 text-gray-400 hover:text-white transition-all rounded-md"
+                                    className="p-1 hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-all rounded-md"
                                   >
                                     <Plus size={12} />
                                   </button>
@@ -200,14 +200,14 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
 
                   {/* Payment Protocol */}
                   <div className="space-y-4">
-                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Payment Protocol</h3>
+                    <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Payment Protocol</h3>
                     <div className="grid grid-cols-2 gap-2">
-                       <button onClick={() => setPaymentMethod('cod')} className={cn("p-4 rounded-2xl border text-left transition-all", paymentMethod === 'cod' ? "bg-blue-600/20 border-blue-500" : "bg-white/5 border-white/10")}>
-                          <p className="text-[10px] font-bold text-white uppercase">Cash on Delivery</p>
-                          <p className="text-[8px] text-gray-500 mt-1 uppercase">Pay at your door</p>
+                       <button onClick={() => setPaymentMethod('cod')} className={cn("p-4 rounded-2xl border text-left transition-all", paymentMethod === 'cod' ? "bg-blue-600/20 border-blue-500" : "bg-foreground/5 border-border")}>
+                          <p className="text-[10px] font-bold text-foreground uppercase">Cash on Delivery</p>
+                          <p className="text-[8px] text-muted-foreground mt-1 uppercase">Pay at your door</p>
                        </button>
-                       <button onClick={() => setPaymentMethod('mobile_money')} className={cn("p-4 rounded-2xl border text-left transition-all", paymentMethod === 'mobile_money' ? "bg-yellow-500/20 border-yellow-500" : "bg-white/5 border-white/10")}>
-                          <p className="text-[10px] font-bold text-white uppercase">Mobile Money</p>
+                       <button onClick={() => setPaymentMethod('mobile_money')} className={cn("p-4 rounded-2xl border text-left transition-all", paymentMethod === 'mobile_money' ? "bg-yellow-500/20 border-yellow-500" : "bg-foreground/5 border-border")}>
+                          <p className="text-[10px] font-bold text-foreground uppercase">Mobile Money</p>
                           <p className="text-[8px] text-yellow-500 mt-1 uppercase tracking-widest font-black">MTN / Airtel</p>
                        </button>
                     </div>
@@ -215,10 +215,10 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     <AnimatePresence>
                       {paymentMethod === 'mobile_money' && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                           <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-4">
+                           <div className="p-4 bg-foreground/5 rounded-2xl border border-border space-y-4">
                               <div className="flex gap-2">
                                  {CARRIERS.map(c => (
-                                   <button key={c.id} onClick={() => setCarrier(c.id)} className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase transition-all", carrier === c.id ? c.color : "bg-black/40 border-white/10 text-gray-500")}>
+                                   <button key={c.id} onClick={() => setCarrier(c.id)} className={cn("flex-1 py-3 rounded-xl border text-[10px] font-black uppercase transition-all", carrier === c.id ? c.color : "bg-foreground/10 border-border text-muted-foreground")}>
                                       {c.name}
                                    </button>
                                  ))}
@@ -236,11 +236,11 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
 
                   {/* Logistics */}
                   <div className="space-y-4">
-                    <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Logistics & Zone</h3>
+                    <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Logistics & Zone</h3>
                     <div className="grid grid-cols-2 gap-2">
                       {DISTRICTS.map((d) => (
-                        <button key={d.name} onClick={() => setDistrict(d.name)} className={cn("p-4 rounded-2xl border text-left transition-all", district === d.name ? "bg-blue-600/20 border-blue-500" : "bg-white/5 border-white/10")}>
-                          <p className="text-[10px] font-bold text-white uppercase tracking-wider">{d.name}</p>
+                        <button key={d.name} onClick={() => setDistrict(d.name)} className={cn("p-4 rounded-2xl border text-left transition-all", district === d.name ? "bg-blue-600/20 border-blue-500" : "bg-foreground/5 border-border")}>
+                          <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">{d.name}</p>
                           <p className="text-[8px] text-blue-500 font-black tracking-widest mt-1">UGX {d.fee.toLocaleString()}</p>
                         </button>
                       ))}
@@ -248,13 +248,13 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     
                     <div className="space-y-3 pt-4">
                       <div className="relative group">
-                         <input type="text" placeholder="Full Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" />
+                         <input type="text" placeholder="Full Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-foreground/5 border border-border rounded-xl p-4 text-foreground text-sm outline-none focus:border-blue-500 transition-colors" />
                       </div>
                       <div className="relative group">
-                         <input type="tel" placeholder="Mobile Number" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" />
+                         <input type="tel" placeholder="Mobile Number" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="w-full bg-foreground/5 border border-border rounded-xl p-4 text-foreground text-sm outline-none focus:border-blue-500 transition-colors" />
                       </div>
                       <div className="relative group">
-                         <textarea placeholder="Delivery Address / Landmarks" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-colors h-24 no-scrollbar resize-none" />
+                         <textarea placeholder="Delivery Address / Landmarks" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="w-full bg-foreground/5 border border-border rounded-xl p-4 text-foreground text-sm outline-none focus:border-blue-500 transition-colors h-24 no-scrollbar resize-none" />
                       </div>
                     </div>
                   </div>
@@ -268,11 +268,11 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
             </div>
 
             {items.length > 0 && (
-              <div className="p-6 border-t border-white/10 bg-black/80 backdrop-blur-md">
+              <div className="p-6 border-t border-border bg-background/80 backdrop-blur-md">
                 <div className="space-y-2 mb-6">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]"><span className="text-gray-500">Subtotal</span><span className="text-white font-mono">UGX {subtotal.toLocaleString()}</span></div>
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]"><span className="text-gray-500">Logistics</span><span className="text-blue-500 font-mono">UGX {deliveryFee.toLocaleString()}</span></div>
-                  <div className="flex justify-between pt-3 mt-3 border-t border-white/10"><span className="text-sm font-black text-white italic uppercase tracking-tighter">Total Estimate</span><span className="text-xl font-black text-white font-mono tracking-tighter">UGX {grandTotal.toLocaleString()}</span></div>
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]"><span className="text-muted-foreground">Subtotal</span><span className="text-foreground font-mono">UGX {subtotal.toLocaleString()}</span></div>
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]"><span className="text-muted-foreground">Logistics</span><span className="text-blue-500 font-mono">UGX {deliveryFee.toLocaleString()}</span></div>
+                  <div className="flex justify-between pt-3 mt-3 border-t border-border"><span className="text-sm font-black text-foreground italic uppercase tracking-tighter">Total Estimate</span><span className="text-xl font-black text-foreground font-mono tracking-tighter">UGX {grandTotal.toLocaleString()}</span></div>
                 </div>
                 
                 <div className="flex flex-col gap-3">

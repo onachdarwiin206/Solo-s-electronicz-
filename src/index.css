@@ -6,6 +6,14 @@
   --font-display: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-muted-foreground: #64748b;
+
   @keyframes marquee {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
@@ -17,8 +25,28 @@
 }
 
 @layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+    --card: #f8fafc;
+    --card-foreground: #000000;
+    --border: #e2e8f0;
+    --ring: #3b82f6;
+  }
+
+  .dark {
+    --background: #000000;
+    --foreground: #ffffff;
+    --card: #111111;
+    --card-foreground: #ffffff;
+    --border: rgba(255, 255, 255, 0.1);
+    --ring: #3b82f6;
+  }
+
   body {
-    @apply font-sans bg-black text-white antialiased;
+    @apply font-sans antialiased transition-colors duration-300;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 
