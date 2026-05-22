@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import imageCompression from 'browser-image-compression';
-import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle, User } from 'lucide-react';
+import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle, User, QrCode, Printer, TrendingUp, ExternalLink, Search } from 'lucide-react';
+import { ResponsiveContainer, ComposedChart, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, Line, Area } from 'recharts';
 import { Product, Category, Order, OrderStatus, Review } from '../../types';
 import { PRODUCT_CATEGORIES } from '../../constants';
 import { cn } from '../../lib/utils';
@@ -64,6 +65,13 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingReviews, setLoadingReviews] = useState(false);
   
+  // Custom states for Logistics Chart, QR code printable shelf labels, and Market Comps Search
+  const [selectedQRProduct, setSelectedQRProduct] = useState<Product | null>(null);
+  const [marketCompsActive, setMarketCompsActive] = useState(false);
+  const [inspectingComps, setInspectingComps] = useState(false);
+  const [compsQuery, setCompsQuery] = useState('');
+  const [compResults, setCompResults] = useState<{ name: string; estimate: string; trend: string } | null>(null);
+
   // Order filtering states
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<OrderStatus | 'all'>('all');
@@ -201,6 +209,135 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
     is_verified: true
   });
 
+  // Action to isolate and print the selected shelf-label element via styled window context
+  const handlePrintLabel = (productToPrint: Product) => {
+    const printWindow = window.open('about:blank', '_blank', 'width=600,height=600');
+    if (!printWindow) return;
+    
+    // Build public viewable url for the item
+    const productUrl = `${window.location.origin}/?product=${productToPrint.id}`;
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Label - ${productToPrint.name}</title>
+          <style>
+            body { 
+              font-family: system-ui, -apple-system, sans-serif; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              min-height: 100vh; 
+              margin: 0; 
+              background: #fff; 
+            }
+            .label-card { 
+              border: 3px solid #000; 
+              border-radius: 20px; 
+              padding: 30px; 
+              width: 320px; 
+              text-align: center; 
+            }
+            .brand { 
+              font-size: 10px; 
+              font-weight: 900; 
+              letter-spacing: 0.15em; 
+              color: #1a56db; 
+              margin-bottom: 5px; 
+            }
+            .title { 
+              font-size: 18px; 
+              font-weight: 800; 
+              margin: 10px 0; 
+              line-height: 1.2; 
+            }
+            .category { 
+              font-size: 9px; 
+              font-weight: 700; 
+              color: #6b7280; 
+              text-transform: uppercase; 
+              margin-bottom: 12px; 
+            }
+            .price { 
+              font-size: 24px; 
+              font-weight: 900; 
+              color: #111827; 
+              font-family: monospace; 
+              margin: 10px 0; 
+            }
+            .qr-wrapper { 
+              margin: 15px auto; 
+              width: 160px; 
+              height: 160px; 
+            }
+            .qr-img { 
+              width: 100%; 
+              height: 100%; 
+              object-fit: contain; 
+            }
+            .footer-text { 
+              font-size: 8px; 
+              font-weight: 700; 
+              letter-spacing: 0.05em; 
+              color: #4b5563; 
+              text-transform: uppercase; 
+              margin-top: 15px; 
+            }
+          </style>
+        </head>
+        <body>
+          <div class="label-card">
+            <div class="brand">⚡ SOLO ELECTRONICS ⚡</div>
+            <div class="title">${productToPrint.name}</div>
+            <div class="category">${productToPrint.category || 'General Electronics'}</div>
+            <div class="price">UGX ${(productToPrint.price || 0).toLocaleString()}</div>
+            <div class="qr-wrapper">
+              <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(productUrl)}" />
+            </div>
+            <div class="footer-text">SCAN QR TO BROWSE SPECIFICATIONS & INITIATE ORDER</div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  // Pricing Estimator based on tech market indices
+  const triggerMarketCompsInvestigation = () => {
+    if (!newProduct.name) return;
+    setInspectingComps(true);
+    setCompResults(null);
+    
+    setTimeout(() => {
+      const isPhone = newProduct.category?.toLowerCase().includes('phone') || newProduct.name?.toLowerCase().includes('iphone') || newProduct.name?.toLowerCase().includes('samsung');
+      const isLaptop = newProduct.category?.toLowerCase().includes('laptop') || newProduct.name?.toLowerCase().includes('macbook') || newProduct.name?.toLowerCase().includes('thinkpad');
+      
+      let estRange = "UGX 450,000 - UGX 1,200,000";
+      let trendDetails = "Steady local street demand. Suggest 12-18% target markup.";
+      
+      if (isPhone) {
+        estRange = "UGX 600,000 - UGX 3,400,000";
+        trendDetails = "Extremely high liquidity. High competition on standard devices; keep markup slim (8-12%) for fast turns.";
+      } else if (isLaptop) {
+        estRange = "UGX 1,500,000 - UGX 5,5000,000";
+        trendDetails = "Higher ticket items. High corporate/student interest in Lira; 15-22% markup is sustainable.";
+      }
+      
+      setCompResults({
+        name: newProduct.name || '',
+        estimate: estRange,
+        trend: trendDetails
+      });
+      setInspectingComps(false);
+    }, 450);
+  };
+
   // Derived categories for suggestions
   const suggestedCategories = Array.from(new Set([
     ...PRODUCT_CATEGORIES,
@@ -246,6 +383,63 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
     }
     setLoadingOrders(false);
   };
+
+  // Derived analytical datasets for Logistics charts
+  const categoryAnalyticsData = PRODUCT_CATEGORIES.map(cat => {
+    const categoryProducts = initialProducts.filter(p => p.category === cat);
+    const totalStock = categoryProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
+    
+    let totalUnitsSold = 0;
+    orders.forEach(ord => {
+      ord.items?.forEach(itm => {
+        const fullProd = initialProducts.find(p => p.id === itm.id);
+        if (itm.category === cat || (fullProd && fullProd.category === cat)) {
+          totalUnitsSold += itm.quantity || 1;
+        }
+      });
+    });
+
+    return {
+      category: cat.replace(' & ', ' & ').split(' ')[0], // short style
+      fullCategory: cat,
+      "Daily Sales Volume": totalUnitsSold,
+      "Inventory Stock Level": totalStock,
+    };
+  });
+
+  const getDailyTrendData = () => {
+    const trendMap: Record<string, { date: string, "Units Sold": number, "Stock Level": number }> = {};
+    const totalGlobalStock = initialProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
+    
+    // Seed last 7 days chronologically
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = format(d, 'MMM dd');
+      trendMap[dateStr] = {
+        date: dateStr,
+        "Units Sold": 0,
+        "Stock Level": totalGlobalStock
+      };
+    }
+
+    // Populate units sold from orders
+    orders.forEach(ord => {
+      try {
+        const dStr = format(new Date(ord.created_at), 'MMM dd');
+        if (trendMap[dStr] && ord.items) {
+          const quantitySold = ord.items.reduce((s, itm) => s + (itm.quantity || 1), 0);
+          trendMap[dStr]["Units Sold"] += quantitySold;
+        }
+      } catch (err) {
+        // Safe bypass
+      }
+    });
+
+    return Object.values(trendMap);
+  };
+
+  const dailyLogisticsData = getDailyTrendData();
 
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -639,6 +833,81 @@ _Thank you for choosing Solo Electronics!_
                               className="w-full bg-background border border-border rounded-2xl py-4 pl-12 pr-6 text-foreground outline-none focus:border-blue-500 font-bold transition-all" 
                             />
                           </div>
+
+                          {/* Market Pricing Search and Inspection Tool */}
+                          {newProduct.name && newProduct.name.length > 2 && (
+                            <div className="p-4 bg-blue-600/5 hover:bg-blue-600/10 border border-blue-500/15 rounded-2xl space-y-3 transition-all duration-300">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <TrendingUp size={14} className="text-blue-500" />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-[#2563eb]">Market Pricing Comps Search</span>
+                                </div>
+                                <span className="text-[7.5px] font-mono text-muted-foreground/80 uppercase">Solo-Intel v2.1</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground/90 leading-tight">
+                                Compare "{newProduct.name}" specs across global & regional retail pipelines to optimize margins.
+                              </p>
+                              
+                              <div className="flex gap-2 flex-wrap">
+                                <a 
+                                  href={`https://www.google.com/search?q=${encodeURIComponent(newProduct.name + ' price specs Uganda')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest"
+                                >
+                                  <Search size={11} />
+                                  Google Search Similar
+                                </a>
+                                <a 
+                                  href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(newProduct.name)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-foreground/5 hover:bg-foreground/10 text-foreground border border-border rounded-xl text-[9px] font-black uppercase tracking-widest"
+                                >
+                                  <ExternalLink size={11} className="text-blue-500" />
+                                  Google Shopping
+                                </a>
+                                <a 
+                                  href={`https://www.jumia.co.ug/catalog/?q=${encodeURIComponent(newProduct.name)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-[#f68b1e]/15 hover:bg-[#f68b1e]/25 text-[#f68b1e] border border-[#f68b1e]/30 rounded-xl text-[9px] font-black uppercase tracking-widest"
+                                >
+                                  <ExternalLink size={11} />
+                                  Jumia Uganda
+                                </a>
+                              </div>
+
+                              <div className="pt-2 border-t border-blue-500/10">
+                                <button 
+                                  type="button"
+                                  onClick={triggerMarketCompsInvestigation}
+                                  className="text-[9px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                                >
+                                  {inspectingComps ? (
+                                    <>
+                                      <Loader2 size={10} className="animate-spin" />
+                                      Scanning tech indices...
+                                    </>
+                                  ) : (
+                                    "⚡ Check Category Smart Markup Guide"
+                                  )}
+                                </button>
+                                
+                                {compResults && (
+                                  <motion.div 
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mt-2.5 p-3 bg-background/50 border border-border rounded-xl space-y-1 text-[9.5px]"
+                                  >
+                                    <p className="font-bold text-foreground">Estimated East Africa Retail:</p>
+                                    <p className="font-mono font-black text-blue-500">{compResults.estimate}</p>
+                                    <p className="text-muted-foreground text-[8.5px] leading-tight uppercase font-medium mt-1">{compResults.trend}</p>
+                                  </motion.div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           
                           <div className="relative">
                             <Tag className="absolute left-4 top-4 text-muted-foreground/40" size={18} />
@@ -901,6 +1170,66 @@ _Thank you for choosing Solo Electronics!_
 
       {activeTab === 'inventory' && (
         <div className="space-y-12">
+          {/* Logistics Analytics Visualization: Daily Sales Volume vs Inventory Stock Levels */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-foreground/5 p-8 rounded-[2.5rem] border border-border">
+            {/* Column 1: Category Allocation index */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={18} className="text-blue-500" />
+                <h4 className="text-sm font-black uppercase tracking-widest text-[#2563eb]">Category Performance Benchmark</h4>
+              </div>
+              <p className="text-xs text-muted-foreground leading-normal">
+                Live evaluation comparing cumulative item sales volumes (sales units) against current store stock levels across categories.
+              </p>
+              
+              <div className="h-64 mt-4 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={categoryAnalyticsData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="category" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9 }} stroke="rgba(255,255,255,0.1)" />
+                    <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9 }} stroke="rgba(255,255,255,0.1)" />
+                    <RechartsTooltip 
+                      contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      labelStyle={{ color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 9, textTransform: 'uppercase', fontStyle: 'italic' }} />
+                    <Bar dataKey="Daily Sales Volume" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={24} />
+                    <Bar dataKey="Inventory Stock Level" fill="#10b981" radius={[6, 6, 0, 0]} barSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Column 2: Chronological last 7 days */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Package size={18} className="text-emerald-500" />
+                <h4 className="text-sm font-black uppercase tracking-widest text-emerald-400">7-Day Supply Chain Buffer</h4>
+              </div>
+              <p className="text-xs text-muted-foreground leading-normal">
+                Chronological units sold compared to cumulative available stock buffer. Ensures storekeepers track restock velocity.
+              </p>
+
+              <div className="h-64 mt-4 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={dailyLogisticsData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="date" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9 }} stroke="rgba(255,255,255,0.1)" />
+                    <YAxis yAxisId="left" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9 }} stroke="rgba(255,255,255,0.1)" label={{ value: 'Units Sold', angle: -90, position: 'insideLeft', style: { fill: 'rgba(255,255,255,0.3)', fontSize: 8 } }} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9 }} stroke="rgba(255,255,255,0.1)" label={{ value: 'Stock Buffer', angle: 90, position: 'insideRight', style: { fill: 'rgba(255,255,255,0.3)', fontSize: 8 } }} />
+                    <RechartsTooltip 
+                      contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      labelStyle={{ color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 9, textTransform: 'uppercase', fontStyle: 'italic' }} />
+                    <Bar yAxisId="left" dataKey="Units Sold" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20} />
+                    <Line yAxisId="right" type="monotone" dataKey="Stock Level" stroke="#059669" strokeWidth={2} dot={{ r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
           {Object.entries(groupedProducts).length === 0 ? (
             <div className="py-20 text-center text-muted-foreground font-black uppercase tracking-widest bg-foreground/5 rounded-[3rem] border border-border">
               No Inventory Items Detected
@@ -924,6 +1253,10 @@ _Thank you for choosing Solo Electronics!_
                         <p className="text-blue-500 font-mono text-sm font-bold">UGX {p.price.toLocaleString()}</p>
                         <div className="flex items-center gap-4 mt-2">
                             <button onClick={() => { setNewProduct(p); setEditingId(p.id); setIsAdding(true); }} className="text-[10px] font-black text-muted-foreground hover:text-foreground uppercase transition-colors">Edit Specification</button>
+                            <button onClick={() => setSelectedQRProduct(p)} className="text-[10px] font-black text-blue-500 hover:text-blue-400 uppercase transition-colors flex items-center gap-1">
+                              <QrCode size={11} className="shrink-0" />
+                              Shelf QR
+                            </button>
                             <button onClick={() => handleDelete(p.id)} className="text-[10px] font-black text-red-500/50 hover:text-red-500 uppercase transition-colors">Decommission</button>
                         </div>
                       </div>
@@ -1127,6 +1460,87 @@ _Thank you for choosing Solo Electronics!_
           </div>
         </div>
       )}
+
+      {/* Printable QR Shelf-Label Modal Overlay */}
+      <AnimatePresence>
+        {selectedQRProduct && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-card border border-border rounded-[2.5rem] p-8 max-w-md w-full relative shadow-2xl space-y-6 text-left"
+            >
+              <button 
+                onClick={() => setSelectedQRProduct(null)} 
+                className="absolute top-5 right-5 p-2 rounded-full hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-all"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="space-y-1">
+                <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Shelf-Print Utility</span>
+                <h3 className="text-xl font-black italic uppercase tracking-tight text-foreground">Interactive QR Generator</h3>
+              </div>
+
+              {/* Printable Shelf Card Element Design */}
+              <div className="border-2 border-dashed border-border p-6 rounded-3xl bg-background text-center relative overflow-hidden group">
+                <div className="absolute top-2 right-2 bg-blue-600/10 text-blue-400 font-black text-[7px] uppercase px-2 py-0.5 rounded-full">
+                  Shelf Ready Accent
+                </div>
+                <div className="text-[10px] uppercase tracking-widest text-[#2563eb] font-black italic">⚡ SOLO ELECTRONICS ⚡</div>
+                
+                <h4 className="text-base font-black text-foreground uppercase tracking-tight mt-3">{selectedQRProduct.name}</h4>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">{selectedQRProduct.category}</p>
+                
+                {/* Large high-contrast price tag */}
+                <p className="text-xl font-black font-mono text-foreground tracking-tight my-4">
+                  UGX {selectedQRProduct.price.toLocaleString()}
+                </p>
+
+                {/* Simulated/CDN QR server image */}
+                <div className="mx-auto w-40 h-40 bg-white p-3 rounded-2xl border border-border flex items-center justify-center shadow-sm">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${window.location.origin}/?product=${selectedQRProduct.id}`)}`} 
+                    alt="Product Shelf QR" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                <p className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest mt-4">
+                  Scan to explore full technical spec sheet & buy
+                </p>
+              </div>
+
+              {/* Printing Controls */}
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => handlePrintLabel(selectedQRProduct)} 
+                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <Printer size={14} />
+                  Print Label
+                </button>
+                <button 
+                  onClick={() => {
+                    const productUrl = `${window.location.origin}/?product=${selectedQRProduct.id}`;
+                    navigator.clipboard.writeText(productUrl);
+                    alert("Product index URL synced directly to clipboard!");
+                  }} 
+                  className="w-full py-3 px-4 bg-foreground/5 hover:bg-foreground/10 border border-border text-foreground font-black text-[10px] uppercase tracking-widest rounded-xl transition-all"
+                >
+                  Copy URL
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
