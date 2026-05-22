@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '../../lib/utils';
 import { Tooltip } from '../ui/Tooltip';
 import { OptimizedImage } from '../ui/OptimizedImage';
+import { useAuth } from '../../AuthContext';
 
 interface CartProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ const CARRIERS = [
 ];
 
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, t }: CartProps) {
+  const { user } = useAuth();
   const [district, setDistrict] = useState(DISTRICTS[0].name);
   const [deliveryFee, setDeliveryFee] = useState(DISTRICTS[0].fee);
   const [customerName, setCustomerName] = useState('');
@@ -44,6 +46,13 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const grandTotal = subtotal + deliveryFee;
+
+  useEffect(() => {
+    if (user && user.id !== 'legacy-admin') {
+      if (user.name) setCustomerName(user.name);
+      if (user.phone) setCustomerPhone(user.phone);
+    }
+  }, [user]);
 
   useEffect(() => {
     const d = DISTRICTS.find(d => d.name === district);
@@ -247,6 +256,21 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     </div>
                     
                     <div className="space-y-3 pt-4">
+                      {user ? (
+                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shrink-0" />
+                          <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400">
+                            Pre-filled via synced account
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
+                          <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">
+                            Guest Mode Active (Select or Sign Up later)
+                          </p>
+                        </div>
+                      )}
                       <div className="relative group">
                          <input type="text" placeholder="Full Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-foreground/5 border border-border rounded-xl p-4 text-foreground text-sm outline-none focus:border-blue-500 transition-colors" />
                       </div>

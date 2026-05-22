@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { UserProfile } from './types';
-import { signUp as supaSignUp, login as supaLogin, logoutUser, sendResetPasswordEmail, AuthResponse } from './auth';
+import { signUp as supaSignUp, login as supaLogin, logoutUser, sendResetPasswordEmail, AuthResponse, loginWithGoogle as supaLoginWithGoogle } from './auth';
 
 type AuthType = {
   user: UserProfile | null;
@@ -11,6 +11,7 @@ type AuthType = {
   clearRecoveryState: () => void;
   signUp: (email: string, password: string, fullName: string, whatsapp: string) => Promise<AuthResponse>;
   login: (email: string, password: string) => Promise<AuthResponse>;
+  loginWithGoogle: () => Promise<AuthResponse>;
   resetPassword: (email: string) => Promise<AuthResponse>;
   toggleWishlist: (productId: string) => Promise<boolean>;
   toggleLike: (productId: string) => Promise<boolean>;
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthType>({
   clearRecoveryState: () => {},
   signUp: async () => ({ success: false, error: 'Not implemented' }),
   login: async () => ({ success: false, error: 'Not implemented' }),
+  loginWithGoogle: async () => ({ success: false, error: 'Not implemented' }),
   resetPassword: async () => ({ success: false, error: 'Not implemented' }),
   toggleWishlist: async () => false,
   toggleLike: async () => false,
@@ -283,6 +285,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         clearRecoveryState: () => setIsRecovering(false),
         signUp: supaSignUp,
         login: supaLogin,
+        loginWithGoogle: supaLoginWithGoogle,
         resetPassword: sendResetPasswordEmail,
         toggleWishlist,
         toggleLike,

@@ -26,11 +26,11 @@
 
 @layer base {
   :root {
-    --background: #ffffff;
-    --foreground: #000000;
-    --card: #f8fafc;
-    --card-foreground: #000000;
-    --border: #e2e8f0;
+    --background: #000000;
+    --foreground: #ffffff;
+    --card: #111111;
+    --card-foreground: #ffffff;
+    --border: rgba(255, 255, 255, 0.1);
     --ring: #3b82f6;
   }
 
@@ -43,10 +43,66 @@
     --ring: #3b82f6;
   }
 
+  .glass {
+    --background: rgba(10, 12, 22, 0.25);
+    --foreground: #ffffff;
+    --card: rgba(255, 255, 255, 0.04);
+    --card-foreground: #ffffff;
+    --border: rgba(255, 255, 255, 0.15);
+    --ring: #3b82f6;
+  }
+
   body {
     @apply font-sans antialiased transition-colors duration-300;
     background-color: var(--background);
     color: var(--foreground);
+  }
+
+  /* Frosted Clear Glass UI overrides */
+  .glass body {
+    background-color: transparent !important;
+  }
+  
+  .glass .bg-background,
+  .glass .bg-background\/80,
+  .glass .bg-background\/50,
+  .glass .bg-black\/80,
+  .glass .bg-black\/50,
+  .glass .bg-black\/40 {
+    background-color: rgba(15, 23, 42, 0.3) !important;
+    backdrop-filter: blur(24px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
+  }
+  
+  .glass .bg-foreground\/5,
+  .glass .bg-white\/5,
+  .glass .bg-black\/5 {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    backdrop-filter: blur(16px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(120%) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+
+  .glass .bg-white\/10,
+  .glass .bg-foreground\/10 {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    backdrop-filter: blur(16px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(120%) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  .glass .border-border,
+  .glass .border-white\/10,
+  .glass .border-white\/5,
+  .glass .border-white\/20 {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* Make components shine under frosted clear glass */
+  .glass .shadow-2xl,
+  .glass .shadow-xl {
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5),
+                inset 0 1px 1px 0 rgba(255, 255, 255, 0.18) !important;
   }
 }
 

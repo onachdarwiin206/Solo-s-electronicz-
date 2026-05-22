@@ -152,7 +152,7 @@ export function ProductCard({
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
           
           {/* Interaction Buttons */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex flex-col gap-1.5 sm:gap-2 z-20">
             <Tooltip content={isWishlisted ? "Remove from Saved" : "Save for Later"} position="left">
               <button 
                 onClick={(e) => {
@@ -160,22 +160,22 @@ export function ProductCard({
                   onToggleWishlist?.(product.id);
                 }}
                 className={cn(
-                  "p-3 rounded-2xl backdrop-blur-md transition-all border",
+                  "p-2.5 sm:p-3 rounded-xl sm:rounded-2xl backdrop-blur-md transition-all border",
                   isWishlisted 
                     ? "bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-900/40" 
                     : "bg-black/40 border-white/10 text-white hover:bg-black/60"
                 )}
               >
-                <Bookmark size={18} fill={isWishlisted ? "currentColor" : "none"} />
+                <Bookmark size={16} className="sm:w-[18px] sm:h-[18px]" fill={isWishlisted ? "currentColor" : "none"} />
               </button>
             </Tooltip>
 
             <Tooltip content="Quick Look" position="left">
               <button 
                 onClick={handleQuickView}
-                className="p-3 bg-black/40 border border-white/10 text-white rounded-2xl backdrop-blur-md hover:bg-black/60 transition-all"
+                className="p-2.5 sm:p-3 bg-black/40 border border-white/10 text-white rounded-xl sm:rounded-2xl backdrop-blur-md hover:bg-black/60 transition-all"
               >
-                <Eye size={18} />
+                <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
             </Tooltip>
 
@@ -186,65 +186,65 @@ export function ProductCard({
                   onToggleLike?.(product.id);
                 }}
                 className={cn(
-                  "p-3 rounded-2xl backdrop-blur-md transition-all border flex flex-col items-center gap-0.5",
+                  "p-2.5 sm:p-3 rounded-xl sm:rounded-2xl backdrop-blur-md transition-all border flex flex-col items-center gap-0.5",
                   isLiked 
                     ? "bg-pink-600 border-pink-400 text-white shadow-xl shadow-pink-900/40" 
                     : "bg-black/40 border-white/10 text-white hover:bg-black/60"
                 )}
               >
-                <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+                <Heart size={16} className="sm:w-[18px] sm:h-[18px]" fill={isLiked ? "currentColor" : "none"} />
                 {product.likes_count !== undefined && (
-                  <span className="text-[8px] font-black">{product.likes_count}</span>
+                  <span className="text-[7px] sm:text-[8px] font-black">{product.likes_count}</span>
                 )}
               </button>
             </Tooltip>
           </div>
 
-          <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-20">
+          <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 flex flex-col gap-1.5 sm:gap-2 z-20">
             <div className={cn(
-              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border backdrop-blur-md transition-colors",
+              "px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest border backdrop-blur-md transition-colors",
               stockStatus.color
             )}>
               {stockStatus.label}
             </div>
             {product.is_verified && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/80 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-white border border-green-400/30">
-                <BadgeCheck size={12} />
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-green-500/80 backdrop-blur-md rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white border border-green-400/30">
+                <BadgeCheck size={10} className="sm:w-3 sm:h-3" />
                 Verified
               </div>
             )}
           </div>
 
-          <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
-            <div className="bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase text-white border border-blue-400/30">
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex flex-col gap-1.5 sm:gap-2 z-20">
+            <div className="bg-blue-600/80 backdrop-blur-md px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] sm:text-[9px] font-black tracking-widest uppercase text-white border border-blue-400/30">
               {product.category}
             </div>
             {product.price > 1000000 && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/80 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-black border border-yellow-400/30">
-                <BadgeCheck size={12} fill="currentColor" />
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-yellow-500/80 backdrop-blur-md rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-black border border-yellow-400/30">
+                <BadgeCheck size={10} className="sm:w-3 sm:h-3" fill="currentColor" />
                 Official Store
               </div>
             )}
             {product.price < 500000 && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-orange-500/80 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-white border border-orange-400/30">
-                <Zap size={12} fill="currentColor" />
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-orange-500/80 backdrop-blur-md rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white border border-orange-400/30">
+                <Zap size={10} className="sm:w-3 sm:h-3" fill="currentColor" />
                 Free Delivery
               </div>
             )}
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-2 gap-2">
-            <h3 className="text-xl font-black text-foreground group-hover:text-blue-400 transition-colors line-clamp-1 italic uppercase tracking-tighter">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-baseline gap-1 sm:gap-4 mb-2">
+            <h3 className="text-base sm:text-xl font-black text-foreground group-hover:text-blue-400 transition-colors line-clamp-2 sm:line-clamp-1 italic uppercase tracking-tighter">
               {product.name}
             </h3>
-            <p className="text-xl font-mono font-black text-blue-500 whitespace-nowrap">
+            <p className="text-base sm:text-xl font-mono font-black text-blue-500 whitespace-nowrap">
               UGX {product.price.toLocaleString()}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <div className="flex text-amber-500">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} size={10} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
@@ -255,29 +255,29 @@ export function ProductCard({
             </span>
           </div>
 
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-6 font-medium leading-relaxed">
+          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-4 sm:mb-6 font-medium leading-relaxed">
             {product.description}
           </p>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <button
               onClick={handleAdd}
               disabled={isAdding || (product.stock || 0) <= 0}
-              className="py-4 bg-foreground/5 hover:bg-foreground/10 text-foreground font-black rounded-2xl flex items-center justify-center gap-2 transition-all group/btn border border-border shadow-xl active:scale-95 disabled:opacity-50 text-[10px] uppercase tracking-widest"
+              className="py-3 sm:py-4 bg-foreground/5 hover:bg-foreground/10 text-foreground font-black rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all group/btn border border-border shadow-xl active:scale-95 disabled:opacity-50 text-[9px] sm:text-[10px] uppercase tracking-widest"
             >
               {isAdding ? (
-                <Loader2 className="animate-spin" size={16} />
+                <Loader2 className="animate-spin" size={14} />
               ) : (
-                <ShoppingCart size={16} className="group-hover/btn:scale-110 transition-transform" />
+                <ShoppingCart size={14} className="group-hover/btn:scale-110 transition-transform" />
               )}
               {isAdding ? 'Adding...' : 'Add to Cart'}
             </button>
             
             <button
               onClick={handleWhatsAppBuy}
-              className="py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all border border-green-400/30 shadow-xl shadow-green-900/20 active:scale-95 text-[10px] uppercase tracking-widest"
+              className="py-3 sm:py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all border border-green-400/30 shadow-xl shadow-green-900/20 active:scale-95 text-[9px] sm:text-[10px] uppercase tracking-widest"
             >
-              <MessageCircle size={16} fill="currentColor" />
+              <MessageCircle size={14} fill="currentColor" />
               Buy Now
             </button>
           </div>

@@ -58,7 +58,7 @@ export function FlashSales({ products, onAddToCart, onProductClick, onQuickView 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-8">
         {flashProducts.map(product => (
           <div key={product.id} className="relative group">
             <div className="absolute -top-3 -left-3 z-10 bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-full shadow-lg shadow-red-500/30 uppercase tracking-widest italic flex items-center gap-1">

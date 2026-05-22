@@ -1,11 +1,10 @@
 import { useState, ChangeEvent, useRef, useEffect } from 'react';
-import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut } from 'lucide-react';
+import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
 import { Tooltip } from '../ui/Tooltip';
 import { useAuth } from '../../AuthContext';
-import { ThemeToggle } from './ThemeToggle';
 
 interface NavbarProps {
   onCategorySelect: (category: string | null) => void;
@@ -40,6 +39,7 @@ export function Navbar({
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showLang, setShowLang] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [pressTimerActive, setPressTimerActive] = useState(false);
   const pressTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -139,7 +139,6 @@ export function Navbar({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
-            <ThemeToggle />
             <Tooltip content="Search Database">
               <button 
                 onClick={() => setShowSearch(!showSearch)}
@@ -232,32 +231,172 @@ export function Navbar({
               </button>
             </Tooltip>
 
-            <Tooltip content={user ? "Review Hardware Orders" : "Access Personal Cloud"}>
+            {/* Profile Dropdown */}
+            <div className="relative">
               <button 
-                onClick={user ? () => window.dispatchEvent(new CustomEvent('changeView', { detail: 'tracking' })) : onAuthClick}
+                onClick={() => {
+                  setShowProfile(!showProfile);
+                  setShowLang(false);
+                }}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border",
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border outline-none",
                   user 
                     ? "bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border-blue-500/20" 
                     : "bg-foreground/5 hover:bg-foreground/10 text-muted-foreground hover:text-foreground border-border"
                 )}
               >
-                <User size={16} className={cn(!user && "text-blue-500")} />
+                <User size={16} className={cn(isAdmin ? "text-amber-400 font-bold" : user ? "text-emerald-400" : "text-blue-500")} />
                 <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">
                   {user ? (user.name?.split(' ')[0] || 'Profile') : 'Login'}
                 </span>
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  isAdmin ? "bg-amber-400 animate-pulse" : user ? "bg-emerald-500" : "bg-blue-500"
+                )} />
               </button>
-            </Tooltip>
 
-            {isAdmin && (
-              <button 
-                onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'admin' }))}
-                className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-500 rounded-full transition-all"
-              >
-                <Package size={16} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Dash</span>
-              </button>
-            )}
+              <AnimatePresence>
+                {showProfile && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-3 w-80 bg-card border border-border rounded-3xl p-5 shadow-2xl backdrop-blur-3xl z-[120]"
+                  >
+                    {/* Header */}
+                    <div className="mb-4">
+                      {isAdmin ? (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-[8.5px] font-black uppercase tracking-widest text-amber-500">
+                          <ShieldCheck size={11} />
+                          System Administrator [Core]
+                        </div>
+                      ) : user ? (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[8.5px] font-black uppercase tracking-widest text-emerald-400">
+                          <UserCheck size={11} />
+                          Verified Client Session
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[8.5px] font-black uppercase tracking-widest text-blue-400 animate-pulse">
+                          <Eye size={11} />
+                          Potential Customer [Visitor]
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Body Info */}
+                    <div className="space-y-4">
+                      {isAdmin ? (
+                        <div className="p-3 bg-foreground/5 rounded-2xl border border-border/50">
+                          <p className="text-xs font-black text-foreground uppercase tracking-tight">{user?.name || 'Authorized Admin'}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground break-all mt-0.5">{user?.email}</p>
+                          <div className="mt-3 flex items-center gap-1 text-[8.5px] font-bold text-amber-400/80 uppercase tracking-widest">
+                            <Sparkles size={10} />
+                            Full System Clearance Enabled
+                          </div>
+                        </div>
+                      ) : user ? (
+                        <div className="p-3 bg-foreground/5 rounded-2xl border border-border/50 space-y-2">
+                          <div>
+                            <p className="text-xs font-black text-foreground uppercase tracking-tight">{user.name}</p>
+                            <p className="text-[10px] font-mono text-muted-foreground break-all mt-0.5">{user.email}</p>
+                          </div>
+                          {user.phone && (
+                            <p className="text-[9.5px] font-mono text-muted-foreground/85 flex items-center gap-1 border-t border-border/30 pt-2">
+                              <span>WhatsApp: {user.phone}</span>
+                            </p>
+                          )}
+                          <div className="flex items-center justify-around gap-2 bg-foreground/5 rounded-xl p-2 text-center border border-border/30 mt-1">
+                            <div>
+                              <p className="text-xs font-mono font-black text-blue-500">{wishlistCount}</p>
+                              <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Saved</p>
+                            </div>
+                            <div className="w-[1px] h-6 bg-border/40" />
+                            <div>
+                              <p className="text-xs font-mono font-black text-blue-500">{cartCount}</p>
+                              <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Basket</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-foreground/5 rounded-2xl border border-border/50 space-y-2 text-left">
+                          <p className="text-[10px] font-bold text-muted-foreground leading-relaxed uppercase tracking-wide">
+                            YOUR SELECTIONS ARE TEMPORARILY BUFFERED. CREATE AN ACCESS PROFILE TO SECURE SYSTEM QUOTE SYNCS.
+                          </p>
+                          <div className="bg-blue-600/5 rounded-xl p-2.5 border border-blue-500/10 text-center">
+                            <p className="text-[8.5px] font-black text-blue-500 uppercase tracking-widest">Client Privileges</p>
+                            <p className="text-[8px] text-muted-foreground mt-0.5 uppercase tracking-tight">Express Checkout, Quote Sync, Priority Support</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Dynamic Action Buttons */}
+                      <div className="space-y-2 pt-2 border-t border-border/40">
+                        {isAdmin && (
+                          <button 
+                            onClick={() => {
+                              window.dispatchEvent(new CustomEvent('changeView', { detail: 'admin' }));
+                              setShowProfile(false);
+                            }}
+                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-[9.5px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/15"
+                          >
+                            <ShieldCheck size={14} />
+                            Launch Admin Center
+                          </button>
+                        )}
+
+                        {user ? (
+                          <>
+                            <button 
+                              onClick={() => {
+                                window.dispatchEvent(new CustomEvent('changeView', { detail: 'tracking' }));
+                                setShowProfile(false);
+                              }}
+                              className="w-full py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground font-black text-[9.5px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 border border-border"
+                            >
+                              <ClipboardList size={14} className="text-blue-500" />
+                              Hardware Tracker Core
+                            </button>
+                            <button 
+                              onClick={async () => {
+                                await logout();
+                                setShowProfile(false);
+                              }}
+                              className="w-full py-2.5 bg-foreground/5 hover:bg-red-500/10 hover:text-red-500 text-muted-foreground font-black text-[9.5px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 border border-transparent"
+                            >
+                              <LogOut size={13} />
+                              Disconnect Session
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button 
+                              onClick={() => {
+                                onAuthClick();
+                                setShowProfile(false);
+                              }}
+                              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-[9.5px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/15"
+                            >
+                              <LogIn size={14} />
+                              Log In / Register Profile
+                            </button>
+                            <button 
+                              onClick={() => {
+                                window.dispatchEvent(new CustomEvent('changeView', { detail: 'shop' }));
+                                setShowProfile(false);
+                              }}
+                              className="w-full py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground font-black text-[9.5px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 border border-border"
+                            >
+                              <Eye size={13} className="text-blue-500" />
+                              Continue as Guest
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <button
               onClick={() => setIsOpen(!isOpen)}

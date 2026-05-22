@@ -514,7 +514,7 @@ _Your order is now being processed._
                                     View Full Sector →
                                   </button>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-10">
                                   {catProducts.slice(0, 3).map(product => (
                                     <ProductCard 
                                       key={product.id} 
@@ -592,7 +592,7 @@ _Your order is now being processed._
                             </div>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
                             {loadingProducts ? (
                               [...Array(6)].map((_, i) => (
                                 <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
