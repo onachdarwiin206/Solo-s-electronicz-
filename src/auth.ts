@@ -1,4 +1,4 @@
-import { supabase } from "./lib/supabase";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 
 export interface AuthResponse {
   success: boolean;
@@ -6,7 +6,30 @@ export interface AuthResponse {
   user?: any;
 }
 
+// In-Memory or LocalStorage database helper for sandbox mode
+const getSandboxUsers = (): any[] => {
+  try {
+    return JSON.parse(localStorage.getItem('solo_sandbox_users') || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const saveSandboxUser = (user: any) => {
+  try {
+    const users = getSandboxUsers();
+    users.push(user);
+    localStorage.setItem('solo_sandbox_users', JSON.stringify(users));
+  } catch (e) {
+    console.warn("[Sandbox] Could not keep user persisted:", e);
+  }
+};
+
 export const logoutUser = async () => {
+  if (!isSupabaseConfigured) {
+    localStorage.removeItem('solo_sandbox_session');
+    return true;
+  }
   const { error } = await supabase.auth.signOut();
   if (error) {
     console.error("Logout error:", error.message);
@@ -16,6 +39,26 @@ export const logoutUser = async () => {
 };
 
 export const signUp = async (email: string, password: string, fullName: string, whatsapp: string): Promise<AuthResponse> => {
+  if (!isSupabaseConfigured) {
+    const existing = getSandboxUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      return { success: false, error: "This email address is already locked inside our sandbox registry." };
+    }
+    const newId = `sand-usr-${Math.random().toString(36).substr(2, 9)}`;
+    const mockUser = {
+      id: newId,
+      email: email.toLowerCase(),
+      name: fullName,
+      whatsapp,
+      role: ['onachdarwiin@gmail.com', 'wanchaaaron@gmail.com'].includes(email.toLowerCase()) ? 'admin' : 'customer',
+      wishlist: [],
+      likes: [],
+      created_at: new Date().toISOString()
+    };
+    saveSandboxUser(mockUser);
+    return { success: true, user: mockUser };
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -32,6 +75,31 @@ export const signUp = async (email: string, password: string, fullName: string, 
 };
 
 export const login = async (email: string, password: string): Promise<AuthResponse> => {
+  if (!isSupabaseConfigured) {
+    const matched = getSandboxUsers().find(
+      u => u.email.toLowerCase() === email.toLowerCase()
+    );
+    if (!matched) {
+      // Create auto-guest profile for quick local tests
+      const isDefaultAdmin = ['onachdarwiin@gmail.com', 'wanchaaaron@gmail.com'].includes(email.toLowerCase());
+      const mockUser = {
+        id: `sand-usr-${Math.random().toString(36).substr(2, 9)}`,
+        email: email.toLowerCase(),
+        name: isDefaultAdmin ? 'Admin Representative' : 'Sandbox Guest User',
+        whatsapp: '+256701000000',
+        role: isDefaultAdmin ? 'admin' : 'customer',
+        wishlist: [],
+        likes: [],
+        created_at: new Date().toISOString()
+      };
+      saveSandboxUser(mockUser);
+      localStorage.setItem('solo_sandbox_session', JSON.stringify(mockUser));
+      return { success: true, user: mockUser };
+    }
+    localStorage.setItem('solo_sandbox_session', JSON.stringify(matched));
+    return { success: true, user: matched };
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -53,6 +121,14 @@ export const login = async (email: string, password: string): Promise<AuthRespon
 };
 
 export const getCurrentUser = async () => {
+  if (!isSupabaseConfigured) {
+    try {
+      return JSON.parse(localStorage.getItem('solo_sandbox_session') || 'null');
+    } catch {
+      return null;
+    }
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -66,6 +142,9 @@ export const getCurrentUser = async () => {
 };
 
 export const sendResetPasswordEmail = async (email: string): Promise<AuthResponse> => {
+  if (!isSupabaseConfigured) {
+    return { success: true }; // instant mock bypass
+  }
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/?view=reset-password`,
   });
@@ -83,6 +162,21 @@ export const requireAdmin = async () => {
 };
 
 export const loginWithGoogle = async (): Promise<AuthResponse> => {
+  if (!isSupabaseConfigured) {
+    const mockUser = {
+      id: `sand-goo-${Math.random().toString(36).substr(2, 9)}`,
+      email: 'onachdarwiin@gmail.com', // Simulate user email if matching
+      name: 'Google Sync Guest',
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces',
+      role: 'admin', // Auto grant admin for convenience in testing the sandboxed Google login button!
+      wishlist: [],
+      likes: [],
+      created_at: new Date().toISOString()
+    };
+    localStorage.setItem('solo_sandbox_session', JSON.stringify(mockUser));
+    return { success: true, user: mockUser };
+  }
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {

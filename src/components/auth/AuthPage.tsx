@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
 import { cn } from '../../lib/utils';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 interface AuthPageProps {
   onSuccess: () => void;
@@ -442,6 +443,21 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
               {isLogin 
                 ? "Connecting verifies user credential sets with supersonic edge relays." 
                 : "A confirmation secure mail directive will generate on dynamic submit."}
+            </div>
+
+            {/* Supabase Integration Config Panel */}
+            <div className="mt-8 pt-6 border-t border-border/40 flex flex-col items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-background border border-border/80 rounded-full shadow-sm">
+                <span className={cn("w-1.5 h-1.5 rounded-full", isSupabaseConfigured ? "bg-emerald-500 animate-pulse" : "bg-amber-500")} />
+                <span className="text-[8px] font-black uppercase tracking-widest text-[#2563eb]">
+                  {isSupabaseConfigured ? "Live Supabase Cloud Sync: Live" : "Offline Sandbox Fallback Sync: Active"}
+                </span>
+              </div>
+              {!isSupabaseConfigured && (
+                <p className="text-[8.5px] text-muted-foreground/80 leading-normal text-center max-w-xs uppercase tracking-wider">
+                  Supply <span className="text-amber-500 font-bold font-mono text-[7.5px]">VITE_SUPABASE_URL</span> & <span className="text-amber-500 font-bold font-mono text-[7.5px]">VITE_SUPABASE_ANON_KEY</span> in the AI Studio Settings menu to connect your personal live database securely.
+                </p>
+              )}
             </div>
           </div>
 

@@ -53,6 +53,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (!isSupabaseConfigured) {
+      try {
+        const cached = localStorage.getItem('solo_sandbox_session');
+        if (cached) {
+          const mockUser = JSON.parse(cached);
+          setUser(mockUser);
+          setIsAdmin(mockUser.role === 'admin' || ADMIN_EMAILS.includes(mockUser.email?.toLowerCase()));
+        }
+      } catch (e) {
+        console.warn("[Sandbox] Could not restore cached session:", e);
+      }
       setLoading(false);
       return;
     }
@@ -219,6 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await logoutUser();
+    setUser(null);
     setIsAdmin(false);
     sessionStorage.removeItem('admin_auth');
     sessionStorage.removeItem('admin_last_active');
@@ -275,6 +286,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
+  const contextSignUp = async (email: string, password: string, fullName: string, whatsapp: string) => {
+    const res = await supaSignUp(email, password, fullName, whatsapp);
+    if (!isSupabaseConfigured && res.success && res.user) {
+      setUser(res.user);
+      setIsAdmin(res.user.role === 'admin');
+      localStorage.setItem('solo_sandbox_session', JSON.stringify(res.user));
+    }
+    return res;
+  };
+
+  const contextLogin = async (email: string, password: string) => {
+    const res = await supaLogin(email, password);
+    if (!isSupabaseConfigured && res.success && res.user) {
+      setUser(res.user);
+      setIsAdmin(res.user.role === 'admin');
+      localStorage.setItem('solo_sandbox_session', JSON.stringify(res.user));
+    }
+    return res;
+  };
+
+  const contextLoginWithGoogle = async () => {
+    const res = await supaLoginWithGoogle();
+    if (!isSupabaseConfigured && res.success && res.user) {
+      setUser(res.user);
+      setIsAdmin(res.user.role === 'admin');
+      localStorage.setItem('solo_sandbox_session', JSON.stringify(res.user));
+    }
+    return res;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -283,9 +324,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAdmin,
         isRecovering,
         clearRecoveryState: () => setIsRecovering(false),
-        signUp: supaSignUp,
-        login: supaLogin,
-        loginWithGoogle: supaLoginWithGoogle,
+        signUp: contextSignUp,
+        login: contextLogin,
+        loginWithGoogle: contextLoginWithGoogle,
         resetPassword: sendResetPasswordEmail,
         toggleWishlist,
         toggleLike,
