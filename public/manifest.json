@@ -1,0 +1,33 @@
+{
+  "name": "Solo's Electronics Portal",
+  "short_name": "Solo's Tech",
+  "description": "Premium Electronics, Laptops, Mobile Phones, Gaming and engineering masterpieces from Solo's Store.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#2563eb",
+  "id": "/",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["shopping", "electronics"],
+  "shortcuts": [
+    {
+      "name": "Shop Products",
+      "short_name": "Shop",
+      "url": "/"
+    }
+  ]
+}

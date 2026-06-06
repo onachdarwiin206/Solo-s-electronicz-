@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Heart, History, User, ChevronRight, ShoppingBag, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { UserProfile, Order, Product } from '../../types';
 import { useAuth } from '../../AuthContext';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { safeGetLocalStorage } from '../../lib/sandboxDb';
 
 import { OptimizedImage } from '../ui/OptimizedImage';
 
@@ -22,6 +23,14 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
 
   const fetchOrders = async () => {
     setLoading(true);
+    if (!isSupabaseConfigured) {
+      const localOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
+      const filtered = localOrders.filter((o: any) => o.user_id === user.id);
+      setOrders(filtered);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -47,13 +56,15 @@ export function AccountDashboard({ user, products, onTrackOrder, onViewProduct }
   useEffect(() => {
     fetchOrders();
     
-    const channel = supabase.channel(`acc_orders_${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` }, () => {
-        fetchOrders();
-      })
-      .subscribe();
+    if (isSupabaseConfigured) {
+      const channel = supabase.channel(`acc_orders_${user.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` }, () => {
+          fetchOrders();
+        })
+        .subscribe();
 
-    return () => { if (channel) supabase.removeChannel(channel); };
+      return () => { if (channel) supabase.removeChannel(channel); };
+    }
   }, [user.id]);
 
   const wishlistProducts = products.filter(p => user.wishlist?.includes(p.id));

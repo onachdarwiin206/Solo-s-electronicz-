@@ -9,11 +9,13 @@ import { Cart } from './components/shop/Cart';
 import { CategoryBar } from './components/shop/CategoryBar';
 import { FlashSales } from './components/shop/FlashSales';
 import { Footer } from './components/layout/Footer';
+import { AndroidInstallPrompt } from './components/layout/AndroidInstallPrompt';
 import { INITIAL_PRODUCTS, PRODUCT_CATEGORIES } from './constants';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Product, CartItem, PaymentMethod } from './types';
 import { format, addDays } from 'date-fns';
 import { useAuth } from './AuthContext';
+import { generateDeterministicOrderId, safeGetLocalStorage, safeSetLocalStorage } from './lib/sandboxDb';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
 import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home } from 'lucide-react';
@@ -84,7 +86,7 @@ export default function App() {
         if (error.code === 'PGRST116' || error.code === '42P01' || error.hint?.includes('not found')) {
           console.warn("[Supabase] 'products' table missing. Using hardware feed fallback.");
         } else {
-          console.error("[Supabase] Query error:", error.message || error);
+          console.warn("[Supabase] Query warning:", error.message || error);
         }
         setProducts(INITIAL_PRODUCTS);
       } else if (data && data.length > 0) {
@@ -94,9 +96,9 @@ export default function App() {
       }
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-        console.error("[Supabase] Connection Failure: Check if project URL is correct.");
+        console.warn("[Supabase] Connection Failure: Check if project URL is correct.");
       } else {
-        console.error("[Supabase] Dynamic error:", err);
+        console.warn("[Supabase] Dynamic warning (handled):", err);
       }
       setProducts(INITIAL_PRODUCTS);
     } finally {
@@ -276,7 +278,7 @@ export default function App() {
   const handleCheckout = async (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string, customerName: string) => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const total = subtotal + deliveryFee;
-    const orderId = `SOLO-ORD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const orderId = generateDeterministicOrderId(phone, district);
     const createdAt = new Date().toISOString();
     const estDelivery = format(addDays(new Date(createdAt), 3), 'PPP');
 
@@ -297,6 +299,44 @@ export default function App() {
         { status: 'pending', message: 'Order initialized in the hardware pool.', timestamp: createdAt }
       ]
     };
+
+    if (!isSupabaseConfigured) {
+      const sandboxOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
+      sandboxOrders.push(orderData);
+      safeSetLocalStorage('solo_sandbox_orders', sandboxOrders);
+      console.log("[Sandbox] Order recorded locally via safe database layer:", orderData);
+      
+      const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
+      
+      const receiptTemplate = `
+🧾 *SOLO ELECTRONICS - DIGITAL RECEIPT (SANDBOX)*
+---------------------------------------
+*Order ID:* ${orderId}
+*Date:* ${new Date().toLocaleDateString()}
+*Customer:* ${customerName}
+
+*ITEMS:*
+${cartSummary}
+
+---------------------------------------
+*Subtotal:* UGX ${subtotal.toLocaleString()}
+*Delivery:* UGX ${deliveryFee.toLocaleString()}
+*TOTAL:* UGX ${total.toLocaleString()}
+
+*DELIVERY TO:*
+${district}, ${address}
+*PHONE:* ${phone}
+
+_Thank you for choosing Solo Electronics!_
+_Your order is now being processed._
+`.trim();
+      
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(receiptTemplate)}`;
+      window.open(whatsappUrl, '_blank');
+      
+      setCart([]);
+      return orderId;
+    }
 
     try {
       let { error } = await supabase.from('orders').insert(orderData);
@@ -355,7 +395,7 @@ _Your order is now being processed._
       setCart([]);
       return orderId;
     } catch (e: any) {
-      console.error("[Supabase] Order error:", e.message);
+      console.warn("[Supabase] Order warning:", e.message);
       alert("Command Failure: Your purchase signature could not be committed to the hardware pool. Please contact Solo Support.");
       return null;
     }
@@ -391,6 +431,7 @@ _Your order is now being processed._
   return (
     <div className="min-h-screen">
       <BackgroundSlideshow />
+      <AndroidInstallPrompt />
       
       {authResolving ? (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">

@@ -2,6 +2,7 @@ import { createContext, useEffect, useState, useContext, ReactNode, useRef } fro
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { UserProfile } from './types';
 import { signUp as supaSignUp, login as supaLogin, logoutUser, sendResetPasswordEmail, AuthResponse, loginWithGoogle as supaLoginWithGoogle } from './auth';
+import { safeGetLocalStorage, safeSetLocalStorage, SANDBOX_SYNC_EVENT } from "./lib/sandboxDb";
 
 type AuthType = {
   user: UserProfile | null;
@@ -47,21 +48,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Synchronize state across tabs & local triggers
+  useEffect(() => {
+    const handleSync = (e: any) => {
+      const { key, value } = e.detail;
+      if (key === 'solo_sandbox_session') {
+        setUser(value);
+        if (value) {
+          setIsAdmin(value.role === 'admin' || ADMIN_EMAILS.includes(value.email?.toLowerCase()));
+        } else {
+          setIsAdmin(false);
+        }
+      }
+    };
+    window.addEventListener(SANDBOX_SYNC_EVENT, handleSync);
+    return () => window.removeEventListener(SANDBOX_SYNC_EVENT, handleSync);
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && window.opener && (window.location.hash.includes('access_token=') || window.location.search.includes('code='))) {
        window.close();
     }
 
     if (!isSupabaseConfigured) {
-      try {
-        const cached = localStorage.getItem('solo_sandbox_session');
-        if (cached) {
-          const mockUser = JSON.parse(cached);
-          setUser(mockUser);
-          setIsAdmin(mockUser.role === 'admin' || ADMIN_EMAILS.includes(mockUser.email?.toLowerCase()));
-        }
-      } catch (e) {
-        console.warn("[Sandbox] Could not restore cached session:", e);
+      const mockUser = safeGetLocalStorage<UserProfile | null>('solo_sandbox_session', null);
+      if (mockUser) {
+        setUser(mockUser);
+        setIsAdmin(mockUser.role === 'admin' || ADMIN_EMAILS.includes(mockUser.email?.toLowerCase()));
       }
       setLoading(false);
       return;
@@ -243,6 +256,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ? currentWishlist.filter(id => id !== productId)
       : [...currentWishlist, productId];
     
+    if (!isSupabaseConfigured) {
+      const updatedUser = { ...user, wishlist: newWishlist };
+      setUser(updatedUser);
+      safeSetLocalStorage('solo_sandbox_session', updatedUser);
+      
+      const users = safeGetLocalStorage<any[]>('solo_sandbox_users', []);
+      const updatedUsers = users.map((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase() ? { ...u, wishlist: newWishlist } : u);
+      safeSetLocalStorage('solo_sandbox_users', updatedUsers);
+      return true;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -266,6 +290,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ? currentLikes.filter(id => id !== productId)
       : [...currentLikes, productId];
     
+    if (!isSupabaseConfigured) {
+      const updatedUser = { ...user, likes: newLikes };
+      setUser(updatedUser);
+      safeSetLocalStorage('solo_sandbox_session', updatedUser);
+      
+      const users = safeGetLocalStorage<any[]>('solo_sandbox_users', []);
+      const updatedUsers = users.map((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase() ? { ...u, likes: newLikes } : u);
+      safeSetLocalStorage('solo_sandbox_users', updatedUsers);
+      return true;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -291,7 +326,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!isSupabaseConfigured && res.success && res.user) {
       setUser(res.user);
       setIsAdmin(res.user.role === 'admin');
-      localStorage.setItem('solo_sandbox_session', JSON.stringify(res.user));
+      safeSetLocalStorage('solo_sandbox_session', res.user);
     }
     return res;
   };
@@ -301,7 +336,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!isSupabaseConfigured && res.success && res.user) {
       setUser(res.user);
       setIsAdmin(res.user.role === 'admin');
-      localStorage.setItem('solo_sandbox_session', JSON.stringify(res.user));
+      safeSetLocalStorage('solo_sandbox_session', res.user);
     }
     return res;
   };
@@ -311,7 +346,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!isSupabaseConfigured && res.success && res.user) {
       setUser(res.user);
       setIsAdmin(res.user.role === 'admin');
-      localStorage.setItem('solo_sandbox_session', JSON.stringify(res.user));
+      safeSetLocalStorage('solo_sandbox_session', res.user);
     }
     return res;
   };

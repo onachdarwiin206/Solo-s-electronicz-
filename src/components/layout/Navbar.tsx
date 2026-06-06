@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
 import { Tooltip } from '../ui/Tooltip';
 import { useAuth } from '../../AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 interface NavbarProps {
   onCategorySelect: (category: string | null) => void;
@@ -94,20 +95,43 @@ export function Navbar({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4 lg:gap-8 flex-1">
-            <button 
-              onClick={() => onCategorySelect(null)}
-              onMouseDown={startPressTimer}
-              onMouseUp={cancelPressTimer}
-              onMouseLeave={cancelPressTimer}
-              onTouchStart={startPressTimer}
-              onTouchEnd={cancelPressTimer}
-              className={cn(
-                "text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all shrink-0 italic select-none outline-none",
-                pressTimerActive && "scale-90 opacity-70"
-              )}
-            >
-              SOLO'S
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => onCategorySelect(null)}
+                onMouseDown={startPressTimer}
+                onMouseUp={cancelPressTimer}
+                onMouseLeave={cancelPressTimer}
+                onTouchStart={startPressTimer}
+                onTouchEnd={cancelPressTimer}
+                className={cn(
+                  "text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all shrink-0 italic select-none outline-none",
+                  pressTimerActive && "scale-90 opacity-70"
+                )}
+              >
+                SOLO'S
+              </button>
+              
+              <div 
+                className={cn(
+                  "hidden xs:flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[8px] font-mono uppercase tracking-[0.1em] transition-all",
+                  isSupabaseConfigured 
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.15)]" 
+                    : "bg-amber-500/10 border-amber-500/20 text-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.15)]"
+                )}
+              >
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className={cn(
+                    "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                    isSupabaseConfigured ? "bg-emerald-400" : "bg-amber-400"
+                  )}></span>
+                  <span className={cn(
+                    "relative inline-flex rounded-full h-1.5 w-1.5",
+                    isSupabaseConfigured ? "bg-emerald-500" : "bg-amber-500"
+                  )}></span>
+                </span>
+                <span>{isSupabaseConfigured ? "CLOUD-SYNC" : "SANDBOX-FLOW"}</span>
+              </div>
+            </div>
             
             <div className="hidden xl:block">
               <div className="flex items-baseline space-x-2">

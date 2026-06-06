@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MessageSquare } from 'lucide-react';
-import Lottie from 'lottie-react';
+import { X, MessageSquare, Terminal } from 'lucide-react';
 
 interface SoloBotProps {
   user: any;
@@ -13,15 +12,8 @@ interface SoloBotProps {
 
 export function SoloBot({ user, onLogin, onViewTerms, onTrackOrder, t }: SoloBotProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [animationData, setAnimationData] = useState<any>(null);
 
   useEffect(() => {
-    // Fetch a developer lottie animation
-    fetch('https://assets3.lottiefiles.com/packages/lf20_w51pcehl.json')
-      .then(res => res.json())
-      .then(data => setAnimationData(data))
-      .catch(err => console.error('Lottie fetch failed', err));
-
     const timer = setTimeout(() => setIsOpen(true), 3000);
     return () => clearTimeout(timer);
   }, []);
@@ -77,11 +69,7 @@ export function SoloBot({ user, onLogin, onViewTerms, onTrackOrder, t }: SoloBot
         onClick={() => setIsOpen(!isOpen)}
         className="pointer-events-auto relative w-16 h-16 md:w-20 md:h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-2xl overflow-hidden group"
       >
-        {animationData ? (
-          <Lottie animationData={animationData} loop={true} className="w-full h-full scale-[1.6]" />
-        ) : (
-          <MessageSquare className="text-white" size={32} />
-        )}
+        <Terminal className="text-white" size={32} />
         <div className="absolute inset-0 bg-blue-500/20 group-hover:bg-blue-500/10 transition-colors" />
       </motion.button>
     </div>

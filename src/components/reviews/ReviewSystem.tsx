@@ -58,16 +58,16 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
         if (error.code === '42P01' || error.message?.includes('not found')) {
           console.warn("[Supabase] Reviews table not found.");
         } else {
-          console.error("[Supabase] Reviews Fetch Error:", error.message || error);
+          console.warn("[Supabase] Reviews Fetch Warning:", error.message || error);
         }
       } else {
         setReviews(data as Review[]);
       }
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-        console.error("[Supabase] Connection Failure in reviews: Check project URL or network.");
+        console.warn("[Supabase] Connection Failure in reviews: Check project URL or network.");
       } else {
-        console.error("[Supabase] Dynamic reviews error:", err);
+        console.warn("[Supabase] Dynamic reviews warning:", err);
       }
     }
     setLoading(false);

@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, Mail, MapPin, Package, Settings, LogOut, ShieldCheck, Clock, CheckCircle, Truck, Zap, Calendar, ArrowLeft, Info } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { safeGetLocalStorage } from '../../lib/sandboxDb';
 import { Order, Product, OrderStatus } from '../../types';
 import { format, addDays } from 'date-fns';
 import { cn } from '../../lib/utils';
 import { OptimizedImage } from '../ui/OptimizedImage';
+import { INITIAL_PRODUCTS } from '../../constants';
 
 export default function UserProfile() {
   const { user, logout } = useAuth();
@@ -31,6 +33,26 @@ export default function UserProfile() {
     const fetchProfileData = async () => {
       if (!user) return;
       setLoading(true);
+
+      if (!isSupabaseConfigured) {
+        // Fetch sandbox local orders for this user
+        const localOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
+        const userOrders = localOrders.filter((o: any) => o.user_id === user.id);
+        setOrders(userOrders);
+
+        // Get product arrays
+        const wlIds = user.wishlist || [];
+        const lkIds = user.likes || [];
+        
+        const WL = INITIAL_PRODUCTS.filter(p => wlIds.includes(p.id));
+        const LK = INITIAL_PRODUCTS.filter(p => lkIds.includes(p.id));
+        
+        setWishlistProducts(WL);
+        setLikedProducts(LK);
+        setLoading(false);
+        return;
+      }
+
       try {
         // Fetch Orders
         const { data: ordersData } = await supabase

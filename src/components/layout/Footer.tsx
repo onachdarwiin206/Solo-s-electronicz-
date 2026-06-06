@@ -62,6 +62,9 @@ export function Footer({ t, onCategorySelect, onAdminPanelClick }: FooterProps) 
               <li className="hover:text-foreground transition-colors cursor-pointer" onClick={() => onCategorySelect('Computers')}>Workstations</li>
               <li className="hover:text-foreground transition-colors cursor-pointer" onClick={() => onCategorySelect('Electronics')}>Smart Devices</li>
               <li className="hover:text-blue-500 transition-colors cursor-pointer font-black" onClick={onAdminPanelClick}>Staff Portal</li>
+              <li className="text-blue-400 hover:text-blue-300 transition-all cursor-pointer font-bold flex items-center gap-1.5 text-xs select-none" onClick={() => window.dispatchEvent(new CustomEvent('open-install-guide'))}>
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] shrink-0" /> Install Android/Mobile App
+              </li>
               <li className="hover:text-amber-500 transition-colors cursor-pointer text-[10px] opacity-30">Admin Systems v2.4</li>
             </ul>
           </div>

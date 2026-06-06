@@ -40,7 +40,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'High-fidelity audio with industry-leading Active Noise Cancellation.',
     price: 2200000,
     category: 'TVs & Audio',
-    image: 'https://images.unsplash.com/photo-1546435770-a3e426da471b?q=75&w=800&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?q=75&w=800&auto=format&fit=crop',
     stock: 100,
     featured: true
   },
@@ -50,7 +50,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Premium convertible laptop with 4K OLED touch display and slim profile.',
     price: 5400000,
     category: 'Computers & Laptops',
-    image: 'https://images.unsplash.com/photo-1544006659-f0b21884cb1d?q=75&w=800&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1496181130204-755241524eab?q=75&w=800&auto=format&fit=crop',
     stock: 30,
     featured: true
   },

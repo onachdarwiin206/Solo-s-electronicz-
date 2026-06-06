@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useAuth } from '../../AuthContext';
+import { safeGetLocalStorage, safeSetLocalStorage, SANDBOX_SYNC_EVENT } from '../../lib/sandboxDb';
 import { uploadFile, getPublicUrl, deleteFile } from '../../lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { OptimizedImage } from '../ui/OptimizedImage';
@@ -150,7 +151,7 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
           .select('email');
         
         if (error) {
-           console.error("[Supabase] Admins Fetch Error:", error.message || error);
+           console.warn("[Supabase] Admins Fetch Warning:", error.message || error);
            if (error.code === '42P01' || error.message?.includes('does not exist')) {
              setMissingTables(prev => Array.from(new Set([...prev, 'admins'])));
            }
@@ -352,11 +353,15 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
   }, {} as Record<string, Product[]>);
 
   const fetchOrders = async () => {
+    setLoadingOrders(true);
     if (!isSupabaseConfigured) {
+      const localOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
+      const sorted = [...localOrders].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setOrders(sorted);
       setLoadingOrders(false);
       return;
     }
-    setLoadingOrders(true);
+
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -368,7 +373,7 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
           console.warn("[Supabase] 'orders' table not found.");
           setMissingTables(prev => Array.from(new Set([...prev, 'orders'])));
         } else {
-          console.error("[Supabase] Orders Fetch Error:", error.message || error);
+          console.warn("[Supabase] Orders Fetch Warning:", error.message || error);
         }
       } else {
         setMissingTables(prev => prev.filter(t => t !== 'orders'));
@@ -376,9 +381,9 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
       }
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-         console.error("[Supabase] Connection Failure in orders: Check network.");
+         console.warn("[Supabase] Connection Failure in orders: Check network.");
       } else {
-         console.error("[Supabase] Dynamic order error", err);
+         console.warn("[Supabase] Dynamic order warning:", err);
       }
     }
     setLoadingOrders(false);
@@ -442,23 +447,66 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
   const dailyLogisticsData = getDailyTrendData();
 
   useEffect(() => {
+    fetchOrders();
+    
+    // Wire up cross-tab synchronization for the logistics display
+    const handleSync = (e: any) => {
+      const { key } = e.detail;
+      if (key === 'solo_sandbox_orders') {
+        const localOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
+        const sorted = [...localOrders].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setOrders(sorted);
+      }
+    };
+    window.addEventListener(SANDBOX_SYNC_EVENT, handleSync);
+
     if (isSupabaseConfigured) {
-      fetchOrders();
       const channel = supabase.channel('orders_changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
           fetchOrders();
         })
         .subscribe();
-      return () => { if (channel) supabase.removeChannel(channel); };
+      return () => {
+        window.removeEventListener(SANDBOX_SYNC_EVENT, handleSync);
+        if (channel) supabase.removeChannel(channel);
+      };
     }
+    
+    return () => {
+      window.removeEventListener(SANDBOX_SYNC_EVENT, handleSync);
+    };
   }, []);
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    if (!isSupabaseConfigured) {
+      const localOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
+      const updated = localOrders.map((o: any) => {
+        if (o.id === orderId) {
+          const now = new Date().toISOString();
+          const logs = o.tracking_logs || [];
+          return {
+            ...o,
+            status,
+            updated_at: now,
+            tracking_logs: [
+              ...logs,
+              { status, message: `Order transitioned to ${status.toUpperCase()} stage by Admin.`, timestamp: now }
+            ]
+          };
+        }
+        return o;
+      });
+      safeSetLocalStorage('solo_sandbox_orders', updated);
+      setOrders(updated);
+      return;
+    }
+
     try {
       await supabase
         .from('orders')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', orderId);
+      fetchOrders();
     } catch (e) {
       console.error("Order Update Error:", e);
     }

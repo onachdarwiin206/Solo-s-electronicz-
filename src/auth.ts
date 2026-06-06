@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
+import { safeGetLocalStorage, safeSetLocalStorage } from "./lib/sandboxDb";
 
 export interface AuthResponse {
   success: boolean;
@@ -6,28 +7,22 @@ export interface AuthResponse {
   user?: any;
 }
 
-// In-Memory or LocalStorage database helper for sandbox mode
+// Sandbox database helper for sandbox mode
 const getSandboxUsers = (): any[] => {
-  try {
-    return JSON.parse(localStorage.getItem('solo_sandbox_users') || '[]');
-  } catch {
-    return [];
-  }
+  return safeGetLocalStorage<any[]>('solo_sandbox_users', []);
 };
 
 const saveSandboxUser = (user: any) => {
-  try {
-    const users = getSandboxUsers();
-    users.push(user);
-    localStorage.setItem('solo_sandbox_users', JSON.stringify(users));
-  } catch (e) {
-    console.warn("[Sandbox] Could not keep user persisted:", e);
-  }
+  const users = getSandboxUsers();
+  users.push(user);
+  safeSetLocalStorage('solo_sandbox_users', users);
 };
 
 export const logoutUser = async () => {
   if (!isSupabaseConfigured) {
-    localStorage.removeItem('solo_sandbox_session');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('solo_sandbox_session');
+    }
     return true;
   }
   const { error } = await supabase.auth.signOut();
@@ -93,10 +88,10 @@ export const login = async (email: string, password: string): Promise<AuthRespon
         created_at: new Date().toISOString()
       };
       saveSandboxUser(mockUser);
-      localStorage.setItem('solo_sandbox_session', JSON.stringify(mockUser));
+      safeSetLocalStorage('solo_sandbox_session', mockUser);
       return { success: true, user: mockUser };
     }
-    localStorage.setItem('solo_sandbox_session', JSON.stringify(matched));
+    safeSetLocalStorage('solo_sandbox_session', matched);
     return { success: true, user: matched };
   }
 
@@ -122,11 +117,7 @@ export const login = async (email: string, password: string): Promise<AuthRespon
 
 export const getCurrentUser = async () => {
   if (!isSupabaseConfigured) {
-    try {
-      return JSON.parse(localStorage.getItem('solo_sandbox_session') || 'null');
-    } catch {
-      return null;
-    }
+    return safeGetLocalStorage<any>('solo_sandbox_session', null);
   }
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -173,7 +164,7 @@ export const loginWithGoogle = async (): Promise<AuthResponse> => {
       likes: [],
       created_at: new Date().toISOString()
     };
-    localStorage.setItem('solo_sandbox_session', JSON.stringify(mockUser));
+    safeSetLocalStorage('solo_sandbox_session', mockUser);
     return { success: true, user: mockUser };
   }
 

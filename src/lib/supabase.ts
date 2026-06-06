@@ -37,10 +37,13 @@ const getCleanUrl = (url: string | undefined): string => {
 
 const cleanUrl = getCleanUrl(supabaseUrl);
 
+// Use a placeholder JWT to prevent initialization crashes in unconfigured sandboxed or static builds
+const dummyAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NzkyOTMyMDAsImV4cCI6MjAwMTM2OTIwMH0.placeholder';
+
 // Single instance of the Supabase client
 export const supabase = createClient(
   cleanUrl,
-  supabaseKey || '',
+  supabaseKey || dummyAnonKey,
   {
     auth: {
       persistSession: true,
