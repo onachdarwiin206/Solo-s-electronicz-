@@ -10,6 +10,7 @@ import { CategoryBar } from './components/shop/CategoryBar';
 import { FlashSales } from './components/shop/FlashSales';
 import { Footer } from './components/layout/Footer';
 import { AndroidInstallPrompt } from './components/layout/AndroidInstallPrompt';
+import { WhatsAppFloat } from './components/ui/WhatsAppFloat';
 import { INITIAL_PRODUCTS, PRODUCT_CATEGORIES } from './constants';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Product, CartItem, PaymentMethod } from './types';
@@ -432,6 +433,7 @@ _Your order is now being processed._
     <div className="min-h-screen">
       <BackgroundSlideshow />
       <AndroidInstallPrompt />
+      <WhatsAppFloat user={user} />
       
       {authResolving ? (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
@@ -457,7 +459,23 @@ _Your order is now being processed._
 
           <BottomNav 
             activeView={view} 
-            onViewChange={(v) => { setView(v); setCategory(null); }}
+            onViewChange={(v) => {
+              if (v === 'cart') {
+                setCartOpen(true);
+              } else if (v === 'search') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.dispatchEvent(new CustomEvent('toggleSearch'));
+              } else if (v === 'profile') {
+                if (user) {
+                  setView('tracking');
+                } else {
+                  setView('auth');
+                }
+              } else {
+                setView(v);
+                setCategory(null);
+              }
+            }}
             cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
           />
 
@@ -555,7 +573,7 @@ _Your order is now being processed._
                                     View Full Sector →
                                   </button>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-10">
+                                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 sm:gap-10">
                                   {catProducts.slice(0, 3).map(product => (
                                     <ProductCard 
                                       key={product.id} 
@@ -633,7 +651,7 @@ _Your order is now being processed._
                             </div>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
+                          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 sm:gap-8">
                             {loadingProducts ? (
                               [...Array(6)].map((_, i) => (
                                 <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">

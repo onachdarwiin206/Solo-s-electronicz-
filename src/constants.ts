@@ -50,7 +50,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Premium convertible laptop with 4K OLED touch display and slim profile.',
     price: 5400000,
     category: 'Computers & Laptops',
-    image: 'https://images.unsplash.com/photo-1496181130204-755241524eab?q=75&w=800&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?q=75&w=800&auto=format&fit=crop',
     stock: 30,
     featured: true
   },

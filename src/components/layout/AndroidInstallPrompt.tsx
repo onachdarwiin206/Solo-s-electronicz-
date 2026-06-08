@@ -72,10 +72,19 @@ export function AndroidInstallPrompt() {
     };
     window.addEventListener('open-install-guide', triggerGuideListener);
 
+    // Dismiss banner on scroll
+    const handleScroll = () => {
+      if (window.scrollY > 30) {
+        setShowBanner(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('open-install-guide', triggerGuideListener);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -102,68 +111,6 @@ export function AndroidInstallPrompt() {
 
   return (
     <>
-      {/* Dynamic Header/Toast Banner */}
-      <AnimatePresence>
-        {showBanner && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-20 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:max-w-md z-[60]"
-          >
-            <div className="bg-[#09090b]/95 backdrop-blur-md border border-blue-500/30 rounded-2xl p-4 shadow-2xl flex flex-col gap-3 relative overflow-hidden">
-              {/* Radial Glowing Background Decor */}
-              <div className="absolute -right-16 -top-16 w-32 h-32 bg-blue-600/10 blur-3xl rounded-full" />
-              
-              <div className="flex items-start justify-between">
-                <div className="flex gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shrink-0 text-blue-500">
-                    <Smartphone size={24} className="animate-pulse" />
-                  </div>
-                  <div>
-                    <h4 className="text-foreground text-xs font-black uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                      <span>Solo's Tech App</span>
-                      <span className="bg-emerald-500/10 text-emerald-400 text-[8px] px-1.5 py-0.5 rounded-full font-black border border-emerald-500/20">
-                        FREE INSTALL
-                      </span>
-                    </h4>
-                    <p className="text-muted-foreground text-[11px] leading-relaxed mt-0.5 max-w-[240px]">
-                      Install our fast, lightweight app directly to your device for offline shopping & instant orders.
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={dismissBanner}
-                  className="p-1 hover:bg-foreground/5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 mt-1">
-                <button
-                  onClick={handleInstallClick}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-wider py-2 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(37,99,235,0.4)]"
-                >
-                  <Download size={13} />
-                  {deferredPrompt ? "Install Now" : "Install Guide"}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowBanner(false);
-                    setShowGuideModal(true);
-                  }}
-                  className="px-3 py-2 bg-foreground/5 text-muted-foreground hover:text-foreground font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all border border-border"
-                >
-                  How?
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Guided Setup Interactive Dialogue Modal */}
       <AnimatePresence>
         {showGuideModal && (

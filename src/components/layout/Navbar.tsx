@@ -59,8 +59,13 @@ export function Navbar({
   };
 
   useEffect(() => {
+    const handleToggleSearch = () => {
+      setShowSearch(p => !p);
+    };
+    window.addEventListener('toggleSearch', handleToggleSearch);
     return () => {
       if (pressTimeout.current) clearTimeout(pressTimeout.current);
+      window.removeEventListener('toggleSearch', handleToggleSearch);
     };
   }, []);
 

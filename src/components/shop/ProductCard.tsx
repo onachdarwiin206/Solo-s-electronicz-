@@ -234,50 +234,50 @@ export function ProductCard({
           </div>
         </div>
 
-        <div className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-baseline gap-1 sm:gap-4 mb-2">
-            <h3 className="text-base sm:text-xl font-black text-foreground group-hover:text-blue-400 transition-colors line-clamp-2 sm:line-clamp-1 italic uppercase tracking-tighter">
+        <div className="p-3.5 xs:p-4.5 sm:p-6">
+          <div className="flex flex-col gap-1.5 mb-2">
+            <h3 className="text-[13px] xs:text-sm sm:text-lg md:text-xl font-black text-foreground group-hover:text-blue-400 transition-colors line-clamp-2 italic uppercase tracking-tighter">
               {product.name}
             </h3>
-            <p className="text-base sm:text-xl font-mono font-black text-blue-500 whitespace-nowrap">
+            <p className="text-sm xs:text-base sm:text-lg md:text-xl font-mono font-black text-blue-500 whitespace-nowrap">
               UGX {product.price.toLocaleString()}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex text-amber-500">
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <div className="flex text-amber-500 gap-0.5">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={10} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
+                <Star key={i} size={8} className="xs:w-2.5 xs:h-2.5" fill={i < (product.rating || 5) ? "currentColor" : "none"} />
               ))}
             </div>
-            <span className="text-[10px] font-mono text-muted-foreground font-bold uppercase tracking-widest">
+            <span className="text-[9px] xs:text-[10px] font-mono text-muted-foreground font-bold uppercase tracking-widest">
               {product.rating || 5}.0
             </span>
           </div>
 
-          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-4 sm:mb-6 font-medium leading-relaxed">
+          <p className="text-[10.5px] xs:text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-3.5 sm:mb-6 font-medium leading-relaxed">
             {product.description}
           </p>
           
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-1.5 xs:gap-2 sm:gap-3">
             <button
               onClick={handleAdd}
               disabled={isAdding || (product.stock || 0) <= 0}
-              className="py-3 sm:py-4 bg-foreground/5 hover:bg-foreground/10 text-foreground font-black rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all group/btn border border-border shadow-xl active:scale-95 disabled:opacity-50 text-[9px] sm:text-[10px] uppercase tracking-widest"
+              className="py-2.5 xs:py-3 sm:py-4 bg-foreground/5 hover:bg-foreground/10 text-foreground font-black rounded-2xl flex items-center justify-center gap-1.5 transition-all group/btn border border-border shadow-xl active:scale-95 disabled:opacity-50 text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-widest"
             >
               {isAdding ? (
-                <Loader2 className="animate-spin" size={14} />
+                <Loader2 className="animate-spin" size={12} />
               ) : (
-                <ShoppingCart size={14} className="group-hover/btn:scale-110 transition-transform" />
+                <ShoppingCart size={12} className="group-hover/btn:scale-110 transition-transform" />
               )}
               {isAdding ? 'Adding...' : 'Add to Cart'}
             </button>
             
             <button
               onClick={handleWhatsAppBuy}
-              className="py-3 sm:py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 transition-all border border-green-400/30 shadow-xl shadow-green-900/20 active:scale-95 text-[9px] sm:text-[10px] uppercase tracking-widest"
+              className="py-2.5 xs:py-3 sm:py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-1.5 transition-all border border-green-400/30 shadow-xl shadow-green-900/20 active:scale-95 text-[8px] xs:text-[9px] sm:text-[10px] uppercase tracking-widest"
             >
-              <MessageCircle size={14} fill="currentColor" />
+              <MessageCircle size={12} fill="currentColor" />
               Buy Now
             </button>
           </div>
