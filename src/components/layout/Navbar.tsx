@@ -177,14 +177,7 @@ export function Navbar({
               </button>
             </Tooltip>
 
-            <Tooltip content="Track Hardware">
-              <button 
-                onClick={onTrackingClick}
-                className="hidden sm:block p-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Package size={20} />
-              </button>
-            </Tooltip>
+
 
             {/* Language Selector Dropdown */}
             <div className="relative">
@@ -376,16 +369,6 @@ export function Navbar({
                         {user ? (
                           <>
                             <button 
-                              onClick={() => {
-                                window.dispatchEvent(new CustomEvent('changeView', { detail: 'tracking' }));
-                                setShowProfile(false);
-                              }}
-                              className="w-full py-2.5 bg-foreground/5 hover:bg-foreground/10 text-foreground font-black text-[9.5px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 border border-border"
-                            >
-                              <ClipboardList size={14} className="text-blue-500" />
-                              Hardware Tracker Core
-                            </button>
-                            <button 
                               onClick={async () => {
                                 await logout();
                                 setShowProfile(false);
@@ -487,15 +470,7 @@ export function Navbar({
               {item.name}
             </button>
           ))}
-          <button
-            onClick={() => {
-              onTrackingClick();
-              setIsOpen(false);
-            }}
-            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10"
-          >
-            Track Order
-          </button>
+
           <div className="px-3 py-4 border-t border-border mt-4">
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">Select Region / Language</p>
             <div className="grid grid-cols-2 gap-2">

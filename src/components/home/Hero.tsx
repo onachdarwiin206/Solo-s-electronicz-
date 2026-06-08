@@ -30,12 +30,6 @@ export function Hero({ onShopNow, onMarketingClick, t }: HeroProps) {
               {t.shop_now}
               <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
-            <button 
-              onClick={onMarketingClick}
-              className="w-full sm:w-auto px-10 py-5 bg-foreground/5 text-foreground font-bold rounded-2xl hover:bg-foreground/10 transition-all backdrop-blur-md border border-border text-xs uppercase tracking-widest"
-            >
-              Hardware Briefings
-            </button>
           </div>
         </motion.div>
       </div>

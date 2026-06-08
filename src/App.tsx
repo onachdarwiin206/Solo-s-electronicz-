@@ -21,7 +21,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
 import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home } from 'lucide-react';
 
-const OrderTracking = lazy(() => import('./components/tracking/OrderTracking'));
+// OrderTracking removed
 const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal'));
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 const ProductDetail = lazy(() => import('./components/shop/ProductDetail'));
@@ -31,7 +31,7 @@ const UserProfile = lazy(() => import('./components/profile/UserProfile'));
 const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
 const AuthPage = lazy(() => import('./components/auth/AuthPage'));
 
-type View = 'shop' | 'tracking' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth';
+type View = 'shop' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth';
 
 const WHATSAPP_NUMBER = "256793405517";
 
@@ -149,8 +149,8 @@ export default function App() {
         setIsAdminModalOpen(false);
         sessionStorage.removeItem('auth_redirect_pending');
       } else if (user && (isRedirectPending || view === 'shop' || view === 'marketing' || view === 'product-detail')) {
-        console.info("[Auth] Role: Customer. Navigating to User Tracking.");
-        setView('tracking');
+        console.info("[Auth] Role: Customer. Redirect to Shop.");
+        setView('shop');
         setIsAdminModalOpen(false);
         sessionStorage.removeItem('auth_redirect_pending');
       }
@@ -448,7 +448,7 @@ _Your order is now being processed._
             cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
             wishlistCount={wishlist.length}
             onCartClick={() => setCartOpen(true)}
-            onTrackingClick={() => setView('tracking')}
+            onTrackingClick={() => {}}
             onMarketingClick={() => setView('marketing')}
             isAdmin={isAdmin}
             currentLanguage={language}
@@ -466,11 +466,7 @@ _Your order is now being processed._
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 window.dispatchEvent(new CustomEvent('toggleSearch'));
               } else if (v === 'profile') {
-                if (user) {
-                  setView('tracking');
-                } else {
-                  setView('auth');
-                }
+                setView('auth');
               } else {
                 setView(v);
                 setCategory(null);
@@ -696,7 +692,6 @@ _Your order is now being processed._
                     />
                   )}
 
-                  {view === 'tracking' && <OrderTracking />}
                   {view === 'marketing' && <MarketingPortal />}
                   {view === 'auth' && <AuthPage onSuccess={() => setView(user?.role === 'admin' ? 'admin' : 'shop')} />}
                   {view === 'reset-password' && <div className="max-w-md mx-auto px-4"><ResetPassword onSuccess={() => setView('shop')} /></div>}
@@ -715,17 +710,7 @@ _Your order is now being processed._
               </div>
             )}
 
-            {(view !== 'shop' || category) && (
-              <div className="fixed bottom-32 right-8 z-[90]">
-                <button 
-                  onClick={() => { setView('shop'); setCategory(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
-                  className="bg-blue-600 p-4 rounded-full text-white shadow-2xl flex items-center gap-3 pl-6 pr-6 hover:bg-blue-500 transition-all group"
-                >
-                  <Home size={24} className="group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-black uppercase tracking-widest hidden md:inline">Return to Landing</span>
-                </button>
-              </div>
-            )}
+
 
             <div className="bg-white/5 backdrop-blur-md border-y border-white/10 py-12">
                <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">

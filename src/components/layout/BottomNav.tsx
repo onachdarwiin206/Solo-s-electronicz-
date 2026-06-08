@@ -13,7 +13,6 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
     { id: 'shop', label: 'Shop', icon: Home },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'cart', label: 'Cart', icon: ShoppingBag },
-    { id: 'tracking', label: 'Track', icon: Package },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
@@ -25,7 +24,6 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
           // Determine if tab is active
           const isActive = 
             (tab.id === 'shop' && (activeView === 'shop' || activeView === 'product-detail')) ||
-            (tab.id === 'tracking' && activeView === 'tracking') ||
             (tab.id === 'profile' && activeView === 'auth') ||
             (tab.id === activeView);
           
