@@ -18,6 +18,8 @@ export function AndroidInstallPrompt() {
       if (isStandalone) {
         setIsInstalled(true);
         setIsVisible(false);
+      } else {
+        setIsVisible(window.scrollY <= 80);
       }
     };
 
@@ -29,7 +31,7 @@ export function AndroidInstallPrompt() {
       setDeferredPrompt(e);
       // Ensure we display official badge
       if (localStorage.getItem('solo_pwa_installed') !== 'true') {
-        setIsVisible(true);
+        setIsVisible(window.scrollY <= 80);
       }
     };
 

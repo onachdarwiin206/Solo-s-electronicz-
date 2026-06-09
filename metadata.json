@@ -1,6 +1,6 @@
 {
   "name": "Solo's Phones & Electronics",
-  "description": "Premium electronics store with online shopping, digital receipts, delivery tracking, and a dedicated marketing portal.",
+  "description": "Premium electronics store with online shopping, digital receipts, and a dedicated marketing portal.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

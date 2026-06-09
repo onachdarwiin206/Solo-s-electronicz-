@@ -320,12 +320,8 @@ export default function App() {
 ${cartSummary}
 
 ---------------------------------------
-*Subtotal:* UGX ${subtotal.toLocaleString()}
-*Delivery:* UGX ${deliveryFee.toLocaleString()}
 *TOTAL:* UGX ${total.toLocaleString()}
 
-*DELIVERY TO:*
-${district}, ${address}
 *PHONE:* ${phone}
 
 _Thank you for choosing Solo Electronics!_
@@ -729,7 +725,7 @@ _Your order is now being processed._
                  <div className="bg-gray-900 border border-white/10 p-8 rounded-[3rem] max-w-2xl w-full relative">
                     <button onClick={() => setShowTerms(false)} className="absolute top-8 right-8"><X size={24} /></button>
                     <h2 className="text-3xl font-black mb-8 italic uppercase">Warranty & Service</h2>
-                    <div className="space-y-6 text-gray-400 text-sm"><p>All hardware comes with a 12-month Solo Assurance guarantee. We facilitate repairs and replacements directly with brand importers in Lira/Kampala.</p></div>
+                    <div className="space-y-6 text-gray-400 text-sm"><p>All hardware comes with a 12-month Solo Assurance guarantee. We facilitate repairs and replacements directly with brand importers in Lira City.</p></div>
                  </div>
               </motion.div>
             )}
