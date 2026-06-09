@@ -141,7 +141,7 @@ export function AndroidInstallPrompt() {
                     </span>
                   </div>
                   <h4 className="text-sm font-black text-white uppercase tracking-tight mt-1">INSTALL MOBILE APP</h4>
-                  <p className="text-[10.5px] text-gray-400 leading-normal mt-0.5">Shop with instant access, offline catalog syncing & fast express payments.</p>
+                  <p className="text-[10.5px] text-gray-400 leading-normal mt-0.5">Shop with instant access, offline catalog syncing & fast priority dispatch.</p>
                 </div>
               </div>
               <button 

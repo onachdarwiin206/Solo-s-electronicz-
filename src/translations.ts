@@ -4,7 +4,7 @@ export const translations = {
   en: {
     shop_now: "Shop Now",
     hero_title: "Premium Phones & Electronics Delivered Across Uganda",
-    hero_subtitle: "Shop authentic smartphones, accessories, laptops, and gadgets with fast delivery, secure payments, and real-time order tracking.",
+    hero_subtitle: "Shop authentic smartphones, accessories, laptops, and gadgets with fast delivery, warranty coverage, and real-time order tracking.",
     sign_in: "Sign In to Your Account",
     marketing_portal: "Marketing Portal",
     basket_empty: "Basket is empty",
@@ -52,7 +52,7 @@ export const translations = {
   sw: {
     shop_now: "Nunua Sasa",
     hero_title: "Simu na Vifaa vya Kielektroniki Vya Kulipiwa Vinavyowasilishwa Kote Uganda",
-    hero_subtitle: "Nunua simu halisi, vifaa vya kompyuta, na laptop kwa uwasilishaji wa haraka, malipo salama na ufuatiliaji wa agizo.",
+    hero_subtitle: "Nunua simu halisi, vifaa vya kompyuta, na laptop kwa uwasilishaji wa haraka, udhamini wa kuaminika na ufuatiliaji wa agizo.",
     sign_in: "Ingia kwenye Akaunti Yako",
     marketing_portal: "Lango la Masoko",
     basket_empty: "Kikapu ni tupu",

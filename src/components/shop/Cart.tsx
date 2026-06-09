@@ -19,17 +19,10 @@ interface CartProps {
   t: any;
 }
 
-const CARRIERS = [
-  { id: 'mtn', name: 'MTN MoMo', color: 'bg-yellow-400 text-black border-yellow-500' },
-  { id: 'airtel', name: 'Airtel Money', color: 'bg-red-600 text-white border-red-700' },
-];
-
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, t }: CartProps) {
   const { user } = useAuth();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | 'bank_transfer'>('cod');
-  const [carrier, setCarrier] = useState(CARRIERS[0].id);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
@@ -70,25 +63,6 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const handleMomoSubmit = async () => {
-    if (!validate()) return;
-    setIsProcessing(true);
-    
-    setTimeout(async () => {
-      try {
-        const orderId = await onCheckout('mobile_money', 'Lira City', 0, customerPhone, '', customerName);
-        if (orderId) {
-          setLastOrderId(orderId);
-          setIsSuccess(true);
-        }
-      } catch (err) {
-        setValidationError("Mobile money prompt simulation failed. Please retry.");
-      } finally {
-        setIsProcessing(false);
-      }
-    }, 1500);
   };
 
   const handleWhatsAppCheckout = async () => {
