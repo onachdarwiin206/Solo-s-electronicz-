@@ -9,18 +9,8 @@ interface WhatsAppFloatProps {
 export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [showTooltip, setShowTooltip] = useState(false);
 
   const WHATSAPP_NUMBER = "256793405517";
-
-  useEffect(() => {
-    // Show a small inviting tooltip after a few seconds to draw attention
-    const timer = setTimeout(() => {
-      setShowTooltip(true);
-    }, 4000);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleStartChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,26 +22,6 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
 
   return (
     <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 flex flex-col items-end gap-3 pointer-events-none">
-      {/* Tooltip Chat Bubble */}
-      <AnimatePresence>
-        {showTooltip && !isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.9 }}
-            className="pointer-events-auto bg-[#09090b]/95 backdrop-blur-md border border-green-500/30 text-white p-3 rounded-2xl shadow-xl max-w-[200px] text-xs font-medium text-right relative"
-          >
-            <button 
-              onClick={() => setShowTooltip(false)}
-              className="absolute -top-1.5 -left-1.5 bg-foreground/10 hover:bg-foreground/20 rounded-full p-0.5 text-muted-foreground hover:text-white transition-colors"
-            >
-              <X size={10} />
-            </button>
-            <p className="leading-tight">Need instant help? Talk to us on WhatsApp! 🚀</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Interactive Chat Popup Form */}
       <AnimatePresence>
         {isOpen && (
@@ -124,7 +94,6 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
         whileTap={{ scale: 0.95 }}
         onClick={() => {
           setIsOpen(!isOpen);
-          setShowTooltip(false);
         }}
         className="pointer-events-auto relative w-12 h-12 md:w-14 md:h-14 bg-green-600 hover:bg-green-500 rounded-full flex items-center justify-center shadow-2xl transition-all border border-green-500/20 group cursor-pointer"
       >

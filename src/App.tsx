@@ -709,15 +709,6 @@ _Your order is now being processed._
                 <button onClick={() => setView('admin')} className="bg-red-600 p-4 rounded-full text-white shadow-2xl flex items-center gap-3 pr-6"><UserCog size={24} /><span className="text-sm font-black uppercase tracking-widest">Admin Control</span></button>
               </div>
             )}
-
-
-
-            <div className="bg-white/5 backdrop-blur-md border-y border-white/10 py-12">
-               <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
-                  <div className="flex items-center gap-6"><ShieldCheck size={48} className="text-blue-500" /><div><h3 className="text-xl font-bold uppercase italic">Quality Assured</h3><p className="text-gray-500 text-sm">Every asset is verified by our engineering desk.</p></div></div>
-                  <button onClick={() => setShowTerms(true)} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all flex items-center gap-2 text-sm font-bold">Terms & Security <ChevronRight size={16} /></button>
-               </div>
-            </div>
           </main>
 
           <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />

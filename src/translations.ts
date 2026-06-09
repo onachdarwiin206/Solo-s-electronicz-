@@ -3,8 +3,8 @@ export type Language = 'en' | 'lg' | 'sw' | 'lgo' | 'it' | 'es' | 'de' | 'nyn';
 export const translations = {
   en: {
     shop_now: "Shop Now",
-    hero_title: "Hardware for the High Performance Individual",
-    hero_subtitle: "The next generation of tech is here. Computers, phones, and devices curated for the digital elite.",
+    hero_title: "Premium Phones & Electronics Delivered Across Uganda",
+    hero_subtitle: "Shop authentic smartphones, accessories, laptops, and gadgets with fast delivery, secure payments, and real-time order tracking.",
     sign_in: "Sign In to Your Account",
     marketing_portal: "Marketing Portal",
     basket_empty: "Basket is empty",
@@ -19,8 +19,8 @@ export const translations = {
   },
   lg: {
     shop_now: "Gula Kati",
-    hero_title: "Ebyuma by'omutindo ogwa waggulu",
-    hero_subtitle: "Mulembe omupya ogwa tekinologiya guwedde. Kompyuta, amassimu, n'ebikozesebwa ku lwa digital elite.",
+    hero_title: "Essimu n'Ebyuma eby'Omutindo ebisindikibwa mu Uganda yonna",
+    hero_subtitle: "Gula essimu entuufu, laptop, n'ebintu eby'omutindo mu mangu n'okulondoola oda yo mu mangu ddala.",
     sign_in: "Yingira mu akaunti yo",
     marketing_portal: "Ekifo kyamaketingi",
     basket_empty: "Ekkapu erimu nsa",
@@ -35,8 +35,8 @@ export const translations = {
   },
   nyn: {
     shop_now: "Gura Hati",
-    hero_title: "Ebyuma by'omutindo ogwa waggulu",
-    hero_subtitle: "Omulembe omusya ogwa tekinologiya gwiijire. Kompyuta, esimu, n'ebindi ebya digital elite.",
+    hero_title: "Esimu n'Ebyuma eby'Omutindo ebisindikibwa omu Uganda yoona",
+    hero_subtitle: "Gura esimu ez'amazima, laptop, n'ebintu eby'omutindo aha bwanu na mangu, n'okulondoola oda yawe.",
     sign_in: "Taha mu akaunti yawe",
     marketing_portal: "Akatale ka marketing",
     basket_empty: "Ekibo kirimu busha",
@@ -51,8 +51,8 @@ export const translations = {
   },
   sw: {
     shop_now: "Nunua Sasa",
-    hero_title: "Vifaa vya Utendaji wa Juu kwa Kila Mtu",
-    hero_subtitle: "Kizazi kijacho cha teknolojia kiko hapa. Kompyuta, simu, na vifaa vilivyochaguliwa kwa wasomi wa kidijitali.",
+    hero_title: "Simu na Vifaa vya Kielektroniki Vya Kulipiwa Vinavyowasilishwa Kote Uganda",
+    hero_subtitle: "Nunua simu halisi, vifaa vya kompyuta, na laptop kwa uwasilishaji wa haraka, malipo salama na ufuatiliaji wa agizo.",
     sign_in: "Ingia kwenye Akaunti Yako",
     marketing_portal: "Lango la Masoko",
     basket_empty: "Kikapu ni tupu",
@@ -99,8 +99,8 @@ export const translations = {
   },
   es: {
     shop_now: "Comprar ahora",
-    hero_title: "Hardware para el individuo de alto rendimiento",
-    hero_subtitle: "La próxima generación de tecnología está aquí. Computadoras, teléfonos y dispositivos seleccionados para la élite digital.",
+    hero_title: "Teléfonos y Electrónica Premium Entregados en Toda Uganda",
+    hero_subtitle: "Compre teléfonos inteligentes, accesorios y computadoras portátiles auténticos con entrega rápida y seguimiento en tiempo real.",
     sign_in: "Inicia sesión en tu cuenta",
     marketing_portal: "Portal de Marketing",
     basket_empty: "El carrito está vacío",
@@ -115,8 +115,8 @@ export const translations = {
   },
   de: {
     shop_now: "Jetzt kaufen",
-    hero_title: "Hardware für den Hochleistungsmenschen",
-    hero_subtitle: "Die nächste Generation der Technik ist da. Computer, Telefone und Geräte für die digitale Elite.",
+    hero_title: "Premium-Telefone und Elektronik Geliefert in Ganz Uganda",
+    hero_subtitle: "Kaufen Sie authentische Smartphones, Laptops und Zubehör mit schneller Lieferung und Echtzeit-Tracking.",
     sign_in: "Melden Sie sich bei Ihrem Konto an",
     marketing_portal: "Marketing-Portal",
     basket_empty: "Warenkorb ist leer",
