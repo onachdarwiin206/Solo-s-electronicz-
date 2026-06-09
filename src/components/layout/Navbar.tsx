@@ -114,27 +114,6 @@ export function Navbar({
               >
                 SOLO'S
               </button>
-              
-              <div 
-                className={cn(
-                  "hidden xs:flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[8px] font-mono uppercase tracking-[0.1em] transition-all",
-                  isSupabaseConfigured 
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.15)]" 
-                    : "bg-amber-500/10 border-amber-500/20 text-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.15)]"
-                )}
-              >
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className={cn(
-                    "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                    isSupabaseConfigured ? "bg-emerald-400" : "bg-amber-400"
-                  )}></span>
-                  <span className={cn(
-                    "relative inline-flex rounded-full h-1.5 w-1.5",
-                    isSupabaseConfigured ? "bg-emerald-500" : "bg-amber-500"
-                  )}></span>
-                </span>
-                <span>{isSupabaseConfigured ? "CLOUD-SYNC" : "SANDBOX-FLOW"}</span>
-              </div>
             </div>
             
             <div className="hidden xl:block">
@@ -159,7 +138,7 @@ export function Navbar({
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  placeholder="Search architecture..."
+                  placeholder="Search products..."
                   className="w-full bg-foreground/5 border border-border rounded-2xl py-2.5 pl-12 pr-4 text-xs text-foreground outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all font-mono placeholder:text-muted-foreground"
                 />
               </div>
@@ -167,7 +146,7 @@ export function Navbar({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
-            <Tooltip content="Search Database">
+            <Tooltip content="Search Products">
               <button 
                 onClick={() => setShowSearch(!showSearch)}
                 className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -176,7 +155,7 @@ export function Navbar({
               </button>
             </Tooltip>
 
-            <Tooltip content="Saved Hardware">
+            <Tooltip content="Wishlist">
               <button 
                 className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => {

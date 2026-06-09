@@ -156,18 +156,6 @@ export function Hero({ onShopNow, onMarketingClick, t }: HeroProps) {
         {/* 3. Left Column: Strong Copywriting, State indicators, and Multi-CTAs */}
         <div className="lg:col-span-7 flex flex-col pt-4">
           
-          {/* Environment / System State Pulsing Badge */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="self-start flex items-center gap-2 px-3.5 py-1.5 bg-blue-950/40 border border-blue-500/20 rounded-full text-[10px] font-mono font-black uppercase tracking-widest text-blue-400 mb-6 backdrop-blur-md"
-          >
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-            <span>CLOUD-SYNC ACTIVE</span>
-            <span className="text-gray-600">|</span>
-            <span className="text-gray-400">SANDBOX-FLOW</span>
-          </motion.div>
-
           {/* Action-Oriented Core Headline */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tighter sm:leading-[1.15] mb-4">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-200 to-white">
@@ -329,7 +317,7 @@ export function Hero({ onShopNow, onMarketingClick, t }: HeroProps) {
                     <span className="text-[9px] font-mono font-black text-blue-500">ORDER TRACKING</span>
                     <span className="text-[7.5px] font-bold text-emerald-500 px-1.5 py-0.5 bg-emerald-500/10 rounded">LIVE STAGE</span>
                   </div>
-                  <p className="text-[10.5px] font-black text-white uppercase italic truncate">Moto Hub Kampala</p>
+                  <p className="text-[10.5px] font-black text-white uppercase italic truncate">Moto Hub Lira City</p>
                   <p className="text-[8.5px] text-gray-400 truncate">Estimated Arrival Time: <span className="text-white font-mono">5:30 PM Today</span></p>
                 </div>
               </div>
