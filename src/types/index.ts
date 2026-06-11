@@ -76,7 +76,7 @@ export interface Order {
   tracking_logs?: TrackingLog[];
 }
 
-export type PaymentMethod = 'cod';
+export type PaymentMethod = 'cod' | 'momo';
 
 export interface Review {
   id: string;

@@ -12,6 +12,7 @@ import {
   Zap,
   LayoutGrid
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { PRODUCT_CATEGORIES } from '../../constants';
 
@@ -38,31 +39,38 @@ const getCategoryIcon = (category: string) => {
 
 export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarProps) {
   return (
-    <div className="bg-[#050508]/65 backdrop-blur-3xl border-b border-white/5 py-8 overflow-x-auto no-scrollbar scroll-smooth">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 flex gap-6 min-w-max justify-center items-center">
+    <div className="bg-[#030307]/80 backdrop-blur-2xl border-b border-white/[0.04] py-5 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-start md:justify-center gap-2.5 min-w-max">
+        
+        {/* All Sectors Tab */}
         <button
           onClick={() => onCategorySelect(null)}
           className={cn(
-            "flex flex-col items-center gap-3.5 p-5.5 rounded-[2rem] transition-all duration-300 border group min-w-[100px] cursor-pointer outline-none",
+            "relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide border",
             selectedCategory === null 
-              ? "bg-gradient-to-br from-blue-600 to-indigo-700 border-blue-400/40 shadow-[0_8px_30px_rgba(37,99,235,0.35)] text-white scale-105" 
-              : "bg-[#0c0d12] border-white/5 text-gray-400 hover:text-white hover:bg-[#13151f] hover:border-blue-500/30 hover:shadow-[0_4px_24px_rgba(59,130,246,0.1)] active:scale-95"
+              ? "text-black border-transparent font-bold" 
+              : "bg-white/[0.02] border-white/[0.04] text-gray-400 hover:text-white hover:bg-white/[0.05] hover:border-white/10 active:scale-95"
           )}
         >
+          {selectedCategory === null && (
+            <motion.div
+              layoutId="active-category-pill"
+              className="absolute inset-0 bg-white rounded-full z-0 shadow-[0_4px_20px_rgba(255,255,255,0.15)]"
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            />
+          )}
           <div className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
-            selectedCategory === null ? "bg-white text-blue-600 scale-110 shadow-md" : "bg-white/5 text-muted-foreground group-hover:bg-blue-500/10 group-hover:text-blue-400"
+            "relative z-10 w-4.5 h-4.5 flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
+            selectedCategory === null ? "text-black" : "text-gray-400 group-hover:text-white"
           )}>
-            <LayoutGrid size={22} className="transition-transform duration-300 group-hover:scale-110" />
+            <LayoutGrid size={15} strokeWidth={2.5} />
           </div>
-          <span className={cn(
-            "text-[9px] font-black uppercase tracking-[0.15em] font-mono",
-            selectedCategory === null ? "text-white" : "text-gray-500 group-hover:text-gray-300"
-          )}>
+          <span className="relative z-10">
             All Sectors
           </span>
         </button>
 
+        {/* Dynamic Category Tabs */}
         {PRODUCT_CATEGORIES.map((cat) => {
           const Icon = getCategoryIcon(cat);
           const isActive = selectedCategory === cat;
@@ -71,27 +79,32 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
               key={cat}
               onClick={() => onCategorySelect(cat)}
               className={cn(
-                "flex flex-col items-center gap-3.5 p-5.5 rounded-[2rem] transition-all duration-300 border group min-w-[130px] cursor-pointer outline-none",
+                "relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide border",
                 isActive 
-                  ? "bg-gradient-to-br from-blue-600 to-indigo-700 border-blue-400/40 shadow-[0_8px_30px_rgba(37,99,235,0.35)] text-white scale-105" 
-                  : "bg-[#0c0d12] border-white/5 text-gray-400 hover:text-white hover:bg-[#13151f] hover:border-blue-500/30 hover:shadow-[0_4px_24px_rgba(59,130,246,0.1)] active:scale-95"
+                  ? "text-black border-transparent font-bold" 
+                  : "bg-white/[0.02] border-white/[0.04] text-gray-400 hover:text-white hover:bg-white/[0.05] hover:border-white/10 active:scale-95"
               )}
             >
+              {isActive && (
+                <motion.div
+                  layoutId="active-category-pill"
+                  className="absolute inset-0 bg-white rounded-full z-0 shadow-[0_4px_20px_rgba(255,255,255,0.15)]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
               <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
-                isActive ? "bg-white text-blue-600 scale-110 shadow-md" : "bg-white/5 text-muted-foreground group-hover:bg-blue-500/10 group-hover:text-blue-400"
+                "relative z-10 w-4.5 h-4.5 flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
+                isActive ? "text-black" : "text-gray-400 group-hover:text-white"
               )}>
-                <Icon size={22} className="transition-transform duration-300 group-hover:scale-110" />
+                <Icon size={15} strokeWidth={2.5} />
               </div>
-              <span className={cn(
-                "text-[9px] font-black uppercase tracking-[0.15em] font-mono",
-                isActive ? "text-white" : "text-gray-500 group-hover:text-gray-300"
-              )}>
+              <span className="relative z-10">
                 {cat}
               </span>
             </button>
           );
         })}
+
       </div>
     </div>
   );

@@ -199,42 +199,28 @@ export function ProductCard({
               </button>
             </Tooltip>
           </div>
-
-          <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 flex flex-col gap-1.5 sm:gap-2 z-20">
-            <div className={cn(
-              "px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest border backdrop-blur-md transition-colors",
-              stockStatus.color
-            )}>
-              {stockStatus.label}
-            </div>
-            {product.is_verified && (
-              <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-green-500/80 backdrop-blur-md rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white border border-green-400/30">
-                <BadgeCheck size={10} className="sm:w-3 sm:h-3" />
-                Verified
-              </div>
-            )}
-          </div>
-
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex flex-col gap-1.5 sm:gap-2 z-20">
-            <div className="bg-blue-600/80 backdrop-blur-md px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] sm:text-[9px] font-black tracking-widest uppercase text-white border border-blue-400/30">
-              {product.category}
-            </div>
-            {product.price > 1000000 && (
-              <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-yellow-500/80 backdrop-blur-md rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-black border border-yellow-400/30">
-                <BadgeCheck size={10} className="sm:w-3 sm:h-3" fill="currentColor" />
-                Official Store
-              </div>
-            )}
-            {product.price < 500000 && (
-              <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-orange-500/80 backdrop-blur-md rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white border border-orange-400/30">
-                <Zap size={10} className="sm:w-3 sm:h-3" fill="currentColor" />
-                Free Delivery
-              </div>
-            )}
-          </div>
         </div>
 
         <div className="p-3.5 xs:p-4.5 sm:p-6">
+          <div className="flex flex-wrap gap-1.5 mb-2.5 items-center">
+            {/* Minimal Inline Badges to replace the heavy absolute overlays */}
+            <span className={cn(
+              "px-2 py-0.5 rounded-md text-[8px] font-mono font-black uppercase tracking-wider border",
+              stockStatus.color
+            )}>
+              {stockStatus.label}
+            </span>
+            {product.is_verified && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-md text-[8px] font-mono font-black uppercase tracking-wider">
+                <BadgeCheck size={8} />
+                Verified
+              </span>
+            )}
+            <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-md text-[8px] font-mono font-black uppercase tracking-wider">
+              {product.category}
+            </span>
+          </div>
+
           <div className="flex flex-col gap-1.5 mb-2">
             <h3 className="text-[13px] xs:text-sm sm:text-lg md:text-xl font-black text-foreground group-hover:text-blue-400 transition-colors line-clamp-2 italic uppercase tracking-tighter">
               {product.name}

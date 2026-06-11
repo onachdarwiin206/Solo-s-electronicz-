@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
 import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
 import { BottomNav } from './components/layout/BottomNav';
-import { Hero } from './components/home/Hero';
 import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
 import { CategoryBar } from './components/shop/CategoryBar';
+import { HomeHero } from './components/home/HomeHero';
 import { FlashSales } from './components/shop/FlashSales';
 import { Footer } from './components/layout/Footer';
 import { AndroidInstallPrompt } from './components/layout/AndroidInstallPrompt';
@@ -477,13 +477,20 @@ _Your order is now being processed._
                 <Suspense fallback={<div className="flex items-center justify-center py-40"><Loader2 className="animate-spin text-blue-500" size={48} /></div>}>
                   {view === 'shop' && (
                     <>
-                      {!category && !searchQuery && (
-                        <Hero onShopNow={() => document.getElementById('tech-inventory')?.scrollIntoView({ behavior: 'smooth' })} onMarketingClick={() => setView('marketing')} t={t} />
-                      )}
-                      
                       <div className="z-40">
                          <CategoryBar onCategorySelect={(cat) => setCategory(cat)} selectedCategory={category} />
                       </div>
+
+                      {!category && !searchQuery && products.length > 0 && (
+                        <HomeHero 
+                          products={products}
+                          onAddToCart={addToCart}
+                          onProductClick={(p) => { setSelectedProduct(p); setView('product-detail'); }}
+                          onQuickView={(p) => setQuickViewProduct(p)}
+                          onCategorySelect={(cat) => setCategory(cat)}
+                          t={t}
+                        />
+                      )}
 
                       <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         {/* Deactivated for now: 
