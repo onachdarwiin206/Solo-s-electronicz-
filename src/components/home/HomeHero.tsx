@@ -369,26 +369,26 @@ export function HomeHero({
       {!category && !searchQuery && (
         <>
           {/* 3. THE DYNAMIC HARDWARE INVENTORY FEED (FORMERLY #TECH-INVENTORY) */}
-          <section id="hardware-catalog-sectors" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="flex justify-between items-end mb-12 border-b border-white/[0.04] pb-6 text-left">
-               <div className="space-y-2">
+          <section id="hardware-catalog-sectors" className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="flex justify-between items-end mb-6 border-b border-white/[0.04] pb-3 text-left">
+               <div className="space-y-1">
                  <span className="text-[10px] font-mono tracking-[0.4em] text-blue-500 uppercase font-black">
                    HARDWARE RECON
                  </span>
-                 <h2 className="text-4xl font-black tracking-tighter uppercase italic text-white leading-none">
+                 <h2 className="text-2xl font-black tracking-tighter uppercase italic text-white leading-none">
                    Hardware Feed
                  </h2>
                </div>
                <div className="flex items-center gap-4">
                   {loadingProducts && <Loader2 size={16} className="animate-spin text-blue-500" />}
-                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     {filteredProducts.length} Results
                   </span>
                </div>
             </div>
 
             {groupedMainProducts && !loadingProducts && (
-              <div className="space-y-32">
+              <div className="space-y-12">
                 {Object.entries(groupedMainProducts)
                   .sort(([a], [b]) => {
                     const idxA = PRODUCT_CATEGORIES.indexOf(a as any);
@@ -401,23 +401,23 @@ export function HomeHero({
                   .map(([cat, catProducts]) => (
                   <motion.section 
                     key={cat} 
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
-                    className="space-y-12 text-left"
+                    className="space-y-6 text-left"
                   >
                     <div className="flex items-center gap-6 group">
                       <div className="flex flex-col">
-                        <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white group-hover:text-blue-500 transition-colors leading-none">{cat}</h3>
+                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-blue-500 transition-colors leading-none">{cat}</h3>
                         <div className="flex items-center gap-2 mt-1.5 font-mono">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{catProducts.length} Units Active</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                          <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{catProducts.length} Units Active</span>
                         </div>
                       </div>
                       <div className="h-px flex-1 bg-gradient-to-r from-blue-500/30 to-transparent" />
                       <button 
                         onClick={() => onCategorySelect(cat)}
-                        className="px-6 py-3 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-white hover:bg-blue-600/20 transition-all shadow-xl cursor-pointer"
+                        className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-blue-400 hover:text-white hover:bg-blue-600/20 transition-all shadow-xl cursor-pointer"
                       >
                         View Full Sector →
                       </button>
@@ -426,7 +426,7 @@ export function HomeHero({
                       {catProducts.slice(0, 3).map((item, idx) => (
                         <motion.div
                           key={item.id}
-                          initial={{ opacity: 0, y: 20 }}
+                          initial={{ opacity: 0, y: 15 }}
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true, margin: "-100px" }}
                           transition={{ delay: idx * 0.04 }}
@@ -498,14 +498,14 @@ export function HomeHero({
                 ))}
 
                 {/* Category Quick Badges footer */}
-                <div className="py-20 border-t border-white/10">
-                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 text-center mb-10">Direct Sector Access</p>
-                   <div className="flex flex-wrap justify-center gap-4">
+                <div className="py-10 border-t border-white/10">
+                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 text-center mb-4">Direct Sector Access</p>
+                   <div className="flex flex-wrap justify-center gap-3">
                       {PRODUCT_CATEGORIES.map(cat => (
                         <button
                           key={cat}
                           onClick={() => onCategorySelect(cat)}
-                          className="px-8 py-4 bg-white/5 border border-white/10 rounded-3xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:border-blue-500/50 hover:bg-white/10 transition-all cursor-pointer"
+                          className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:border-blue-500/50 hover:bg-white/10 transition-all cursor-pointer"
                         >
                           {cat}
                         </button>
