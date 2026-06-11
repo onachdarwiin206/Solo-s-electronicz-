@@ -481,205 +481,25 @@ _Your order is now being processed._
                          <CategoryBar onCategorySelect={(cat) => setCategory(cat)} selectedCategory={category} />
                       </div>
 
-                      {!category && !searchQuery && products.length > 0 && (
+                      {products.length > 0 && (
                         <HomeHero 
                           products={products}
+                          filteredProducts={filteredProducts}
+                          groupedMainProducts={groupedMainProducts}
+                          loadingProducts={loadingProducts}
+                          category={category}
+                          searchQuery={searchQuery}
                           onAddToCart={addToCart}
                           onProductClick={(p) => { setSelectedProduct(p); setView('product-detail'); }}
                           onQuickView={(p) => setQuickViewProduct(p)}
                           onCategorySelect={(cat) => setCategory(cat)}
+                          isItemWishlisted={isItemWishlisted}
+                          onToggleWishlist={handleToggleWishlist}
+                          isItemLiked={isItemLiked}
+                          onToggleLike={handleToggleLike}
                           t={t}
                         />
                       )}
-
-                      <section id="tech-inventory" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        {/* Deactivated for now: 
-                        {!category && !searchQuery && products.length > 0 && (
-                          <FlashSales 
-                            products={products} 
-                            onAddToCart={addToCart} 
-                            onProductClick={(p) => { setSelectedProduct(p); setView('product-detail'); }} 
-                            onQuickView={(p) => setQuickViewProduct(p)}
-                          />
-                        )}
-                        */}
-
-                        <div className="flex justify-between items-end mb-12">
-                           <h2 className="text-4xl font-black tracking-tighter uppercase italic">{category || 'Hardware Feed'}</h2>
-                           <div className="flex items-center gap-4">
-                              {loadingProducts && <Loader2 size={16} className="animate-spin text-blue-500" />}
-                              <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">{filteredProducts.length} Results</span>
-                           </div>
-                        </div>
-
-                        {filteredProducts.length === 0 && !loadingProducts ? (
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="py-40 text-center bg-white/5 border border-white/10 rounded-[4rem] relative overflow-hidden backdrop-blur-xl"
-                          >
-                             <div className="absolute inset-0 bg-blue-600/5 animate-pulse" />
-                             <div className="relative z-10 max-w-md mx-auto space-y-8 px-6">
-                              <div className="w-24 h-24 bg-blue-600/10 rounded-full flex items-center justify-center mx-auto border border-blue-500/20">
-                                <ShieldCheck className="text-blue-500" size={48} />
-                              </div>
-                              <div className="space-y-3">
-                                <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white">Sector Offline</h3>
-                                <p className="text-gray-400 text-sm font-medium leading-relaxed">
-                                  The hardware pool is currently empty for this specific sector. Our sourcing engineers are working on replenishment.
-                                </p>
-                              </div>
-                              <button 
-                                onClick={() => { setCategory(null); setSearchQuery(''); }}
-                                className="w-full py-5 bg-blue-600 text-white font-black text-sm uppercase italic rounded-3xl shadow-[0_15px_40px_rgba(37,99,235,0.4)] active:scale-95 transition-all hover:bg-blue-500"
-                              >
-                                Reboot Hardware Feed
-                              </button>
-                            </div>
-                          </motion.div>
-                        ) : groupedMainProducts && !loadingProducts ? (
-                          <div className="space-y-32">
-                            {Object.entries(groupedMainProducts)
-                              .sort(([a], [b]) => {
-                                const idxA = PRODUCT_CATEGORIES.indexOf(a as any);
-                                const idxB = PRODUCT_CATEGORIES.indexOf(b as any);
-                                if (idxA === -1 && idxB === -1) return a.localeCompare(b);
-                                if (idxA === -1) return 1;
-                                if (idxB === -1) return -1;
-                                return idxA - idxB;
-                              })
-                              .map(([cat, catProducts]) => (
-                              <motion.section 
-                                key={cat} 
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true, margin: "-100px" }}
-                                className="space-y-12"
-                              >
-                                <div className="flex items-center gap-6 group">
-                                  <div className="flex flex-col">
-                                    <h3 className="text-4xl font-black italic uppercase tracking-tighter text-foreground group-hover:text-blue-500 transition-colors">{cat}</h3>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{catProducts.length} Units Active</span>
-                                    </div>
-                                  </div>
-                                  <div className="h-px flex-1 bg-gradient-to-r from-blue-500/30 to-transparent" />
-                                  <button 
-                                    onClick={() => setCategory(cat)}
-                                    className="px-6 py-3 bg-foreground/5 border border-border rounded-full text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-foreground hover:bg-blue-600/20 transition-all shadow-xl"
-                                  >
-                                    View Full Sector →
-                                  </button>
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 sm:gap-10">
-                                  {catProducts.slice(0, 3).map(product => (
-                                    <ProductCard 
-                                      key={product.id} 
-                                      product={product} 
-                                      onAddToCart={addToCart} 
-                                      onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
-                                      onQuickView={(p) => setQuickViewProduct(p)}
-                                      isWishlisted={isItemWishlisted(product.id)}
-                                      onToggleWishlist={handleToggleWishlist}
-                                      isLiked={isItemLiked(product.id)}
-                                      onToggleLike={handleToggleLike}
-                                    />
-                                  ))}
-                                </div>
-                              </motion.section>
-                            ))}
-
-                            {/* Recently Viewed Section */}
-                            {(() => {
-                              const stored = typeof window !== 'undefined' ? localStorage.getItem('recently_viewed') : null;
-                              const recentlyViewedIds = stored ? JSON.parse(stored) : [];
-                              const recentlyViewedProducts = products.filter(p => recentlyViewedIds.includes(p.id))
-                                .sort((a, b) => recentlyViewedIds.indexOf(a.id) - recentlyViewedIds.indexOf(b.id));
-
-                              if (recentlyViewedProducts.length === 0) return null;
-
-                              return (
-                                <motion.section 
-                                  initial={{ opacity: 0 }}
-                                  whileInView={{ opacity: 1 }}
-                                  viewport={{ once: true }}
-                                  className="pt-20 border-t border-border space-y-12"
-                                >
-                                  <div className="flex items-center gap-6 group">
-                                    <div className="flex flex-col">
-                                      <h3 className="text-2xl font-black italic uppercase tracking-tighter text-foreground">Recently Deployed</h3>
-                                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Your interaction history</span>
-                                    </div>
-                                    <div className="h-px flex-1 bg-gradient-to-r from-blue-500/10 to-transparent" />
-                                  </div>
-                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                                    {recentlyViewedProducts.map(product => (
-                                      <div 
-                                        key={product.id} 
-                                        onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
-                                        className="cursor-pointer group/rv"
-                                      >
-                                        <div className="aspect-square bg-foreground/5 rounded-2xl overflow-hidden border border-border group-hover/rv:border-blue-500/30 transition-all mb-3 relative">
-                                           <img src={product.image} alt="" className="w-full h-full object-cover group-hover/rv:scale-110 transition-all duration-700" />
-                                           <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover/rv:opacity-100 transition-opacity" />
-                                        </div>
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover/rv:text-foreground truncate">{product.name}</h4>
-                                        <p className="text-[9px] font-mono text-blue-500/80">UGX {product.price.toLocaleString()}</p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </motion.section>
-                              );
-                            })()}
-                            
-                            {/* Category Quick Badges footer */}
-                            <div className="py-20 border-t border-border">
-                               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground text-center mb-10">Direct Sector Access</p>
-                               <div className="flex flex-wrap justify-center gap-4">
-                                  {PRODUCT_CATEGORIES.map(cat => (
-                                    <button
-                                      key={cat}
-                                      onClick={() => setCategory(cat)}
-                                      className="px-8 py-4 bg-foreground/5 border border-border rounded-3xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-blue-500/50 hover:bg-foreground/10 transition-all"
-                                    >
-                                      {cat}
-                                    </button>
-                                  ))}
-                               </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 sm:gap-8">
-                            {loadingProducts ? (
-                              [...Array(6)].map((_, i) => (
-                                <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-[450px] animate-pulse overflow-hidden">
-                                   <div className="aspect-square bg-white/5" />
-                                   <div className="p-6 space-y-4">
-                                      <div className="h-6 bg-white/5 rounded-full w-3/4" />
-                                      <div className="h-4 bg-white/5 rounded-full w-1/4" />
-                                      <div className="h-12 bg-white/5 rounded-2xl w-full" />
-                                   </div>
-                                </div>
-                              ))
-                            ) : (
-                              filteredProducts.map(product => (
-                                <ProductCard 
-                                  key={product.id} 
-                                  product={product} 
-                                  onAddToCart={addToCart} 
-                                  onClick={() => { setSelectedProduct(product); setView('product-detail'); }}
-                                  onQuickView={(p) => setQuickViewProduct(p)}
-                                  isWishlisted={isItemWishlisted(product.id)}
-                                  onToggleWishlist={handleToggleWishlist}
-                                  isLiked={isItemLiked(product.id)}
-                                  onToggleLike={handleToggleLike}
-                                />
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </section>
                     </>
                   )}
 
