@@ -8,6 +8,7 @@ import {
 import { Product } from '../../types';
 import { OptimizedImage } from '../ui/OptimizedImage';
 import { cn } from '../../lib/utils';
+import { triggerWhatsAppFlow } from '../ui/WhatsAppFloat';
 
 interface ProductDetailProps {
   product: Product;
@@ -52,8 +53,7 @@ export default function ProductDetail({
 
   const handleWhatsAppBuy = () => {
     const message = `*Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I'm interested in this unit. Is it available for delivery in Lira?`;
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    triggerWhatsAppFlow(message);
   };
 
   const currentMedia = uniqueMedia[activeMedia];

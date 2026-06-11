@@ -423,7 +423,7 @@ export function HomeHero({
                       </button>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 sm:gap-10">
-                      {catProducts.slice(0, 3).map((item, idx) => (
+                      {catProducts.map((item, idx) => (
                         <motion.div
                           key={item.id}
                           initial={{ opacity: 0, y: 15 }}

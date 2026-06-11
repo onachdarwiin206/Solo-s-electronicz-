@@ -5,6 +5,7 @@ import { Product } from '../../types';
 import { cn } from '../../lib/utils';
 import { Tooltip } from '../ui/Tooltip';
 import { OptimizedImage } from '../ui/OptimizedImage';
+import { triggerWhatsAppFlow } from '../ui/WhatsAppFloat';
 
 interface ProductCardProps {
   product: Product;
@@ -58,8 +59,7 @@ export function ProductCard({
   const handleWhatsAppBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
     const message = `Hello Solo Electronics, I want to buy the *${product.name}* (UGX ${product.price.toLocaleString()}).\n\nLink: ${window.location.origin}/product/${product.id}`;
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    triggerWhatsAppFlow(message);
   };
 
   const handleAdd = (e: React.MouseEvent) => {

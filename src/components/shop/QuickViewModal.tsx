@@ -4,6 +4,7 @@ import { X, ShoppingCart, MessageCircle, BadgeCheck, Star, Shield, Zap, Truck, C
 import { Product } from '../../types';
 import { cn } from '../../lib/utils';
 import { OptimizedImage } from '../ui/OptimizedImage';
+import { triggerWhatsAppFlow } from '../ui/WhatsAppFloat';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -24,8 +25,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
 
   const handleWhatsAppBuy = () => {
     const message = `*Quick Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I saw this in the quick view. Is it in stock?`;
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    triggerWhatsAppFlow(message);
   };
 
   const currentMedia = allMedia[activeMedia];
