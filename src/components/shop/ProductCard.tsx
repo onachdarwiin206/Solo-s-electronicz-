@@ -49,7 +49,7 @@ export function ProductCard({
   const getStockStatus = () => {
     const stock = product.stock || 0;
     if (stock <= 0) return { label: 'Out of Stock', color: 'bg-red-500/20 text-red-500 border-red-500/30' };
-    if (stock < 3) return { label: 'Low Stock', color: 'bg-orange-500/20 text-orange-500 border-orange-500/30' };
+    if (stock < 5) return { label: 'Low Stock', color: 'bg-orange-500/20 text-orange-500 border-orange-500/30' };
     return { label: 'In Stock', color: 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30' };
   };
 

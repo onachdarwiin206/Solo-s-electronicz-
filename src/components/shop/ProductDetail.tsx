@@ -6,7 +6,6 @@ import {
   Bookmark, Heart
 } from 'lucide-react';
 import { Product } from '../../types';
-import { ReviewSystem } from '../reviews/ReviewSystem';
 import { OptimizedImage } from '../ui/OptimizedImage';
 import { cn } from '../../lib/utils';
 
@@ -180,13 +179,22 @@ export default function ProductDetail({
               <span className="px-4 py-1.5 bg-blue-600/20 border border-blue-500/30 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
                 {product.category}
               </span>
-              {(product.stock || 0) > 0 ? (
-                <span className="px-4 py-1.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
-                  {product.stock} Units Syncing
-                </span>
-              ) : (
+              {(product.stock || 0) <= 0 ? (
                 <span className="px-4 py-1.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
                   Depleted
+                </span>
+              ) : (product.stock || 0) < 5 ? (
+                <>
+                  <span className="px-4 py-1.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
+                    {product.stock} Units Syncing
+                  </span>
+                  <span className="px-4 py-1.5 bg-orange-500/20 border border-orange-500/30 text-orange-400 rounded-full text-[10px] font-black uppercase tracking-[0.25em] animate-pulse">
+                    Low Stock
+                  </span>
+                </>
+              ) : (
+                <span className="px-4 py-1.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
+                  {product.stock} Units Syncing
                 </span>
               )}
 
@@ -305,12 +313,6 @@ export default function ProductDetail({
         </div>
       </div>
 
-      {/* Review Section */}
-      <div className="pt-24 border-t border-border">
-        <div className="max-w-4xl">
-          <ReviewSystem product={product} />
-        </div>
-      </div>
     </motion.div>
   );
 }

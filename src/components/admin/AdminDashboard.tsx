@@ -60,7 +60,7 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
 
 export default function AdminDashboard({ products: initialProducts }: AdminDashboardProps) {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'reviews' | 'admins'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'admins'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -128,9 +128,6 @@ export default function AdminDashboard({ products: initialProducts }: AdminDashb
     return matchesSearch && matchesStatus && matchesStart && matchesEnd;
   });
 
-  useEffect(() => {
-    if (activeTab === 'reviews') fetchReviews();
-  }, [activeTab]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -813,7 +810,7 @@ _Thank you for choosing Solo Electronics!_
           )}
 
           <div className="flex gap-2 flex-wrap">
-            {['inventory', 'orders', 'reviews', 'admins'].map((tab) => (
+            {['inventory', 'orders', 'admins'].map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all", activeTab === tab ? "bg-blue-600 text-white" : "bg-foreground/5 text-muted-foreground border border-border hover:bg-foreground/10")}>{tab}</button>
             ))}
           </div>
@@ -1420,74 +1417,6 @@ _Thank you for choosing Solo Electronics!_
         </div>
       )}
 
-      {activeTab === 'reviews' && (
-        <div className="space-y-6">
-           {loadingReviews ? (
-            <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
-          ) : reviews.length === 0 ? (
-            <div className="py-20 text-center text-muted-foreground font-black uppercase tracking-widest bg-foreground/5 rounded-[3rem] border border-border">No Reviews Found</div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {reviews.map((review) => (
-                <div key={review.id} className="bg-foreground/5 border border-border p-8 rounded-[2.5rem] hover:bg-foreground/[0.07] transition-all">
-                  <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500">
-                        <User size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-black text-foreground uppercase italic tracking-tighter">{review.user_name}</h4>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">{format(new Date(review.created_at), 'PPP')}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                       <div className="flex text-amber-500 px-3 py-1 bg-background/40 rounded-full border border-border h-fit">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} />
-                        ))}
-                      </div>
-                      <div className={cn(
-                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                        review.status === 'approved' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : 
-                        review.status === 'rejected' ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                        "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                      )}>
-                        {review.status || 'pending'}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-6 p-4 bg-background/20 rounded-2xl border border-border">
-                    <p className="text-muted-foreground text-sm italic">"{review.comment}"</p>
-                    <p className="text-[10px] text-blue-500 font-bold mt-2 uppercase tracking-widest">Product ID: {review.product_id}</p>
-                  </div>
-
-                  <div className="flex gap-3 justify-end items-center">
-                    <button 
-                      onClick={() => updateReviewStatus(review.id, 'approved')}
-                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-900/20"
-                    >
-                      Approve
-                    </button>
-                    <button 
-                      onClick={() => updateReviewStatus(review.id, 'rejected')}
-                      className="px-6 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-500/20 transition-all"
-                    >
-                      Reject
-                    </button>
-                    <button 
-                      onClick={() => deleteReview(review.id)}
-                      className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {activeTab === 'admins' && (
         <div className="max-w-2xl bg-foreground/5 border border-border rounded-[2.5rem] p-10">
