@@ -56,6 +56,12 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [pinCode, setPinCode] = useState('');
 
+  // Telecom API Live Streaming & Status States
+  const [telecomLogs, setTelecomLogs] = useState<any[]>([]);
+  const [telecomProgress, setTelecomProgress] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
+  const [momoMode, setMomoMode] = useState<'production' | 'sandbox' | 'live_simulation' | null>(null);
+  const [showApiGuide, setShowApiGuide] = useState(false);
+
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   
   // Districts & respective logistics rates
@@ -85,6 +91,9 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
       setValidationError(null);
       setShowPinPrompt(false);
       setPinCode('');
+      setTelecomProgress('idle');
+      setTelecomLogs([]);
+      setMomoMode(null);
     }
   }, [isOpen]);
 
@@ -138,13 +147,67 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
         streetAddress, 
         customerName
       );
-      if (orderId) {
-        setLastOrderId(orderId);
+
+      if (!orderId) {
+        throw new Error("Could not initialize order registry.");
+      }
+
+      setLastOrderId(orderId);
+
+      // Secure Telecom API integration
+      if (paymentOption !== 'cod') {
+        setTelecomProgress('processing');
+        setTelecomLogs([
+          { step: 'INITIAL_REGISTRY', status: 'success', message: `Order #${orderId} locked in collection database.`, timestamp: new Date().toISOString() },
+          { step: 'SECURE_HANDSHAKE', status: 'info', message: 'Initiating secure routing to backend payment orchestrator...', timestamp: new Date().toISOString() }
+        ]);
+
+        // Small initial visual stagger for realistic logging feel
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        const response = await fetch('/api/payments/charge-momo', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            amount: grandTotal,
+            phone: momoNumber,
+            customerName,
+            orderId,
+            network: paymentOption === 'momo_mtn' ? 'MTN' : 'AIRTEL'
+          })
+        });
+
+        const paymentData = await response.json();
+
+        if (paymentData && paymentData.logs) {
+          // Play a stagger-loader for visual elegance mirroring industrial networks
+          for (let i = 0; i < paymentData.logs.length; i++) {
+            setTelecomLogs(prev => [...prev, paymentData.logs[i]]);
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+          setMomoMode(paymentData.mode);
+        }
+
+        if (response.ok && paymentData?.success) {
+          setTelecomProgress('success');
+          // Hold success state momentarily for verification feedback
+          await new Promise(resolve => setTimeout(resolve, 2200));
+          setIsSuccess(true);
+        } else {
+          setTelecomProgress('failed');
+          setValidationError(paymentData?.message || "Telecom gateway terminal rejected charge request.");
+          setIsProcessing(false);
+          return;
+        }
+      } else {
         setIsSuccess(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Checkout transaction error:", error);
       setValidationError("The billing handshake terminated unexpectedly. Please retry or choose Cash on Delivery.");
+      setTelecomProgress('failed');
     } finally {
       setIsProcessing(false);
     }
@@ -491,20 +554,106 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
 
                       {/* Mobile phone configuration block for MoMo billing */}
                       {paymentOption !== 'cod' && (
-                        <motion.div 
-                          initial={{ opacity: 0, height: 0 }} 
-                          animate={{ opacity: 1, height: 'auto' }}
-                          className="space-y-2 font-mono"
-                        >
-                          <label className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest pl-1">Authorized Billing Mobile Number</label>
-                          <input 
-                            type="tel" 
-                            placeholder="Specify MoMo account..." 
-                            value={momoNumber} 
-                            onChange={(e) => setMomoNumber(e.target.value)} 
-                            className="w-full bg-white/[0.01] border border-white/[0.06] rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500"
-                          />
-                        </motion.div>
+                        <div className="space-y-4">
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0 }} 
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="space-y-2 font-mono"
+                          >
+                            <label className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest pl-1">Authorized Billing Mobile Number</label>
+                            <input 
+                              type="tel" 
+                              placeholder="Specify MoMo account..." 
+                              value={momoNumber} 
+                              onChange={(e) => setMomoNumber(e.target.value)} 
+                              className="w-full bg-white/[0.01] border border-white/[0.06] rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500"
+                            />
+                          </motion.div>
+
+                          {/* Developer API Setup and Credentials Integration Guide */}
+                          <div className="pt-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setShowApiGuide(!showApiGuide)}
+                              className="w-full flex items-center justify-between p-3.5 bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 rounded-2xl text-blue-400 font-mono text-[9px] uppercase tracking-widest transition-colors font-bold cursor-pointer"
+                            >
+                              <span className="flex items-center gap-2">
+                                <Info size={12} className="text-blue-400" />
+                                {showApiGuide ? 'Hide Connection Manual' : 'Show Live API Manual & Keys'}
+                              </span>
+                              <span className="text-[8px] bg-blue-500/10 px-2 py-0.5 rounded text-blue-300 font-bold">
+                                UGANDA NODE v3.5
+                              </span>
+                            </button>
+
+                            <AnimatePresence>
+                              {showApiGuide && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="overflow-hidden space-y-4 mt-2"
+                                >
+                                  <div className="bg-[#030307] border border-white/[0.04] p-5 rounded-3xl space-y-4 font-sans text-xs text-gray-400 leading-relaxed text-left">
+                                    <h4 className="font-display font-semibold text-white uppercase text-[10px] tracking-wider text-blue-400">Mobile Money (MTN & Airtel) Live API Manual</h4>
+                                    <p className="text-[11px] text-gray-400 leading-relaxed">
+                                      Businesses in East Africa handle payment flows either through a **Unified Merchant Aggregator (Flutterwave)** or via **Direct Telecom API connections**. Our system supports both modes securely!
+                                    </p>
+
+                                    <div className="space-y-3">
+                                      {/* Channel 1: Flutterwave */}
+                                      <div className="p-3 bg-white/[0.01] border border-white/[0.04] rounded-2xl space-y-1.5">
+                                        <h5 className="font-bold text-white text-[9.5px] uppercase tracking-wider flex items-center gap-1.5 text-emerald-400">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                          Option A: Flutterwave (Highly Recommended)
+                                        </h5>
+                                        <p className="text-[10px] text-gray-500 leading-relaxed">
+                                          Enables charging both **MTN MoMo** and **Airtel Money** Uganda under a consolidated system with auto-settlement.
+                                        </p>
+                                        <ol className="list-decimal pl-4 text-[9px] space-y-1 text-gray-500 font-mono uppercase">
+                                          <li>Register at flutterwave.com.</li>
+                                          <li>Retrieve API Keys from Settings &gt; API Keys.</li>
+                                          <li>Set keys inside your secure .env variables.</li>
+                                        </ol>
+                                      </div>
+
+                                      {/* Channel 2: MTN Direct */}
+                                      <div className="p-3 bg-white/[0.01] border border-white/[0.04] rounded-2xl space-y-1.5">
+                                        <h5 className="font-bold text-white text-[9.5px] uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                          Option B: Direct MTN Mobile Money API
+                                        </h5>
+                                        <p className="text-[10px] text-gray-500 leading-relaxed">
+                                          Direct Collection OpenAPI routing via MTN MoMo Developer Portal (momodeveloper.mtn.com).
+                                        </p>
+                                        <ol className="list-decimal pl-4 text-[9px] space-y-1 text-gray-500 font-mono uppercase">
+                                          <li>Sign up on MTN Developer portal & subscribe to Collections.</li>
+                                          <li>Create API User (UUIDv4) and Sandbox Key.</li>
+                                          <li>Retrieve subscription Primary Key and enter into .env.</li>
+                                        </ol>
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-2 font-mono">
+                                      <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Configuration Slots (.env.example Reference)</span>
+                                      <pre className="p-3.5 bg-black/40 border border-white/[0.05] rounded-2xl text-[8.5px] text-blue-300 font-bold overflow-x-auto whitespace-pre no-scrollbar leading-normal select-all select-text">
+{`# 1. OPTION A: FLUTTERWAVE GATEWAY
+FLUTTERWAVE_SECRET_KEY="FLWSECK-..."
+FLUTTERWAVE_PUBLIC_KEY="FLWPUBK-..."
+
+# 2. OPTION B: DIRECT MTN MOMO COLLECTIONS
+MTN_MOMO_PRIMARY_KEY="Ocp-Apim-Subscription-..."
+MTN_MOMO_API_USER="c88...6" # API User UUID
+MTN_MOMO_API_KEY="53c...1" # API Subscription Key
+MTN_MOMO_TARGET_ENV="sandbox" # sandbox or production`}
+                                      </pre>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
                       )}
 
                       {/* Dynamic MoMo PIN Prompt Modal Frame (Simulated UX) */}
@@ -533,6 +682,74 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                             />
                             <div className="font-sans text-[8px] uppercase tracking-widest text-[#2563eb] animate-pulse">
                               Active Telecom Pipeline Secured
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Dynamic Telecom Live Telemetry Terminal */}
+                      <AnimatePresence>
+                        {telecomProgress !== 'idle' && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -15 }}
+                            className="p-5 rounded-3xl bg-[#030307] border border-blue-500/15 overflow-hidden font-mono text-[10px] space-y-3 shadow-2xl relative"
+                          >
+                            <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 animate-pulse" />
+                            
+                            <div className="flex items-center justify-between border-b border-white/[0.04] pb-2 text-gray-400">
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                <span className="font-extrabold uppercase text-[9px] tracking-wider text-white">Secure API Dispatch Terminal</span>
+                              </span>
+                              <span className="text-[8px] bg-white/[0.05] px-2 py-0.5 rounded uppercase font-bold text-gray-400">
+                                {momoMode === 'production' ? '● Live Production' : momoMode === 'sandbox' ? '● Sandbox Env' : '● Live Simulator'}
+                              </span>
+                            </div>
+
+                            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 no-scrollbar text-left select-none">
+                              {telecomLogs.map((log, index) => (
+                                <div key={index} className="flex gap-2.5 items-start leading-relaxed text-slate-300">
+                                  <span className="text-[9px] text-gray-600 shrink-0">{log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : '00:00:00'}</span>
+                                  <span className={cn(
+                                    "px-1.5 py-0.2 shrink-0 rounded-[4px] text-[7.5px] uppercase font-bold tracking-wider",
+                                    log.status === 'success' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
+                                    log.status === 'error' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/20' :
+                                    log.status === 'warning' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
+                                    'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                                  )}>
+                                    {log.step ? log.step.slice(0, 15) : 'INFO'}
+                                  </span>
+                                  <span className="flex-1 text-[9.5px] font-sans break-words text-gray-300 leading-normal">{log.message}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {telecomProgress === 'processing' && (
+                              <div className="flex items-center gap-2 justify-center py-2 text-blue-400 animate-pulse">
+                                <Loader2 size={12} className="animate-spin text-blue-400" />
+                                <span className="text-[9px] tracking-widest uppercase font-bold text-center">Transmitting ledger sync payload...</span>
+                              </div>
+                            )}
+
+                            {telecomProgress === 'success' && (
+                              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2.5 text-emerald-400">
+                                <Check size={14} className="shrink-0" />
+                                <span className="text-[9.5px] font-sans font-medium uppercase tracking-wide">Handshake Success. Checkout complete.</span>
+                              </div>
+                            )}
+
+                            {telecomProgress === 'failed' && (
+                              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2.5 text-rose-400">
+                                <AlertCircle size={14} className="shrink-0" />
+                                <span className="text-[9.5px] font-sans font-medium uppercase tracking-wide">Transaction aborted. Clear environmental variables.</span>
+                              </div>
+                            )}
+
+                            <div className="pt-2 border-t border-white/[0.04] text-[8px] text-gray-500 uppercase flex justify-between tracking-wider leading-relaxed">
+                              <span>Node Port: 3000 // HTTPS Broker</span>
+                              <span>Reference: {lastOrderId || 'SIMULATED'}</span>
                             </div>
                           </motion.div>
                         )}

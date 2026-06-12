@@ -3,7 +3,8 @@ import { motion } from 'motion/react';
 import { 
   Smartphone, Laptop, Headphones, Watch, ShieldCheck, 
   Truck, Star, Sparkles, ShoppingBag, ArrowRight, 
-  ChevronRight, CheckCircle2, MapPin, Compass, Gamepad2, Loader2
+  ChevronRight, CheckCircle2, MapPin, Compass, Gamepad2, Loader2,
+  Tv, Wifi, Camera, Cpu, Tag, Usb, Heart
 } from 'lucide-react';
 import { Product } from '../../types';
 import { PRODUCT_CATEGORIES } from '../../constants';
@@ -52,6 +53,21 @@ const getProductStockText = (stock: number | undefined): string => {
   const stockNum = stock !== undefined ? stock : 15;
   if (stockNum === 0) return 'Sold Out';
   return `${stockNum} Units Left`;
+};
+
+// Category icon helper mapping
+const getCategoryIcon = (cat: string) => {
+  const norm = cat.toLowerCase();
+  if (norm.includes('phone') || norm.includes('tablet')) return <Smartphone size={10} className="text-blue-400 shrink-0" />;
+  if (norm.includes('computer') || norm.includes('laptop')) return <Laptop size={10} className="text-blue-400 shrink-0" />;
+  if (norm.includes('gaming') || norm.includes('console')) return <Gamepad2 size={10} className="text-blue-400 shrink-0" />;
+  if (norm.includes('tv') || norm.includes('audio')) return <Tv size={10} className="text-blue-400 shrink-0" />;
+  if (norm.includes('accessory') || norm.includes('accessories')) return <Usb size={10} className="text-blue-400 shrink-0" />;
+  if (norm.includes('networking') || norm.includes('network')) return <Wifi size={10} className="text-blue-400 shrink-0" />;
+  if (norm.includes('smart')) return <Cpu size={10} className="text-blue-400 shrink-0" />;
+  if (norm.includes('camera') || norm.includes('security')) return <Camera size={10} className="text-blue-400 shrink-0" />;
+  if (norm.includes('deal') || norm.includes('offer')) return <Tag size={10} className="text-blue-400 shrink-0" />;
+  return <Sparkles size={10} className="text-blue-400 shrink-0" />;
 };
 
 export function HomeHero({ 
@@ -201,6 +217,63 @@ export function HomeHero({
                   </span>
                 </div>
 
+                {/* DYNAMIC SHIELD/RECON SHORTCUT CATEGORY TABS MOVED TO THE TOP */}
+                <div className="border border-white/[0.04] rounded-2.5xl p-1 bg-white/[0.01]">
+                  <div className="flex items-center overflow-x-auto no-scrollbar gap-2 py-2 px-2 bg-transparent text-left">
+                    {/* All Sectors Tab */}
+                    <button
+                      onClick={() => onCategorySelect(null)}
+                      className={`relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 group cursor-pointer outline-none text-[11px] font-semibold tracking-wide shrink-0 border ${
+                        category === null
+                          ? "text-blue-400 border-blue-500/20 bg-blue-500/5"
+                          : "bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-white/[0.03]"
+                      }`}
+                    >
+                      {category === null && (
+                        <motion.div
+                          layoutId="active-hero-tab"
+                          className="absolute inset-0 bg-blue-500/10 rounded-xl z-0 border border-blue-500/20"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                      <Compass size={12} className={`relative z-10 ${category === null ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}`} />
+                      <span className="relative z-10">All Sectors</span>
+                    </button>
+
+                    {/* Dynamic Category Tabs */}
+                    {PRODUCT_CATEGORIES.map((cat) => {
+                      const isActive = category === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => onCategorySelect(cat)}
+                          className={`relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 group cursor-pointer outline-none text-[11px] font-semibold tracking-wide shrink-0 border ${
+                            isActive
+                              ? "text-blue-400 border-blue-500/20 bg-blue-500/5"
+                              : "bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-white/[0.03]"
+                          }`}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="active-hero-tab"
+                              className="absolute inset-0 bg-blue-500/10 rounded-xl z-0 border border-blue-500/20"
+                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                            />
+                          )}
+                          <div className="relative z-10 flex items-center justify-center shrink-0">
+                            {cat.includes('Phones') && <Smartphone size={12} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
+                            {cat.includes('Computers') && <Laptop size={12} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
+                            {cat.includes('TVs') && <Headphones size={12} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
+                            {cat.includes('Gaming') && <Gamepad2 size={12} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
+                            {(!cat.includes('Phones') && !cat.includes('Computers') && !cat.includes('TVs') && !cat.includes('Gaming')) && <Watch size={12} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
+                          </div>
+                          <span className="relative z-10">{cat}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Dynamic Product Grid listing */}
                 {(category || searchQuery) && filteredProducts.length === 0 ? (
                   <motion.div 
@@ -227,16 +300,16 @@ export function HomeHero({
                       </button>
                     </div>
                   </motion.div>
-                ) : (
+                ) : (category || searchQuery) ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 xl:gap-5">
-                    {(category || searchQuery ? filteredProducts : showcaseProducts).map((item, idx) => (
+                    {filteredProducts.map((item, idx) => (
                       <motion.div
                         key={item.id}
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.04 }}
+                        transition={{ delay: idx * 0.03 }}
                         onClick={() => onProductClick(item)}
-                        className="group relative rounded-3xl bg-white/[0.01] border border-white/[0.04] hover:border-blue-500/30 p-4 flex flex-col justify-between h-72 transition-all duration-300 shadow-2xl overflow-hidden text-left cursor-pointer"
+                        className="group relative rounded-3xl bg-white/[0.01]/80 border border-white/[0.04] hover:border-blue-500/30 p-4 flex flex-col justify-between h-72 transition-all duration-300 shadow-2xl overflow-hidden text-left cursor-pointer"
                       >
                         {/* Subtle glass hover glow */}
                         <div className="absolute inset-0 bg-gradient-to-b from-blue-600/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -262,7 +335,7 @@ export function HomeHero({
                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60 pointer-events-none" />
                         </div>
 
-                        {/* Bottom Row Detailing Name, Logistics, Currency and Actions */}
+                        {/* Bottom Row Detailing Name, Currency and Actions */}
                         <div className="space-y-3 z-10">
                           <div>
                             <h3 className="text-xs sm:text-sm font-semibold font-display text-white group-hover:text-blue-400 transition-colors truncate">
@@ -282,23 +355,175 @@ export function HomeHero({
                               </span>
                             </div>
 
-                            {/* Immediate Add To Cart action trigger */}
-                            <button
-                              onClick={(e) => {
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={(e) => {
                                   e.stopPropagation();
-                                  onAddToCart(item);
-                              }}
-                              className="p-1 px-2.5 bg-white hover:bg-neutral-200 text-black text-[9px] font-mono font-bold rounded-lg transition-all active:scale-90 flex items-center gap-1 shrink-0 cursor-pointer"
-                            >
-                              BUY
-                              <ShoppingBag size={9} />
-                            </button>
+                                  onToggleWishlist(item.id);
+                                }}
+                                className={`p-1.5 rounded-lg border transition-all active:scale-95 cursor-pointer ${
+                                  isItemWishlisted(item.id)
+                                    ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                                    : 'bg-white/[0.02] border-white/[0.05] hover:border-white/20 text-gray-400 hover:text-white'
+                                }`}
+                                title="Wishlist"
+                              >
+                                <Heart size={10} fill={isItemWishlisted(item.id) ? "currentColor" : "none"} />
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onAddToCart(item);
+                                }}
+                                className="p-1.5 px-2 bg-white hover:bg-neutral-200 text-black text-[9px] font-mono font-bold rounded-lg transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                              >
+                                <span className="xs:inline hidden">ADD TO CART</span>
+                                <span className="xs:hidden inline">ADD</span>
+                                <ShoppingBag size={8} />
+                              </button>
+                            </div>
                           </div>
                         </div>
 
                       </motion.div>
                     ))}
                   </div>
+                ) : (
+                  // Unified Merged View: All products categorically grouped directly in the panel
+                  groupedMainProducts && !loadingProducts && (
+                    <div className="space-y-12 h-screen overflow-y-auto pr-2 no-scrollbar">
+                      {Object.entries(groupedMainProducts)
+                        .sort(([a], [b]) => {
+                          const idxA = PRODUCT_CATEGORIES.indexOf(a as any);
+                          const idxB = PRODUCT_CATEGORIES.indexOf(b as any);
+                          if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+                          if (idxA === -1) return 1;
+                          if (idxB === -1) return -1;
+                          return idxA - idxB;
+                        })
+                        .map(([cat, catProducts]) => (
+                          <div key={cat} className="space-y-4">
+                            {/* Minimally descriptive & structured section header */}
+                            <div className="flex items-center justify-between border-b border-white/[0.03] pb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="p-1 bg-blue-500/10 rounded-lg">
+                                  {getCategoryIcon(cat)}
+                                </div>
+                                <h3 className="text-sm font-black italic uppercase tracking-wider text-white">
+                                  {cat}
+                                </h3>
+                              </div>
+                              <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest bg-white/[0.02]/80 border border-white/[0.05] px-2 py-0.5 rounded-md">
+                                {catProducts.length} Units Online
+                              </span>
+                            </div>
+
+                            {/* Category-specific product layout grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                              {catProducts.map((item, idx) => (
+                                <motion.div
+                                  key={item.id}
+                                  initial={{ opacity: 0, scale: 0.98 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: idx * 0.02 }}
+                                  onClick={() => onProductClick(item)}
+                                  className="group relative rounded-2xl bg-white/[0.01]/75 border border-white/[0.03] hover:border-blue-500/30 p-3.5 flex flex-col justify-between h-64 transition-all duration-300 overflow-hidden text-left cursor-pointer"
+                                >
+                                  {/* Glass highlight inside unified card */}
+                                  <div className="absolute inset-0 bg-gradient-to-b from-blue-600/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                                  <div className="flex justify-between items-center z-10">
+                                    <span className="text-[8px] font-mono font-medium text-gray-500 uppercase tracking-widest">
+                                      {cat.split(' ')[0]}
+                                    </span>
+                                    <span className="flex items-center gap-0.5 text-yellow-500 text-[9px] font-mono font-black">
+                                      <Star size={8.5} fill="currentColor" /> {getProductRating(item.name)}
+                                    </span>
+                                  </div>
+
+                                  <div className="h-28 w-full flex items-center justify-center relative my-1 overflow-hidden">
+                                    <img 
+                                      src={item.image} 
+                                      alt={item.name} 
+                                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_10px_20px_rgba(37,99,235,0.12)] transform transition-transform duration-500 group-hover:scale-105 select-none"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2.5 z-10">
+                                    <div>
+                                      <h4 className="text-[11px] sm:text-xs font-semibold text-white group-hover:text-blue-400 transition-colors truncate">
+                                        {item.name}
+                                      </h4>
+                                      <div className="flex items-center justify-between text-[8px] font-mono text-gray-500 mt-0.5">
+                                        <span className="truncate">{getProductDelivery(item.category)}</span>
+                                        <span className="text-emerald-500 font-bold uppercase shrink-0">{getProductStockText(item.stock)}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-1.5 border-t border-white/[0.03] gap-2">
+                                      <div className="text-left font-mono">
+                                        <span className="text-[10px] sm:text-[11px] font-black text-white whitespace-nowrap">
+                                          UGX {item.price.toLocaleString()}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onToggleWishlist(item.id);
+                                          }}
+                                          className={`p-1.5 rounded-lg border transition-all active:scale-95 cursor-pointer ${
+                                            isItemWishlisted(item.id)
+                                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                                              : 'bg-white/[0.02] border-white/[0.05] hover:border-white/20 text-gray-400 hover:text-white'
+                                          }`}
+                                          title="Wishlist"
+                                        >
+                                          <Heart size={8} fill={isItemWishlisted(item.id) ? "currentColor" : "none"} />
+                                        </button>
+
+                                        <button
+                                          onClick={(e) => {
+                                              e.stopPropagation();
+                                              onAddToCart(item);
+                                          }}
+                                          className="p-1.5 px-2 bg-white hover:bg-neutral-200 text-black text-[8px] font-mono font-bold rounded-lg transition-all active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                        >
+                                          <span className="hidden xs:inline">ADD TO CART</span>
+                                          <span className="xs:hidden inline">ADD</span>
+                                          <ShoppingBag size={7.5} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      }
+
+                      {/* Category Quick Badges footer inside the side panel */}
+                      <div className="py-6 border-t border-white/[0.04] text-center">
+                         <p className="text-[9px] font-mono tracking-[0.25em] text-gray-500 uppercase font-bold mb-4">Direct Sector Access</p>
+                         <div className="flex flex-wrap justify-center gap-1.5 max-w-xl mx-auto">
+                            {PRODUCT_CATEGORIES.map(cat => (
+                              <button
+                                key={cat}
+                                onClick={() => onCategorySelect(cat)}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.01] hover:bg-white/[0.04] border border-white/[0.05] hover:border-blue-500/30 rounded-xl text-[9px] font-semibold tracking-wider text-gray-400 hover:text-white transition-all cursor-pointer duration-200"
+                              >
+                                {getCategoryIcon(cat)}
+                                <span>{cat}</span>
+                              </button>
+                            ))}
+                         </div>
+                      </div>
+                    </div>
+                  )
                 )}
 
               </section>
@@ -307,217 +532,6 @@ export function HomeHero({
 
           </section>
 
-          {/* 2. INSTANT PRODUCT CATEGORY SHORTCUTS BAR */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="p-1 border-t border-b border-white/[0.04]">
-              <div className="flex items-center overflow-x-auto no-scrollbar gap-2.5 py-4 bg-transparent text-left -mx-4 px-4 sm:mx-0 sm:px-0">
-                {/* All Sectors Tab */}
-                <button
-                  onClick={() => onCategorySelect(null)}
-                  className={`relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide shrink-0 border ${
-                    category === null
-                      ? "text-blue-400 border-blue-500/30"
-                      : "bg-white/[0.01]/80 border-white/[0.04] text-gray-400 hover:text-white hover:bg-white/[0.03]"
-                  }`}
-                >
-                  {category === null && (
-                    <motion.div
-                      layoutId="active-hero-tab"
-                      className="absolute inset-0 bg-blue-500/10 rounded-full z-0 border border-blue-500/20"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  <Compass size={14} className={`relative z-10 ${category === null ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}`} />
-                  <span className="relative z-10">All Sectors</span>
-                </button>
-
-                {/* Dynamic Category Tabs */}
-                {PRODUCT_CATEGORIES.map((cat) => {
-                  const isActive = category === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => onCategorySelect(cat)}
-                      className={`relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide shrink-0 border ${
-                        isActive
-                          ? "text-blue-400 border-blue-500/30"
-                          : "bg-white/[0.01]/80 border-white/[0.04] text-gray-400 hover:text-white hover:bg-white/[0.03]"
-                      }`}
-                    >
-                      {isActive && (
-                        <motion.div
-                          layoutId="active-hero-tab"
-                          className="absolute inset-0 bg-blue-500/10 rounded-full z-0 border border-blue-500/20"
-                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                        />
-                      )}
-                      <div className="relative z-10 flex items-center justify-center shrink-0">
-                        {cat.includes('Phones') && <Smartphone size={14} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
-                        {cat.includes('Computers') && <Laptop size={14} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
-                        {cat.includes('TVs') && <Headphones size={14} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
-                        {cat.includes('Gaming') && <Gamepad2 size={14} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
-                        {(!cat.includes('Phones') && !cat.includes('Computers') && !cat.includes('TVs') && !cat.includes('Gaming')) && <Watch size={14} className={isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'} />}
-                      </div>
-                      <span className="relative z-10">{cat}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-      {!category && !searchQuery && (
-        <>
-          {/* 3. THE DYNAMIC HARDWARE INVENTORY FEED (FORMERLY #TECH-INVENTORY) */}
-          <section id="hardware-catalog-sectors" className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="flex justify-between items-end mb-6 border-b border-white/[0.04] pb-3 text-left">
-               <div className="space-y-1">
-                 <span className="text-[10px] font-mono tracking-[0.4em] text-blue-500 uppercase font-black">
-                   HARDWARE RECON
-                 </span>
-                 <h2 className="text-2xl font-black tracking-tighter uppercase italic text-white leading-none">
-                   Hardware Feed
-                 </h2>
-               </div>
-               <div className="flex items-center gap-4">
-                  {loadingProducts && <Loader2 size={16} className="animate-spin text-blue-500" />}
-                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    {filteredProducts.length} Results
-                  </span>
-               </div>
-            </div>
-
-            {groupedMainProducts && !loadingProducts && (
-              <div className="space-y-12">
-                {Object.entries(groupedMainProducts)
-                  .sort(([a], [b]) => {
-                    const idxA = PRODUCT_CATEGORIES.indexOf(a as any);
-                    const idxB = PRODUCT_CATEGORIES.indexOf(b as any);
-                    if (idxA === -1 && idxB === -1) return a.localeCompare(b);
-                    if (idxA === -1) return 1;
-                    if (idxB === -1) return -1;
-                    return idxA - idxB;
-                  })
-                  .map(([cat, catProducts]) => (
-                  <motion.section 
-                    key={cat} 
-                    initial={{ opacity: 0, y: 15 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    className="space-y-6 text-left"
-                  >
-                    <div className="flex items-center gap-6 group">
-                      <div className="flex flex-col">
-                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-blue-500 transition-colors leading-none">{cat}</h3>
-                        <div className="flex items-center gap-2 mt-1.5 font-mono">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{catProducts.length} Units Active</span>
-                        </div>
-                      </div>
-                      <div className="h-px flex-1 bg-gradient-to-r from-blue-500/30 to-transparent" />
-                      <button 
-                        onClick={() => onCategorySelect(cat)}
-                        className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-blue-400 hover:text-white hover:bg-blue-600/20 transition-all shadow-xl cursor-pointer"
-                      >
-                        View Full Sector →
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 sm:gap-10">
-                      {catProducts.map((item, idx) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, y: 15 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true, margin: "-100px" }}
-                          transition={{ delay: idx * 0.04 }}
-                          onClick={() => onProductClick(item)}
-                          className="group relative rounded-3xl bg-white/[0.01] border border-white/[0.04] hover:border-blue-500/30 p-4 flex flex-col justify-between h-72 transition-all duration-300 shadow-2xl overflow-hidden text-left cursor-pointer"
-                        >
-                          {/* Subtle glass hover glow */}
-                          <div className="absolute inset-0 bg-gradient-to-b from-blue-600/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                          {/* Top Row: Category Label and Rating Badge */}
-                          <div className="flex justify-between items-center z-10">
-                            <span className="px-2 py-0.5 bg-white/[0.03] border border-white/[0.05] rounded-md text-[8.5px] font-mono text-gray-400 tracking-wider font-extrabold uppercase truncate max-w-[80px]">
-                              {item.category.split(' & ')[0]}
-                            </span>
-                            <span className="flex items-center gap-0.5 text-yellow-500 text-[9.5px] font-mono font-black">
-                              <Star size={10} fill="currentColor" /> {getProductRating(item.name)}
-                            </span>
-                          </div>
-
-                          {/* Central Display: High-resolution picture */}
-                          <div className="h-32 w-full flex items-center justify-center relative my-2 overflow-hidden bg-transparent rounded-2xl border border-white/[0.01]">
-                            <img 
-                              src={item.image} 
-                              alt={item.name} 
-                              className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_25px_rgba(37,99,235,0.15)] transform transition-transform duration-500 group-hover:scale-105 select-none"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60 pointer-events-none" />
-                          </div>
-
-                          {/* Bottom Row Detailing Name, Logistics, Currency and Actions */}
-                          <div className="space-y-3 z-10">
-                            <div>
-                              <h3 className="text-xs sm:text-sm font-semibold font-display text-white group-hover:text-blue-400 transition-colors truncate">
-                                {item.name}
-                              </h3>
-                              <div className="flex items-center justify-between text-[9px] font-mono text-gray-500 mt-0.5">
-                                <span className="truncate">{getProductDelivery(item.category)}</span>
-                                <span className="text-emerald-500 font-bold uppercase shrink-0">{getProductStockText(item.stock)}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-2 border-t border-white/[0.03] gap-2">
-                              <div className="text-left font-mono">
-                                <span className="text-[7.5px] text-gray-500 block leading-none uppercase">UG VALUE</span>
-                                <span className="text-[11px] sm:text-xs font-black text-white whitespace-nowrap">
-                                  UGX {item.price.toLocaleString()}
-                                </span>
-                              </div>
-
-                              {/* Immediate Add To Cart action trigger */}
-                              <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onAddToCart(item);
-                                }}
-                                className="p-1 px-2.5 bg-white hover:bg-neutral-200 text-black text-[9px] font-mono font-bold rounded-lg transition-all active:scale-90 flex items-center gap-1 shrink-0 cursor-pointer"
-                              >
-                                BUY
-                                <ShoppingBag size={9} />
-                              </button>
-                            </div>
-                          </div>
-
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.section>
-                ))}
-
-                {/* Category Quick Badges footer */}
-                <div className="py-10 border-t border-white/10">
-                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 text-center mb-4">Direct Sector Access</p>
-                   <div className="flex flex-wrap justify-center gap-3">
-                      {PRODUCT_CATEGORIES.map(cat => (
-                        <button
-                          key={cat}
-                          onClick={() => onCategorySelect(cat)}
-                          className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:border-blue-500/50 hover:bg-white/10 transition-all cursor-pointer"
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                   </div>
-                </div>
-
-              </div>
-            )}
-          </section>
-        </>
-      )}
 
     </div>
   );
