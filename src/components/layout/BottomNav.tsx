@@ -13,7 +13,7 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
     { id: 'shop', label: 'Shop', icon: Home },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'cart', label: 'Cart', icon: ShoppingBag },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'profile', label: 'Deactivated', icon: User, disabled: true },
   ];
 
   return (
@@ -30,10 +30,15 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
           return (
             <button
               key={tab.id}
-              onClick={() => onViewChange(tab.id as any)}
+              onClick={() => {
+                if (tab.disabled) return;
+                onViewChange(tab.id as any);
+              }}
+              disabled={tab.disabled}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-1 py-1 px-3 transition-all min-w-[56px] h-full rounded-2xl active:bg-foreground/5",
-                isActive ? "text-blue-500 font-bold" : "text-muted-foreground"
+                isActive ? "text-blue-500 font-bold" : "text-muted-foreground",
+                tab.disabled && "opacity-30 cursor-not-allowed pointer-events-none"
               )}
             >
               {isActive && (

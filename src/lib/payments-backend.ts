@@ -38,95 +38,6 @@ export function normalizeUgPhoneNumber(phone: string): string {
 }
 
 /**
- * 1. UNIFIED MOBILEY MONEY INTEGRATION via FLUTTERWAVE GATEWAY (Highly Recommended for Uganda)
- * Flutterwave processes both MTN Mobile Money and Airtel Money Uganda under a single unified node.
- */
-async function processFlutterwaveCharge(req: ChargeRequest, logs: PaymentLog[]): Promise<PaymentResult> {
-  const secretKey = process.env.FLUTTERWAVE_SECRET_KEY;
-  if (!secretKey) {
-    throw new Error("Missing FLUTTERWAVE_SECRET_KEY");
-  }
-
-  logs.push({
-    step: 'FLUTTERWAVE_INIT',
-    status: 'info',
-    message: `Attempting unified Flutterwave charge for ${req.network} to ${req.phone} (UGX ${req.amount.toLocaleString()})`,
-    timestamp: new Date().toISOString()
-  });
-
-  const url = 'https://api.flutterwave.com/v3/charges?type=mobile_money_uganda';
-  const internationalPhone = normalizeUgPhoneNumber(req.phone);
-  const txRef = `SOLO-FLW-${req.orderId}-${Date.now().toString().slice(-6)}`;
-
-  const payload = {
-    amount: req.amount,
-    currency: 'UGX',
-    phone_number: internationalPhone,
-    email: 'checkout@soloelectronics.com',
-    tx_ref: txRef,
-    fullname: req.customerName,
-    // Specify target telecom operator
-    network: req.network === 'MTN' ? 'MTN' : 'AIRTEL'
-  };
-
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${secretKey}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json() as any;
-
-    if (res.status !== 200 || !data || data.status === 'error') {
-      logs.push({
-        step: 'FLUTTERWAVE_ERROR',
-        status: 'error',
-        message: data?.message || `Gateway returned status code ${res.status}`,
-        timestamp: new Date().toISOString()
-      });
-      return {
-        success: false,
-        message: data?.message || "Flutterwave transaction initialization failed.",
-        logs,
-        mode: 'production'
-      };
-    }
-
-    logs.push({
-      step: 'FLUTTERWAVE_RESPONSE',
-      status: 'success',
-      message: `USSD push triggered successfully. Reference: ${data.data?.id || txRef}. Info: ${data.meta?.authorization?.instruction || 'Input your PIN to confirm.'}`,
-      timestamp: new Date().toISOString()
-    });
-
-    return {
-      success: true,
-      transactionId: String(data.data?.id || txRef),
-      message: data.message || "USSD checkout push initiated.",
-      logs,
-      mode: 'production'
-    };
-  } catch (err: any) {
-    logs.push({
-      step: 'FLUTTERWAVE_CRITICAL',
-      status: 'error',
-      message: err.message || 'Network connectivity error contacting Flutterwave.',
-      timestamp: new Date().toISOString()
-    });
-    return {
-      success: false,
-      message: "Gateway connectivity timeout.",
-      logs,
-      mode: 'production'
-    };
-  }
-}
-
-/**
  * 2. DIRECT TELECOM GATEWAY: MTN MOBILE MONEY (MoMo direct Developer Portal)
  * Integrates directly with MTN's Collection OpenAPI.
  */
@@ -363,12 +274,7 @@ export async function handleMomoPayment(req: ChargeRequest): Promise<PaymentResu
   const logs: PaymentLog[] = [];
 
   try {
-    // Priority 1: Unified Flutterwave Gateways (Best for real-world setups in Uganda)
-    if (process.env.FLUTTERWAVE_SECRET_KEY) {
-      return await processFlutterwaveCharge(req, logs);
-    }
-
-    // Priority 2: Direct MTN MoMo Collection API
+    // Priority 1: Direct MTN MoMo Collection API
     if (req.network === 'MTN' && process.env.MTN_MOMO_PRIMARY_KEY && process.env.MTN_MOMO_API_USER) {
       return await processDirectMtnMomo(req, logs);
     }

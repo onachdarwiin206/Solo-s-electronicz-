@@ -108,11 +108,11 @@ export function Navbar({
                 onTouchStart={startPressTimer}
                 onTouchEnd={cancelPressTimer}
                 className={cn(
-                  "text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all shrink-0 italic select-none outline-none",
+                  "text-lg sm:text-xl lg:text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all shrink-0 italic select-none outline-none",
                   pressTimerActive && "scale-90 opacity-70"
                 )}
               >
-                SOLO'S
+                SOLO'S PHONES & ELECTRONICS
               </button>
             </div>
             

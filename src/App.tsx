@@ -90,10 +90,8 @@ export default function App() {
           console.warn("[Supabase] Query warning:", error.message || error);
         }
         setProducts(INITIAL_PRODUCTS);
-      } else if (data && data.length > 0) {
+      } else if (data) {
         setProducts(data as Product[]);
-      } else {
-        setProducts(INITIAL_PRODUCTS);
       }
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
@@ -124,12 +122,9 @@ export default function App() {
 
   useEffect(() => {
     const handleOpenAdmin = () => setIsAdminModalOpen(true);
-    const handleOpenAuth = () => setView('auth');
     window.addEventListener('openAdmin', handleOpenAdmin);
-    window.addEventListener('openAuth', handleOpenAuth);
     return () => {
       window.removeEventListener('openAdmin', handleOpenAdmin);
-      window.removeEventListener('openAuth', handleOpenAuth);
     };
   }, []);
   
@@ -462,7 +457,8 @@ _Your order is now being processed._
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 window.dispatchEvent(new CustomEvent('toggleSearch'));
               } else if (v === 'profile') {
-                setView('auth');
+                // Profile view has been deactivated per user request
+                return;
               } else {
                 setView(v);
                 setCategory(null);
@@ -516,11 +512,26 @@ _Your order is now being processed._
                   )}
 
                   {view === 'marketing' && <MarketingPortal />}
-                  {view === 'auth' && <AuthPage onSuccess={() => setView(user?.role === 'admin' ? 'admin' : 'shop')} />}
+                  {view === 'auth' && (
+                    <div className="max-w-md mx-auto px-4 py-20 text-center">
+                      <div className="bg-foreground/5 border border-white/[0.06] rounded-[2rem] p-8 space-y-4">
+                        <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto text-red-500">
+                          <X size={20} />
+                        </div>
+                        <h2 className="text-lg font-bold font-mono tracking-tight text-white uppercase">Profile Feature Deactivated</h2>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Authentication, log-in capabilities, and user profiles have been permanently deactivated per user request.
+                        </p>
+                        <button onClick={() => setView('shop')} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-black uppercase tracking-widest p-3 rounded-2xl transition-colors">
+                          Return to Shop
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {view === 'reset-password' && <div className="max-w-md mx-auto px-4"><ResetPassword onSuccess={() => setView('shop')} /></div>}
                   {view === 'admin' && (
                     <ProtectedRoute requireAdmin>
-                      <AdminDashboard products={products} />
+                      <AdminDashboard products={products} onRefresh={fetchProducts} />
                     </ProtectedRoute>
                   )}
                 </Suspense>

@@ -597,31 +597,15 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                                   <div className="bg-[#030307] border border-white/[0.04] p-5 rounded-3xl space-y-4 font-sans text-xs text-gray-400 leading-relaxed text-left">
                                     <h4 className="font-display font-semibold text-white uppercase text-[10px] tracking-wider text-blue-400">Mobile Money (MTN & Airtel) Live API Manual</h4>
                                     <p className="text-[11px] text-gray-400 leading-relaxed">
-                                      Businesses in East Africa handle payment flows either through a **Unified Merchant Aggregator (Flutterwave)** or via **Direct Telecom API connections**. Our system supports both modes securely!
+                                      Businesses in East Africa handle payment flows via **Direct Telecom API connections** (MTN MoMo API or Airtel Money API). Our system supports direct secure connections under a modular setup!
                                     </p>
 
                                     <div className="space-y-3">
-                                      {/* Channel 1: Flutterwave */}
-                                      <div className="p-3 bg-white/[0.01] border border-white/[0.04] rounded-2xl space-y-1.5">
-                                        <h5 className="font-bold text-white text-[9.5px] uppercase tracking-wider flex items-center gap-1.5 text-emerald-400">
-                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                          Option A: Flutterwave (Highly Recommended)
-                                        </h5>
-                                        <p className="text-[10px] text-gray-500 leading-relaxed">
-                                          Enables charging both **MTN MoMo** and **Airtel Money** Uganda under a consolidated system with auto-settlement.
-                                        </p>
-                                        <ol className="list-decimal pl-4 text-[9px] space-y-1 text-gray-500 font-mono uppercase">
-                                          <li>Register at flutterwave.com.</li>
-                                          <li>Retrieve API Keys from Settings &gt; API Keys.</li>
-                                          <li>Set keys inside your secure .env variables.</li>
-                                        </ol>
-                                      </div>
-
-                                      {/* Channel 2: MTN Direct */}
+                                      {/* Channel: MTN Direct */}
                                       <div className="p-3 bg-white/[0.01] border border-white/[0.04] rounded-2xl space-y-1.5">
                                         <h5 className="font-bold text-white text-[9.5px] uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
                                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                          Option B: Direct MTN Mobile Money API
+                                          Direct MTN Mobile Money API
                                         </h5>
                                         <p className="text-[10px] text-gray-500 leading-relaxed">
                                           Direct Collection OpenAPI routing via MTN MoMo Developer Portal (momodeveloper.mtn.com).
@@ -637,11 +621,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                                     <div className="space-y-2 font-mono">
                                       <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Configuration Slots (.env.example Reference)</span>
                                       <pre className="p-3.5 bg-black/40 border border-white/[0.05] rounded-2xl text-[8.5px] text-blue-300 font-bold overflow-x-auto whitespace-pre no-scrollbar leading-normal select-all select-text">
-{`# 1. OPTION A: FLUTTERWAVE GATEWAY
-FLUTTERWAVE_SECRET_KEY="FLWSECK-..."
-FLUTTERWAVE_PUBLIC_KEY="FLWPUBK-..."
-
-# 2. OPTION B: DIRECT MTN MOMO COLLECTIONS
+{`# DIRECT MTN MOMO COLLECTIONS
 MTN_MOMO_PRIMARY_KEY="Ocp-Apim-Subscription-..."
 MTN_MOMO_API_USER="c88...6" # API User UUID
 MTN_MOMO_API_KEY="53c...1" # API Subscription Key

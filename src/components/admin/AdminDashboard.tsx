@@ -4,7 +4,7 @@ import imageCompression from 'browser-image-compression';
 import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle, User, QrCode, Printer, TrendingUp, ExternalLink, Search } from 'lucide-react';
 import { ResponsiveContainer, ComposedChart, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, Line, Area } from 'recharts';
 import { Product, Category, Order, OrderStatus, Review } from '../../types';
-import { PRODUCT_CATEGORIES } from '../../constants';
+import { PRODUCT_CATEGORIES, INITIAL_PRODUCTS } from '../../constants';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { Tooltip } from '../ui/Tooltip';
@@ -17,6 +17,7 @@ import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface AdminDashboardProps {
   products: Product[];
+  onRefresh?: () => void;
 }
 
 function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
@@ -58,7 +59,7 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
   );
 }
 
-export default function AdminDashboard({ products: initialProducts }: AdminDashboardProps) {
+export default function AdminDashboard({ products: initialProducts, onRefresh }: AdminDashboardProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'admins'>('inventory');
   const [orders, setOrders] = useState<Order[]>([]);
@@ -687,6 +688,7 @@ _Thank you for choosing Solo Electronics!_
         if (error) throw error;
       }
       resetForm();
+      if (onRefresh) onRefresh();
     } catch (e: any) {
       console.error("Save failed:", e);
       alert("Error saving record.");
@@ -719,6 +721,7 @@ _Thank you for choosing Solo Electronics!_
         }
       }
       await supabase.from('products').delete().eq('id', id);
+      if (onRefresh) onRefresh();
     } catch (e) {
       console.error("Delete failed:", e);
     }
@@ -1276,8 +1279,50 @@ _Thank you for choosing Solo Electronics!_
           </div>
 
           {Object.entries(groupedProducts).length === 0 ? (
-            <div className="py-20 text-center text-muted-foreground font-black uppercase tracking-widest bg-foreground/5 rounded-[3rem] border border-border">
-              No Inventory Items Detected
+            <div className="py-20 text-center bg-foreground/5 rounded-[3rem] border border-border px-6 max-w-2xl mx-auto space-y-6">
+              <Package size={48} className="mx-auto text-blue-500 animate-pulse" />
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Your Supabase Inventory is Empty</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
+                  Your Supabase `products` table has 0 listings. You can immediately list a product manually or automatically seed the database with the 6 high-quality default devices.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+                <button
+                  onClick={() => setIsAdding(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-mono text-[10px] font-black uppercase tracking-widest rounded-2xl transition-colors cursor-pointer"
+                >
+                  Create Manual Product
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!isSupabaseConfigured) {
+                      alert("Supabase integration is not fully configured yet. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your settings.");
+                      return;
+                    }
+                    try {
+                      const seedData = INITIAL_PRODUCTS.map(p => ({
+                        ...p,
+                        specifications: 'High performance device with official store warranty.',
+                        images: [p.image],
+                        is_verified: true,
+                        rating: 5.0,
+                        created_at: new Date().toISOString()
+                      }));
+                      const { error } = await supabase.from('products').insert(seedData);
+                      if (error) throw error;
+                      alert("Successfully seeded 6 default premium products to your Supabase products table!");
+                      if (onRefresh) onRefresh();
+                    } catch (err: any) {
+                      console.error("Seeding error:", err);
+                      alert(`Failed to seed: ${err.message || err}`);
+                    }
+                  }}
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-[10px] font-black uppercase tracking-widest rounded-2xl transition-colors cursor-pointer"
+                >
+                  Seed Default Products
+                </button>
+              </div>
             </div>
           ) : (
             Object.entries(groupedProducts).sort(([a], [b]) => a.localeCompare(b)).map(([cat, catProducts]) => (
