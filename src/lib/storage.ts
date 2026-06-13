@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function uploadFile(
@@ -7,6 +7,13 @@ export async function uploadFile(
   path: string
 ): Promise<string | null> {
   try {
+    if (!isSupabaseConfigured) {
+      console.warn("[Storage] Supabase is not configured. Simulating file upload using local Blob URL.");
+      // Encode with a custom prefix so getPublicUrl knows it is a local simulator URL
+      const localUrl = URL.createObjectURL(file);
+      return `sandbox-local:${localUrl}`;
+    }
+
     // Basic check removed to allow PIN-authorized admins to attempt uploads.
     // Supabase RLS policies will still protect the bucket.
     const { data: { user } } = await supabase.auth.getUser();
@@ -41,6 +48,10 @@ export async function uploadFile(
 
 export function getPublicUrl(bucket: string, path: string): string | null {
   if (typeof path !== 'string' || !path || path.trim() === '') return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('sandbox-local:')) {
+    return path.substring('sandbox-local:'.length);
+  }
   const cleanPath = path.replace(/^\/+/, '');
   try {
     const { data } = supabase.storage.from(bucket).getPublicUrl(cleanPath);

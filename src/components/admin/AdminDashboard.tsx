@@ -647,8 +647,8 @@ _Thank you for choosing Solo Electronics!_
     
     try {
       // Merge existing (if editing) with new uploads
-      const existingImages = (newProduct.images || []).filter(img => img.startsWith('http'));
-      const existingVideos = (newProduct.videos || []).filter(vid => vid.startsWith('http'));
+      const existingImages = (newProduct.images || []).filter(img => img && (img.startsWith('http') || img.startsWith('blob:') || img.startsWith('data:')));
+      const existingVideos = (newProduct.videos || []).filter(vid => vid && (vid.startsWith('http') || vid.startsWith('blob:') || vid.startsWith('data:')));
 
       const finalImages = [...existingImages, ...completedImages];
       const finalVideos = [...existingVideos, ...completedVideos];
@@ -798,11 +798,11 @@ _Thank you for choosing Solo Electronics!_
             </div>
           </div>
           
-          {!user && (
+          {(user?.id === 'legacy-admin' || !user) && (
             <motion.div 
-              initial={{ opacity: 0, x: -10 }} 
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3 px-5 py-3 bg-blue-500/10 rounded-2xl border border-blue-500/20 max-w-md"
+               initial={{ opacity: 0, x: -10 }} 
+               animate={{ opacity: 1, x: 0 }}
+               className="flex items-center gap-3 px-5 py-3 bg-blue-500/10 rounded-2xl border border-blue-500/20 max-w-md"
             >
               <ShieldCheck size={20} className="text-blue-500 shrink-0" />
               <div className="space-y-1">
@@ -1050,18 +1050,7 @@ _Thank you for choosing Solo Electronics!_
                       <div className="space-y-4">
                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-4">Media Assets (Select from Phone Storage)</label>
                         
-                        {!user ? (
-                          <div className="p-8 bg-blue-500/5 border-2 border-dashed border-border rounded-3xl text-center space-y-4">
-                              <ShieldCheck className="mx-auto text-blue-500 opacity-50" size={40} />
-                              <p className="text-[10px] font-bold text-muted-foreground px-4 leading-relaxed uppercase tracking-widest">Upload functionality is locked. Sign in with Google to access phone storage and camera permissions.</p>
-                              <button 
-                                onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
-                                className="px-8 py-3 bg-blue-600 text-white font-black text-[10px] uppercase rounded-full shadow-lg shadow-blue-500/20"
-                              >
-                                Authorize Google Login
-                              </button>
-                          </div>
-                        ) : (
+                        <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <label className="group relative h-48 bg-blue-600/5 border-2 border-dashed border-blue-500/20 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-blue-600/10 transition-all overflow-hidden">
                               <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'image')} />
@@ -1087,7 +1076,21 @@ _Thank you for choosing Solo Electronics!_
                               </label>
                             </div>
                           </div>
-                        )}
+
+                          <div className="pt-2 text-center">
+                            {isSupabaseConfigured ? (
+                              <div className="flex items-center justify-center gap-1.5 text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/10 rounded-xl py-2 px-3 text-[9px] font-mono uppercase tracking-widest">
+                                <ShieldCheck size={11} className="animate-pulse" />
+                                Cloud Sync Live: product-images & product-videos buckets active
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center gap-1.5 text-amber-400/90 bg-amber-500/5 border border-amber-500/10 rounded-xl py-2 px-3 text-[9px] font-mono uppercase tracking-widest">
+                                <AlertCircle size={11} className="animate-pulse" />
+                                Sandbox Mode: Uploading locally (Blob Simulators)
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 min-h-[120px]">
@@ -1165,6 +1168,25 @@ _Thank you for choosing Solo Electronics!_
                               <button 
                                 onClick={() => setNewProduct(prev => ({ ...prev, images: prev.images?.filter((_, i) => i !== idx) }))}
                                 className="absolute top-1 right-1 p-1.5 bg-black/60 rounded-full text-white hover:bg-red-500 transition-colors"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          );
+                        })}
+
+                        {/* Existing Database Videos (if editing) */}
+                        {newProduct.videos?.map((vid, idx) => {
+                          if (uploadingMedia.some(m => m.url === vid)) return null;
+                          return (
+                            <div key={`existing-vid-${idx}`} className="relative aspect-square rounded-2xl overflow-hidden bg-foreground/5 border border-border group/item">
+                              <div className="w-full h-full bg-emerald-500/10 flex items-center justify-center overflow-hidden">
+                                <video src={vid} className="w-full h-full object-cover opacity-65" />
+                                <Video className="text-emerald-500 absolute animate-pulse" size={16} />
+                              </div>
+                              <button 
+                                onClick={() => setNewProduct(prev => ({ ...prev, videos: prev.videos?.filter((_, i) => i !== idx) }))}
+                                className="absolute top-1 right-1 p-1.5 bg-black/60 rounded-full text-white hover:bg-red-500 transition-colors z-10"
                               >
                                 <X size={12} />
                               </button>

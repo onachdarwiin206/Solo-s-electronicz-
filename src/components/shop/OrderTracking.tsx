@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Package, Truck, ShieldCheck, CheckCircle2, Search, MapPin, 
-  Clock, LogOut, ArrowRight, CornerDownRight, Loader2, AlertCircle, Phone
+  Clock, ArrowRight, Loader2, AlertCircle, Phone
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
@@ -123,10 +123,10 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
 
   // Timeline Steps
   const steps = [
-    { key: 'pending', label: 'Received', desc: 'Secure verification' },
-    { key: 'verified', label: 'Inspected', desc: 'Sourcing validation' },
-    { key: 'transit', label: 'On Route', desc: 'En route to Lira' },
-    { key: 'delivered', label: 'Arrived', desc: 'At Lira Retail Desk' }
+    { key: 'pending', label: 'Received', desc: 'Sourcing cleared' },
+    { key: 'verified', label: 'Verified', desc: 'Quality validated' },
+    { key: 'transit', label: 'In Transit', desc: 'En route to hub' },
+    { key: 'delivered', label: 'Delivered', desc: 'At Lira Desk' }
   ];
 
   const getStepStatus = (stepKey: string) => {
@@ -141,14 +141,14 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 sm:p-8 bg-[#030307] text-white rounded-[2.5rem] border border-white/[0.04] shadow-[0_24px_80px_rgba(0,0,0,0.8)] overflow-hidden relative font-sans">
-      <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/[0.01] via-transparent to-indigo-600/[0.02] pointer-events-none" />
+    <div className="w-full max-w-4xl mx-auto p-6 sm:p-10 bg-black text-white rounded-[2.5rem] border border-zinc-900 shadow-2xl overflow-hidden relative font-sans text-left">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-to-b from-blue-500/[0.02] to-transparent blur-[120px] pointer-events-none" />
       
       {/* Search Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/[0.05] relative z-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-zinc-900 relative z-10">
         <div>
-          <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-blue-500 uppercase">SOLO LOGISTICS DESK</span>
-          <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-white mt-1">Live Tracking Node</h2>
+          <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-500 uppercase">LOGISTICS PORTAL</span>
+          <h2 className="text-2xl sm:text-3xl font-display font-medium tracking-tight text-white mt-1">Shipment Tracking</h2>
         </div>
 
         <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md w-full relative group">
@@ -157,16 +157,14 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
             placeholder="Enter Order ID (e.g., SOLO-KAMPALA-XM)..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/[0.02] border border-white/[0.08] hover:border-white/20 focus:border-blue-500 rounded-2xl py-3.5 pl-12 pr-28 text-sm outline-none transition-all font-mono placeholder:text-gray-600 focus:ring-4 focus:ring-blue-500/10 text-white"
+            className="w-full bg-zinc-950 border border-zinc-900 hover:border-zinc-800 focus:border-blue-500 rounded-full py-4 pl-6 pr-32 text-xs outline-none transition-all font-mono placeholder:text-zinc-600 font-medium text-white"
           />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={16} />
           <button 
             type="submit" 
             disabled={loading}
-            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-4 py-2 bg-white text-black text-xs font-bold rounded-xl hover:bg-white/95 active:scale-95 transition-all outline-none"
+            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-5 py-2.5 bg-white text-black text-xs font-mono tracking-wider font-bold rounded-full hover:bg-[#e4e4e7] active:scale-95 transition-all outline-none cursor-pointer"
           >
-            {loading ? <Loader2 size={12} className="animate-spin text-black" /> : 'Query'}
-            <ArrowRight size={12} />
+            {loading ? <Loader2 size={11} className="animate-spin text-black" /> : 'QUERY ID'}
           </button>
         </form>
       </div>
@@ -174,9 +172,9 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
       {/* Main Content Area */}
       <div className="mt-8 relative z-10">
         {loading && (
-          <div className="py-20 flex flex-col items-center justify-center">
-            <Loader2 className="animate-spin text-blue-500 mb-4" size={36} />
-            <p className="text-xs font-mono text-gray-400 tracking-widest uppercase animate-pulse">Establishing log connection...</p>
+          <div className="py-24 flex flex-col items-center justify-center">
+            <Loader2 className="animate-spin text-zinc-400 mb-4" size={36} />
+            <p className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase animate-pulse">Syncing logistics logs...</p>
           </div>
         )}
 
@@ -185,19 +183,19 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
             <AlertCircle size={24} className="shrink-0" />
             <div>
               <h4 className="font-bold text-sm">Query Interrupted</h4>
-              <p className="text-xs text-red-400/80 mt-1">{error}</p>
+              <p className="text-xs text-red-500/80 mt-1">{error}</p>
             </div>
           </div>
         )}
 
         {!order && !loading && !error && (
-          <div className="py-16 text-center border border-dashed border-white/[0.05] rounded-[2rem] bg-white/[0.01]">
-            <div className="w-12 h-12 bg-white/[0.03] border border-white/[0.08] rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-400">
-              <Package size={20} />
+          <div className="py-20 text-center border border-dashed border-zinc-900 rounded-[2rem] bg-zinc-950/40">
+            <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-4 text-zinc-400">
+              <Package size={18} />
             </div>
-            <h3 className="text-sm font-bold text-gray-300">No Query Active</h3>
-            <p className="text-xs text-gray-500 max-w-xs mx-auto mt-2 leading-relaxed">
-              Input your unique order signature above to connect with Lira's central delivery tracker log.
+            <h3 className="text-sm font-semibold text-zinc-300">No Query Active</h3>
+            <p className="text-xs text-zinc-500 max-w-xs mx-auto mt-2 leading-relaxed font-sans mb-4">
+              Enter your unique order signature above to connect with Lira's central tracking coordinates.
             </p>
           </div>
         )}
@@ -210,39 +208,39 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
           >
             {/* Quick Status Bar */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-6 bg-white/[0.01] border border-white/[0.04] rounded-2xl">
-                <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">Order Reference</span>
-                <p className="font-mono text-sm font-bold text-white mt-1 select-all">{order.id}</p>
+              <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-3xl">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest block mb-1">Order Reference</span>
+                <p className="font-mono text-sm font-bold text-white select-all">{order.id}</p>
               </div>
 
-              <div className="p-6 bg-white/[0.01] border border-white/[0.04] rounded-2xl">
-                <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">Status / Sector</span>
+              <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-3xl">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest block mb-1">Logistics Status</span>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={cn(
-                    "w-2 h-2 rounded-full",
-                    order.status === 'delivered' ? 'bg-green-500' : 'bg-blue-500 animate-ping'
+                    "w-1.5 h-1.5 rounded-full",
+                    order.status === 'delivered' ? 'bg-emerald-500' : 'bg-blue-500 animate-ping'
                   )} />
-                  <p className="font-display text-sm font-bold text-white capitalize">{order.status === 'cod' ? 'Pending COD' : order.status}</p>
+                  <p className="text-sm font-bold text-white capitalize leading-none">{order.status === 'cod' ? 'Pending COD' : order.status}</p>
                 </div>
               </div>
 
-              <div className="p-6 bg-white/[0.01] border border-white/[0.04] rounded-2xl">
-                <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest font-bold">Estimated Arrival</span>
-                <p className="font-display text-sm font-bold text-blue-400 mt-1">{order.estimated_delivery || 'Calculating...'}</p>
+              <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-3xl">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest font-bold block mb-1">Estimated Arrival</span>
+                <p className="text-sm font-bold text-blue-400">{order.estimated_delivery || 'Calculating...'}</p>
               </div>
             </div>
 
-            {/* Interactive Progress Bar */}
-            <div className="p-8 bg-white/[0.01] border border-white/[0.03] rounded-3xl relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-24 h-24 bg-blue-600/5 blur-2xl pointer-events-none" />
+            {/* Interactive Progress Timeline */}
+            <div className="p-8 bg-zinc-950/60 border border-zinc-900 rounded-[2.5rem] relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-24 h-24 bg-blue-500/[0.01] blur-2xl pointer-events-none" />
               <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 {steps.map((st, idx) => {
                   const status = getStepStatus(st.key);
                   return (
                     <div key={st.key} className="flex-1 w-full relative">
-                      {/* Connection line */}
+                      {/* Connection Line */}
                       {idx < steps.length - 1 && (
-                        <div className="hidden sm:block absolute left-9 top-4 right-0 h-[2px] bg-white/[0.04] z-0">
+                        <div className="hidden sm:block absolute left-9 top-4 right-0 h-[1.5px] bg-zinc-900 z-0">
                           <div className={cn(
                             "h-full bg-blue-500 transition-all duration-500",
                             status === 'completed' ? 'w-full' : 'w-0'
@@ -252,20 +250,20 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
                       
                       <div className="flex sm:flex-col items-center sm:items-start gap-4 sm:gap-0 relative z-10">
                         <div className={cn(
-                          "w-9 h-9 rounded-xl flex items-center justify-center border transition-all duration-300",
-                          status === 'completed' && "bg-blue-500/10 border-blue-500/50 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.15)]",
-                          status === 'active' && "bg-white text-black border-transparent scale-110 shadow-[0_4px_15px_rgba(255,255,255,0.2)]",
-                          status === 'upcoming' && "bg-white/[0.01] border-white/[0.08] text-gray-600"
+                          "w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-300",
+                          status === 'completed' && "bg-blue-500/10 border-blue-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]",
+                          status === 'active' && "bg-white text-black border-transparent scale-105 shadow-[0_4px_12px_rgba(255,255,255,0.15)]",
+                          status === 'upcoming' && "bg-zinc-950 border-zinc-900 text-zinc-700"
                         )}>
-                          {status === 'completed' ? <CheckCircle2 size={15} /> : <div className="text-[11px] font-mono font-bold">{idx + 1}</div>}
+                          {status === 'completed' ? <CheckCircle2 size={13} /> : <div className="text-[10px] font-mono font-bold">{idx + 1}</div>}
                         </div>
                         
                         <div className="sm:mt-3 text-left">
                           <h4 className={cn(
                             "text-xs font-bold leading-none tracking-tight",
-                            status === 'upcoming' ? 'text-gray-500' : 'text-white font-black'
+                            status === 'upcoming' ? 'text-zinc-600' : 'text-white'
                           )}>{st.label}</h4>
-                          <p className="text-[9.5px] font-mono text-gray-500 mt-1 uppercase tracking-tighter sm:block hidden">{st.desc}</p>
+                          <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase tracking-wider sm:block hidden">{st.desc}</p>
                         </div>
                       </div>
                     </div>
@@ -274,23 +272,21 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
               </div>
             </div>
 
-            {/* Timetable logs & Courier Metadata */}
+            {/* Timeline logs & Courier Details Row */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
               {/* Timeline Log Feed */}
               <div className="lg:col-span-3 space-y-4">
-                <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.25em] text-gray-500">Log History Logs</h3>
+                <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.25em] text-zinc-500">Logistics Timeline Events</h3>
                 
-                <div className="space-y-4 relative pl-4 border-l border-white/[0.04]">
+                <div className="space-y-5 relative pl-4 border-l border-zinc-900/60">
                   {order.tracking_logs?.map((log: any, idx: number) => (
-                    <div key={idx} className="relative group">
+                    <div key={idx} className="relative group text-left">
                       {/* indicator node */}
-                      <span className="absolute -left-[20.5px] top-1.5 w-2 h-2 rounded-full bg-blue-500 group-first:bg-white group-first:ring-4 group-first:ring-blue-500/20" />
+                      <span className="absolute -left-[20.5px] top-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 group-first:bg-white group-first:ring-4 group-first:ring-blue-500/20" />
                       
                       <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                          <p className="text-xs font-bold text-white group-first:text-blue-400 group-first:font-semibold">{log.message}</p>
-                        </div>
-                        <p className="text-[8.5px] font-mono text-gray-500">{log.timestamp ? format(new Date(log.timestamp), 'PPpp') : 'Logged'}</p>
+                        <p className="text-xs font-semibold text-white group-first:text-blue-400">{log.message}</p>
+                        <p className="text-[8.5px] font-mono text-zinc-500 uppercase">{log.timestamp ? format(new Date(log.timestamp), 'PPpp') : 'Logged'}</p>
                       </div>
                     </div>
                   ))}
@@ -298,29 +294,29 @@ export function OrderTracking({ onSearchClose, initialOrderId = '' }: TrackingPr
               </div>
 
               {/* Secure Courier Dossier */}
-              <div className="lg:col-span-2 p-6 bg-white/[0.01] border border-white/[0.04] rounded-3xl space-y-6">
+              <div className="lg:col-span-2 p-6 bg-zinc-950 border border-zinc-900 rounded-3xl space-y-6">
                 <div>
-                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.25em] text-gray-500">Destination Capsule</h3>
-                  <div className="flex items-start gap-3.5 mt-4">
-                    <div className="p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl text-gray-400 shrink-0">
-                      <MapPin size={16} />
+                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.25em] text-zinc-500">Shipping destination</h3>
+                  <div className="flex items-start gap-3 mt-4 text-left">
+                    <div className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 shrink-0">
+                      <MapPin size={14} />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-white">{order.district}</h4>
-                      <p className="text-[10px] font-mono text-gray-400 mt-0.5 leading-normal">{order.delivery_address || 'Lira Central Distribution'}</p>
+                      <p className="text-[10px] text-zinc-400 mt-0.5 leading-normal font-medium">{order.delivery_address || 'Lira Central Distribution'}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-white/[0.04] pt-6">
-                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.25em] text-gray-500">Customer Manifest</h3>
-                  <div className="flex items-center gap-3.5 mt-4">
-                    <div className="p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl text-gray-400 shrink-0">
-                      <Phone size={16} />
+                <div className="border-t border-zinc-900 pt-6">
+                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-[0.25em] text-zinc-500">Recipient Information</h3>
+                  <div className="flex items-center gap-3 mt-4 text-left">
+                    <div className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 shrink-0">
+                      <Phone size={14} />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-white mb-0.5">{order.customer_name}</h4>
-                      <p className="text-[10.5px] font-mono text-blue-500">{order.customer_phone}</p>
+                      <p className="text-[10px] font-mono text-blue-400 font-bold">{order.customer_phone}</p>
                     </div>
                   </div>
                 </div>

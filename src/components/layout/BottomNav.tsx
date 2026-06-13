@@ -13,7 +13,7 @@ export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProp
     { id: 'shop', label: 'Shop', icon: Home },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'cart', label: 'Cart', icon: ShoppingBag },
-    { id: 'profile', label: 'Deactivated', icon: User, disabled: true },
+    { id: 'tracking', label: 'Track', icon: Package },
   ];
 
   return (

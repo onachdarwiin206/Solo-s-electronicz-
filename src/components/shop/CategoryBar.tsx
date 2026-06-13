@@ -39,7 +39,7 @@ const getCategoryIcon = (category: string) => {
 
 export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarProps) {
   return (
-    <div className="bg-[#030307]/80 backdrop-blur-2xl border-b border-white/[0.04] py-5 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40">
+    <div className="bg-black/80 backdrop-blur-2xl border-b border-zinc-900 py-5 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-start md:justify-center gap-2.5 min-w-max">
         
         {/* All Sectors Tab */}
@@ -49,7 +49,7 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
             "relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide border",
             selectedCategory === null 
               ? "text-black border-transparent font-bold" 
-              : "bg-white/[0.02] border-white/[0.04] text-gray-400 hover:text-white hover:bg-white/[0.05] hover:border-white/10 active:scale-95"
+              : "bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-800 active:scale-95"
           )}
         >
           {selectedCategory === null && (
@@ -61,7 +61,7 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
           )}
           <div className={cn(
             "relative z-10 w-4.5 h-4.5 flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
-            selectedCategory === null ? "text-black" : "text-gray-400 group-hover:text-white"
+            selectedCategory === null ? "text-black" : "text-zinc-400 group-hover:text-white"
           )}>
             <LayoutGrid size={15} strokeWidth={2.5} />
           </div>
@@ -82,7 +82,7 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
                 "relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide border",
                 isActive 
                   ? "text-black border-transparent font-bold" 
-                  : "bg-white/[0.02] border-white/[0.04] text-gray-400 hover:text-white hover:bg-white/[0.05] hover:border-white/10 active:scale-95"
+                  : "bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-800 active:scale-95"
               )}
             >
               {isActive && (

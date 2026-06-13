@@ -21,7 +21,8 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
 import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home } from 'lucide-react';
 
-// OrderTracking removed
+// OrderTracking restore
+const OrderTracking = lazy(() => import('./components/shop/OrderTracking').then(m => ({ default: m.OrderTracking })));
 const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal'));
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 const ProductDetail = lazy(() => import('./components/shop/ProductDetail'));
@@ -31,7 +32,7 @@ const UserProfile = lazy(() => import('./components/profile/UserProfile'));
 const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
 const AuthPage = lazy(() => import('./components/auth/AuthPage'));
 
-type View = 'shop' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth';
+type View = 'shop' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth' | 'tracking';
 
 const WHATSAPP_NUMBER = "256793405517";
 
@@ -439,7 +440,7 @@ _Your order is now being processed._
             cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
             wishlistCount={wishlist.length}
             onCartClick={() => setCartOpen(true)}
-            onTrackingClick={() => {}}
+            onTrackingClick={() => setView('tracking')}
             onMarketingClick={() => setView('marketing')}
             isAdmin={isAdmin}
             currentLanguage={language}
@@ -502,6 +503,7 @@ _Your order is now being processed._
                   {view === 'product-detail' && selectedProduct && (
                     <ProductDetail 
                       product={selectedProduct} 
+                      products={products}
                       onBack={() => window.history.back()} 
                       onAddToCart={addToCart}
                       isWishlisted={isItemWishlisted(selectedProduct.id)}
@@ -526,6 +528,11 @@ _Your order is now being processed._
                           Return to Shop
                         </button>
                       </div>
+                    </div>
+                  )}
+                  {view === 'tracking' && (
+                    <div className="max-w-4xl mx-auto px-4 py-12">
+                      <OrderTracking />
                     </div>
                   )}
                   {view === 'reset-password' && <div className="max-w-md mx-auto px-4"><ResetPassword onSuccess={() => setView('shop')} /></div>}

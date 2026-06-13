@@ -155,6 +155,15 @@ export function Navbar({
               </button>
             </Tooltip>
 
+            <Tooltip content="Track Order">
+              <button 
+                onClick={onTrackingClick}
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <Package size={20} />
+              </button>
+            </Tooltip>
+
             <Tooltip content="Wishlist">
               <button 
                 className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"

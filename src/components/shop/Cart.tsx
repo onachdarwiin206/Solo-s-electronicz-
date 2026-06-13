@@ -290,43 +290,40 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
             className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-[#030307] border-l border-white/[0.04] z-[110] flex flex-col shadow-2xl font-sans"
           >
             {/* Drawer Header */}
-            <div className="p-6 border-b border-white/[0.04] flex justify-between items-center bg-[#05050a]/90 backdrop-blur-md">
+            <div className="p-6 border-b border-zinc-900 flex justify-between items-center bg-black/90 backdrop-blur-md">
               <div className="space-y-1 text-left">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-display font-medium text-white flex items-center gap-2 uppercase tracking-tight">
-                    <ShoppingCart className="text-blue-500 animate-pulse" size={16} />
-                    Secure Purchase Node
+                  <h2 className="text-base font-display font-medium text-white flex items-center gap-2 uppercase tracking-tight">
+                    <ShoppingCart className="text-zinc-400" size={16} />
+                    Checkout Basket
                   </h2>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-md border border-white/[0.06] bg-white/[0.02] text-gray-400 uppercase tracking-widest">
-                    SSL v3
-                  </span>
                 </div>
-                <p className="text-[8.5px] font-mono text-gray-500 uppercase tracking-widest">ESTABLISHING ENCRYPTED TRANSACTION DIRECTORY</p>
+                <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-widest font-medium">Verify products and address details</p>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-white/[0.03] border border-transparent hover:border-white/[0.05] rounded-xl text-gray-400 hover:text-white transition-colors"><X size={18} /></button>
+              <button onClick={onClose} className="p-2 hover:bg-zinc-900 border border-transparent rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer"><X size={18} /></button>
             </div>
 
-            {/* Stepper Progress Bar */}
-            <div className="px-6 py-4 bg-white/[0.01] border-b border-white/[0.03] flex items-center justify-between text-[10px] font-mono text-gray-500 uppercase font-bold tracking-widest">
+            {/* Stepper Progress Bar - Minimalist Line indicators */}
+            <div className="px-6 py-4 bg-zinc-950/60 border-b border-zinc-900 flex items-center justify-between text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-widest">
               <button 
                 onClick={() => setStep('basket')} 
-                className={cn("flex items-center gap-1.5", step === 'basket' ? "text-white font-extrabold" : "text-gray-600 hover:text-gray-400")}
+                className={cn("flex items-center gap-1.5 transition-colors", step === 'basket' ? "text-white font-extrabold" : "text-zinc-600 hover:text-zinc-400")}
               >
-                <span>01</span> Basket Review
+                Basket
               </button>
-              <ChevronRight size={12} className="text-gray-700" />
+              <ChevronRight size={10} className="text-zinc-800" />
               <button 
                 onClick={() => { if (items.length > 0) setStep('delivery'); }} 
-                className={cn("flex items-center gap-1.5", step === 'delivery' ? "text-white font-extrabold" : "text-gray-600 hover:text-gray-400")}
+                className={cn("flex items-center gap-1.5 transition-colors", step === 'delivery' ? "text-white font-extrabold" : "text-zinc-600 hover:text-zinc-400")}
               >
-                <span>02</span> Delivery Details
+                Delivery
               </button>
-              <ChevronRight size={12} className="text-gray-700" />
+              <ChevronRight size={10} className="text-zinc-800" />
               <button 
                 onClick={() => { if (validateDelivery()) setStep('payment'); }} 
-                className={cn("flex items-center gap-1.5", step === 'payment' ? "text-white font-extrabold" : "text-gray-600 hover:text-gray-400")}
+                className={cn("flex items-center gap-1.5 transition-colors", step === 'payment' ? "text-white font-extrabold" : "text-zinc-600 hover:text-zinc-400")}
               >
-                <span>03</span> Settlement
+                Payment
               </button>
             </div>
 
