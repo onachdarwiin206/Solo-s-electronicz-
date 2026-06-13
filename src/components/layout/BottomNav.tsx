@@ -8,8 +8,15 @@ interface BottomNavProps {
   cartCount: number;
 }
 
+interface NavTab {
+  id: string;
+  label: string;
+  icon: any;
+  disabled?: boolean;
+}
+
 export function BottomNav({ activeView, onViewChange, cartCount }: BottomNavProps) {
-  const tabs = [
+  const tabs: NavTab[] = [
     { id: 'shop', label: 'Shop', icon: Home },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'cart', label: 'Cart', icon: ShoppingBag },

@@ -20,6 +20,7 @@ interface ProductDetailProps {
   onToggleWishlist?: (id: string) => void;
   isLiked?: boolean;
   onToggleLike?: (id: string) => void;
+  onProductClick?: (product: Product) => void;
 }
 
 const WHATSAPP_NUMBER = "256793405517";
@@ -32,7 +33,8 @@ export default function ProductDetail({
   isWishlisted = false,
   onToggleWishlist,
   isLiked = false,
-  onToggleLike
+  onToggleLike,
+  onProductClick
 }: ProductDetailProps) {
   const [activeMedia, setActiveMedia] = useState(0);
 
@@ -360,7 +362,7 @@ export default function ProductDetail({
                 onClick={() => {
                   // Scroll to top and switch to this product
                   window.scrollTo({ top: 0, behavior: 'smooth' });
-                  onProductClick(item);
+                  onProductClick?.(item);
                 }}
                 className="group relative rounded-[2rem] bg-[#070709] border border-zinc-900 hover:border-zinc-800 p-6 flex flex-col justify-between h-[320px] transition-all duration-300 text-left cursor-pointer overflow-hidden"
               >

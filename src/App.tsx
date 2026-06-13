@@ -510,6 +510,7 @@ _Your order is now being processed._
                       onToggleWishlist={handleToggleWishlist}
                       isLiked={isItemLiked(selectedProduct.id)}
                       onToggleLike={handleToggleLike}
+                      onProductClick={(p) => setSelectedProduct(p)}
                     />
                   )}
 
