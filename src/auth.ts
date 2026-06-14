@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from "./lib/supabase";
+import { supabase, isSupabaseConfigured, resolveUserProfile } from "./lib/supabase";
 import { safeGetLocalStorage, safeSetLocalStorage } from "./lib/sandboxDb";
 
 export interface AuthResponse {
@@ -102,12 +102,8 @@ export const login = async (email: string, password: string): Promise<AuthRespon
 
   if (error) return { success: false, error: error.message };
   
-  // Check if admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', data.user.id)
-    .single();
+  // Check if admin centrally
+  const profile = await resolveUserProfile(data.user.id, data.user.user_metadata);
 
   return { 
     success: true, 
@@ -123,11 +119,7 @@ export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  const profile = await resolveUserProfile(user.id, user.user_metadata);
 
   return { ...user, ...profile };
 };

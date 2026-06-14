@@ -91,7 +91,7 @@ export function BackgroundSlideshow() {
       ref={bgRef}
       className="fixed inset-0 z-[-1] overflow-hidden select-none pointer-events-none"
       style={{
-        backgroundColor: '#000002',
+        backgroundColor: theme === 'light' ? '#f8fafc' : '#000002',
         '--mouse-x': '0',
         '--mouse-y': '0',
         '--scroll-y': '0px',
@@ -138,13 +138,13 @@ export function BackgroundSlideshow() {
         }
 
         .glass-contrast-overlay {
-          background-image: radial-gradient(circle at 50% 50%, transparent 20%, #000002 95%);
+          background-image: radial-gradient(circle at 50% 50%, transparent 20%, ${theme === 'light' ? '#f8fafc' : '#000002'} 95%);
         }
 
         .tech-fineline-grid {
           background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.007) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.007) 1px, transparent 1px);
+            linear-gradient(${theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255, 255, 255, 0.007)'} 1px, transparent 1px),
+            linear-gradient(90deg, ${theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255, 255, 255, 0.007)'} 1px, transparent 1px);
           background-size: 50px 50px;
           background-position: center center;
           mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 15%, rgba(0,0,0,0.1) 90%);
@@ -154,7 +154,11 @@ export function BackgroundSlideshow() {
 
       {/* LAYER 1: DEEP GRADIENT COLD SOLID BASE */}
       <div 
-        className="absolute inset-0 bg-gradient-to-tr from-[#000002] via-[#010104] to-[#03030b] bg-[length:200%_200%] transition-colors duration-1000"
+        className={`absolute inset-0 bg-gradient-to-tr bg-[length:200%_200%] transition-all duration-1000 ${
+          theme === 'light' 
+            ? "from-[#e2e8f0] via-[#f1f5f9] to-[#f8fafc]" 
+            : "from-[#000002] via-[#010104] to-[#03030b]"
+        }`}
         style={{
           animation: 'bgBaseBreath 40s infinite ease-in-out',
         }}
@@ -162,7 +166,9 @@ export function BackgroundSlideshow() {
 
       {/* LAYER 2: LARGE MORPHING BLURRED COGNITIVE MESHES */}
       <div 
-        className="absolute inset-0 z-0 overflow-hidden opacity-[0.35] blur-[110px] md:blur-[150px] mix-blend-screen"
+        className={`absolute inset-0 z-0 overflow-hidden blur-[110px] md:blur-[150px] transition-all duration-1000 ${
+          theme === 'light' ? 'opacity-[0.5] mix-blend-multiply' : 'opacity-[0.35] mix-blend-screen'
+        }`}
         style={{
           transform: 'translate(calc(var(--mouse-x) * 8px), calc(var(--mouse-y) * 8px))',
           willChange: 'transform',
@@ -170,19 +176,25 @@ export function BackgroundSlideshow() {
       >
         {/* Blob A - Electric Blue */}
         <div 
-          className="animated-mesh-primary absolute w-[240px] h-[240px] md:w-[480px] md:h-[480px] rounded-full bg-blue-600/6 top-[-10%] left-[-5%]" 
+          className={`animated-mesh-primary absolute w-[240px] h-[240px] md:w-[480px] md:h-[480px] rounded-full transition-colors duration-1000 ${
+            theme === 'light' ? 'bg-blue-300/30' : 'bg-blue-600/6'
+          } top-[-10%] left-[-5%]`} 
           style={{ willChange: 'transform' }}
         />
         
         {/* Blob B - Dark Navy Accent */}
         <div 
-          className="animated-mesh-secondary absolute w-[300px] h-[300px] md:w-[600px] md:h-[600px] rounded-full bg-indigo-950/20 bottom-[-15%] right-[-5%]" 
+          className={`animated-mesh-secondary absolute w-[300px] h-[300px] md:w-[600px] md:h-[600px] rounded-full transition-colors duration-1000 ${
+            theme === 'light' ? 'bg-indigo-200/30' : 'bg-indigo-950/20'
+          } bottom-[-15%] right-[-5%]`} 
           style={{ willChange: 'transform' }}
         />
 
         {/* Blob C - Soft Purple Glow */}
         <div 
-          className="animated-mesh-primary absolute w-[200px] h-[200px] md:w-[450px] md:h-[450px] rounded-full bg-purple-900/4 top-[25%] left-[30%]" 
+          className={`animated-mesh-primary absolute w-[200px] h-[200px] md:w-[450px] md:h-[450px] rounded-full transition-colors duration-1000 ${
+            theme === 'light' ? 'bg-purple-200/20' : 'bg-purple-900/4'
+          } top-[25%] left-[30%]`} 
           style={{ 
             animationDelay: '-15s',
             willChange: 'transform' 
@@ -204,14 +216,16 @@ export function BackgroundSlideshow() {
           return (
             <div
               key={p.id}
-              className="absolute bg-white rounded-full transition-shadow duration-300"
+              className={`absolute rounded-full transition-all duration-1000 ${
+                theme === 'light' ? 'bg-slate-400' : 'bg-white'
+              }`}
               style={{
                 left: `${p.x}%`,
                 top: `${p.y}%`,
                 width: `${p.size}px`,
                 height: `${p.size}px`,
-                opacity: p.opacity,
-                boxShadow: p.glow ? '0 0 6px rgba(147, 51, 234, 0.3)' : undefined,
+                opacity: theme === 'light' ? p.opacity * 1.5 : p.opacity,
+                boxShadow: p.glow && theme !== 'light' ? '0 0 6px rgba(147, 51, 234, 0.3)' : undefined,
                 transform: `translate(
                   calc(var(--mouse-x) * ${depthMultiplier * 15}px),
                   calc(var(--mouse-y) * ${depthMultiplier * 15}px + var(--scroll-y) * ${depthMultiplier * -0.08})
@@ -239,7 +253,9 @@ export function BackgroundSlideshow() {
           {techIndicators.map((ti, index) => (
             <div 
               key={index} 
-              className="absolute text-[8px] font-mono tracking-widest text-blue-500/50 select-none flex items-center gap-2"
+              className={`absolute text-[8px] font-mono tracking-widest select-none flex items-center gap-2 transition-colors duration-1000 ${
+                theme === 'light' ? 'text-slate-800/60' : 'text-blue-500/50'
+              }`}
               style={{
                 top: ti.top,
                 left: ti.left,
@@ -249,7 +265,7 @@ export function BackgroundSlideshow() {
               }}
             >
               {/* Corner crosshairs */}
-              <span className="font-extrabold text-[10px] text-blue-500/70">+</span>
+              <span className={`font-extrabold text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-blue-500/70'}`}>+</span>
               <span>{ti.label}</span>
             </div>
           ))}

@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
-import { supabase, isSupabaseConfigured } from "./lib/supabase";
+import { supabase, isSupabaseConfigured, resolveUserProfile } from "./lib/supabase";
 import { UserProfile } from './types';
 import { signUp as supaSignUp, login as supaLogin, logoutUser, sendResetPasswordEmail, AuthResponse, loginWithGoogle as supaLoginWithGoogle } from './auth';
 import { safeGetLocalStorage, safeSetLocalStorage, SANDBOX_SYNC_EVENT } from "./lib/sandboxDb";
@@ -153,29 +153,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { user: supaUser } = session;
     
     try {
-      // Fetch profile - created by DB trigger for robustness
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', supaUser.id)
-        .single();
+      // Centrally resolve the user's high-fidelity profile with complete fallback policies
+      const profile = await resolveUserProfile(supaUser.id, {
+        email: supaUser.email,
+        full_name: supaUser.user_metadata?.full_name,
+        name: supaUser.user_metadata?.name
+      });
 
       const isDefaultAdmin = ADMIN_EMAILS.includes(supaUser.email?.toLowerCase() || '');
+      const finalRole = isDefaultAdmin ? 'admin' : (profile.role || 'customer');
 
-      if (profileError) {
-        console.warn("[Auth] Profile fetch failed:", profileError.message);
-        setUser({ 
-          id: supaUser.id, 
-          email: supaUser.email || '', 
-          name: supaUser.user_metadata?.full_name || 'User',
-          role: isDefaultAdmin ? 'admin' : 'customer'
-        } as any);
-        setIsAdmin(isDefaultAdmin);
-      } else {
-        const finalRole = isDefaultAdmin ? 'admin' : profile.role;
-        setUser({ id: supaUser.id, ...profile, role: finalRole } as any);
-        setIsAdmin(finalRole === 'admin');
-      }
+      setUser({
+        ...profile,
+        id: supaUser.id,
+        email: supaUser.email || profile.email || '',
+        role: finalRole
+      } as any);
+      setIsAdmin(finalRole === 'admin');
     } catch (err: any) {
       console.error("[Auth] Sync Exception:", err.message);
     } finally {

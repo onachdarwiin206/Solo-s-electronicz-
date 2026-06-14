@@ -1,11 +1,12 @@
 import { useState, ChangeEvent, useRef, useEffect } from 'react';
-import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList } from 'lucide-react';
+import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
 import { Tooltip } from '../ui/Tooltip';
 import { useAuth } from '../../AuthContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import { useTheme } from '../../ThemeContext';
 
 interface NavbarProps {
   onCategorySelect: (category: string | null) => void;
@@ -35,6 +36,7 @@ export function Navbar({
   t
 }: NavbarProps) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -194,6 +196,18 @@ export function Navbar({
               </button>
             </Tooltip>
 
+            <Tooltip content={`Theme: ${theme === 'glass' ? 'Glass Refraction' : theme === 'light' ? 'Light Mode' : 'Dark Mode'}`}>
+              <button 
+                onClick={toggleTheme}
+                className="p-2 text-muted-foreground hover:text-foreground transition-all duration-300 rounded-full hover:bg-foreground/5 relative flex items-center justify-center outline-none cursor-pointer"
+                aria-label="Toggle theme"
+              >
+                {theme === 'glass' && <Sparkles size={20} className="text-purple-400 rotate-12" />}
+                {theme === 'light' && <Sun size={20} className="text-amber-500" />}
+                {theme === 'dark' && <Moon size={20} className="text-blue-400" />}
+              </button>
+            </Tooltip>
+
 
 
             <button
@@ -278,6 +292,37 @@ export function Navbar({
                   <span className="text-[8px] font-mono opacity-60 mt-1">{lang.sub}</span>
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="px-3 py-4 border-t border-border">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">Appearance / Theme</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'light' as const, label: 'Light', icon: Sun, color: 'text-amber-500' },
+                { id: 'dark' as const, label: 'Dark', icon: Moon, color: 'text-blue-400' },
+                { id: 'glass' as const, label: 'Glass', icon: Sparkles, color: 'text-purple-400' }
+              ].map((item) => {
+                const IconComponent = item.icon;
+                const isSelected = theme === item.id;
+                return (
+                  <button 
+                    key={item.id}
+                    onClick={() => {
+                      setTheme(item.id);
+                    }}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center gap-1.5 cursor-pointer", 
+                      isSelected 
+                        ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/20" 
+                        : "bg-foreground/5 border-border text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <IconComponent size={14} className={isSelected ? 'text-white' : item.color} />
+                    <span className="text-[9px] font-black uppercase tracking-tighter">{item.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

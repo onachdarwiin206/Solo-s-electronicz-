@@ -43,6 +43,15 @@
     --ring: #3b82f6;
   }
 
+  .light {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: rgba(15, 23, 42, 0.08);
+    --ring: #2563eb;
+  }
+
   .glass {
     --background: rgba(10, 12, 22, 0.25);
     --foreground: #ffffff;

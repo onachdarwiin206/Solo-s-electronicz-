@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, Mail, MapPin, Package, Settings, LogOut, ShieldCheck, Clock, CheckCircle, Truck, Zap, Calendar, ArrowLeft, Info } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured, resolveUserProfile } from '../../lib/supabase';
 import { safeGetLocalStorage } from '../../lib/sandboxDb';
 import { Order, Product, OrderStatus } from '../../types';
 import { format, addDays } from 'date-fns';
@@ -51,41 +51,25 @@ export default function UserProfile() {
           .order('created_at', { ascending: false });
         if (ordersData) setOrders(ordersData as Order[]);
 
-        // Fetch user profile for wishlist and likes arrays
-        const { data: profile, error: pErr } = await supabase
-          .from('profiles')
-          .select('wishlist, likes')
-          .eq('id', user.id)
-          .single();
+        // Centrally resolve high-fidelity, medium-fidelity or default profile
+        const profileToUse = await resolveUserProfile(user.id);
 
-        if (pErr && pErr.message?.includes('likes')) {
-          // Fallback if likes column missing
-          const { data: fallback } = await supabase
-            .from('profiles')
-            .select('wishlist')
-            .eq('id', user.id)
-            .single();
-          if (fallback) {
-            (profile as any) = { ...fallback, likes: [] };
-          }
-        }
-
-        if (profile) {
-          if (profile.wishlist?.length > 0) {
+        if (profileToUse) {
+          if (profileToUse.wishlist?.length > 0) {
             const { data: wishlist } = await supabase
               .from('products')
               .select('*')
-              .in('id', profile.wishlist);
+              .in('id', profileToUse.wishlist);
             if (wishlist) setWishlistProducts(wishlist);
           } else {
             setWishlistProducts([]);
           }
 
-          if (profile.likes?.length > 0) {
+          if (profileToUse.likes?.length > 0) {
             const { data: likes } = await supabase
               .from('products')
               .select('*')
-              .in('id', profile.likes);
+              .in('id', profileToUse.likes);
             if (likes) setLikedProducts(likes);
           } else {
             setLikedProducts([]);
