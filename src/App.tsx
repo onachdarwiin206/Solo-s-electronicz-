@@ -70,6 +70,11 @@ export default function App() {
   });
 
   const getMergedProducts = (remoteData: Product[]): Product[] => {
+    if (isSupabaseConfigured) {
+      // Direct remote-first source of truth: strictly only use products fetched from Supabase
+      return remoteData;
+    }
+
     try {
       const localCustomRaw = localStorage.getItem('custom_products');
       const localCustom: Product[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
