@@ -172,12 +172,12 @@ export function HomeHero({
               </button>
             </div>
 
-            {/* Compact Mobile Money Badges */}
+            {/* Compact Platform Badges */}
             <div className="pt-4 border-t border-zinc-900/60 flex items-center gap-3">
-              <span className="text-[9px] font-mono font-bold tracking-wider text-zinc-500 uppercase">Local Escrow Active:</span>
+              <span className="text-[9px] font-mono font-bold tracking-wider text-zinc-500 uppercase">Showcase Features:</span>
               <div className="flex items-center gap-1.5">
-                <span className="px-2 py-1 bg-[#FFCC00]/5 border border-[#FFCC00]/20 text-[#FFCC00] text-[8px] font-mono font-bold rounded-lg uppercase">MTN MoMo</span>
-                <span className="px-2 py-1 bg-[#E60000]/5 border border-[#E60000]/20 text-[#E60000] text-[8px] font-mono font-bold rounded-lg uppercase">Airtel Money</span>
+                <span className="px-2 py-1 bg-blue-500/5 border border-blue-500/20 text-blue-400 text-[8px] font-mono font-bold rounded-lg uppercase">Direct Quote</span>
+                <span className="px-2 py-1 bg-purple-500/5 border border-purple-500/20 text-purple-400 text-[8px] font-mono font-bold rounded-lg uppercase">Showroom Lira</span>
               </div>
             </div>
           </div>
@@ -255,48 +255,48 @@ export function HomeHero({
               </div>
             </motion.div>
 
-            {/* 2. Real-Time Tracking */}
+            {/* 2. Showroom Location */}
             <motion.div 
               animate={{ y: [0, 6, 0] }}
               transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.8 }}
               className="absolute top-1/2 -left-6 sm:-left-12 p-3.5 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/70 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-none select-none max-w-[180px]"
             >
               <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
-                <Wifi size={14} className="animate-pulse" />
+                <MapPin size={14} />
               </div>
               <div className="text-left">
-                <h4 className="text-[10.5px] font-bold text-white leading-none">Real-Time Tracking</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">Central Logistics Log</p>
+                <h4 className="text-[10.5px] font-bold text-white leading-none">Premium Showroom</h4>
+                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">Lira City, Uganda</p>
               </div>
             </motion.div>
 
-            {/* 3. MTN MoMo Escrow Setup */}
+            {/* 3. Direct Sourcing */}
             <motion.div 
               animate={{ y: [0, -8, 0] }}
               transition={{ repeat: Infinity, duration: 5.2, ease: "easeInOut", delay: 1.4 }}
               className="absolute top-[40%] -right-6 sm:-right-8 p-3.5 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/70 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-none select-none max-w-[180px]"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#FFCC00]/10 border border-[#FFCC00]/20 flex items-center justify-center text-[#FFCC00] font-sans font-black text-xs shrink-0 select-none">
-                M
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                <Cpu size={14} />
               </div>
               <div className="text-left">
-                <h4 className="text-[10.5px] font-bold text-white leading-none">MTN MoMo</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">Instant Escrow Pay</p>
+                <h4 className="text-[10.5px] font-bold text-white leading-none">Direct Sourcing</h4>
+                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">On-Demand Requests</p>
               </div>
             </motion.div>
 
-            {/* 4. Airtel Money */}
+            {/* 4. Instant Quote Desk */}
             <motion.div 
               animate={{ y: [0, 8, 0] }}
               transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 0.5 }}
               className="absolute -bottom-4 left-1/4 p-3.5 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/70 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-none select-none max-w-[170px]"
             >
-              <div className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 font-sans font-black text-xs shrink-0 select-none">
-                A
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
+                <CheckCircle2 size={14} />
               </div>
               <div className="text-left">
-                <h4 className="text-[10.5px] font-bold text-white leading-none">Airtel Money</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">Secure Digital Pay</p>
+                <h4 className="text-[10.5px] font-bold text-white leading-none">WhatsApp Desk</h4>
+                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">Instant Advice</p>
               </div>
             </motion.div>
 

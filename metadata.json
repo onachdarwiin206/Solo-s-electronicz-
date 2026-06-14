@@ -1,6 +1,6 @@
 {
   "name": "Solo's Phones & Electronics",
-  "description": "Premium electronics store with online shopping, digital receipts, and a dedicated marketing portal.",
+  "description": "Luxurious electronics showcase platform enabling direct procurement, inquiry handshakes, and premium showroom views.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

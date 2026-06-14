@@ -13,7 +13,6 @@ interface NavbarProps {
   cartCount: number;
   wishlistCount: number;
   onCartClick: () => void;
-  onTrackingClick: () => void;
   onMarketingClick: () => void;
   isAdmin: boolean;
   currentLanguage: Language;
@@ -28,7 +27,6 @@ export function Navbar({
   cartCount, 
   wishlistCount,
   onCartClick, 
-  onTrackingClick,
   onMarketingClick,
   isAdmin,
   currentLanguage,
@@ -155,12 +153,14 @@ export function Navbar({
               </button>
             </Tooltip>
 
-            <Tooltip content="Track Order">
+            <Tooltip content="Contact Support">
               <button 
-                onClick={onTrackingClick}
+                onClick={() => {
+                  window.open("https://wa.me/256793405517?text=Hello%20Solo's%20Electronicz!%20I'd%20like%20to%20get%20in%20touch%20with%20customer%20support.", "_blank");
+                }}
                 className="relative p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
-                <Package size={20} />
+                <HelpCircle size={20} />
               </button>
             </Tooltip>
 

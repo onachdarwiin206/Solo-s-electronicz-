@@ -10,14 +10,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('theme');
-      if (stored === 'glass') return 'glass';
-      return 'dark';
-    }
-    return 'dark';
-  });
+  const [theme, setTheme] = useState<Theme>('glass');
 
   useEffect(() => {
     const root = window.document.documentElement;

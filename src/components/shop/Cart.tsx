@@ -30,7 +30,7 @@ interface CartProps {
   t: any;
 }
 
-type CheckoutStep = 'basket' | 'delivery' | 'payment';
+type CheckoutStep = 'basket' | 'delivery';
 
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, t }: CartProps) {
   const { user } = useAuth();
@@ -42,25 +42,11 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
   const [selectedDistrict, setSelectedDistrict] = useState('Lira City');
   const [streetAddress, setStreetAddress] = useState('');
   
-  // Payment State
-  const [paymentOption, setPaymentOption] = useState<'cod' | 'momo_mtn' | 'momo_airtel'>('cod');
-  const [momoNumber, setMomoNumber] = useState('');
-  
   // Processing States
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
-  
-  // Simulation States for MoMo PIN
-  const [showPinPrompt, setShowPinPrompt] = useState(false);
-  const [pinCode, setPinCode] = useState('');
-
-  // Telecom API Live Streaming & Status States
-  const [telecomLogs, setTelecomLogs] = useState<any[]>([]);
-  const [telecomProgress, setTelecomProgress] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
-  const [momoMode, setMomoMode] = useState<'production' | 'sandbox' | 'live_simulation' | null>(null);
-  const [showApiGuide, setShowApiGuide] = useState(false);
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   
@@ -89,58 +75,35 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
     if (isOpen) {
       setStep('basket');
       setValidationError(null);
-      setShowPinPrompt(false);
-      setPinCode('');
-      setTelecomProgress('idle');
-      setTelecomLogs([]);
-      setMomoMode(null);
     }
   }, [isOpen]);
 
   const validateDelivery = () => {
     setValidationError(null);
     if (!customerName.trim()) {
-      setValidationError("Recipient full name represents a required directory checkpoint.");
+      setValidationError("Full Name is a required placeholder for quote generation.");
       return false;
     }
     if (!customerPhone.trim()) {
-      setValidationError("A valid contact telephone sequence is required for delivery courier dispatch.");
+      setValidationError("A contact telephone number is required to route your WhatsApp inquiry.");
       return false;
     }
     if (!streetAddress.trim()) {
-      setValidationError("Specific physical drop-off coordinates are needed to secure deployment.");
+      setValidationError("Delivery coordinates or general landmarks block must copy into your docket.");
       return false;
     }
     return true;
   };
 
-  const handleNextToPayment = () => {
-    if (validateDelivery()) {
-      setStep('payment');
-    }
-  };
-
   const handleExecuteCheckout = async () => {
     setValidationError(null);
-
-    if (paymentOption !== 'cod' && !momoNumber.trim()) {
-      setValidationError("Mobile Money transaction billing requires a designated telemetry number.");
-      return;
-    }
-
-    // Interactive PIN simulation for Mobile Money payments (MTN/Airtel)
-    if (paymentOption !== 'cod' && !showPinPrompt) {
-      setShowPinPrompt(true);
-      return;
-    }
+    if (!validateDelivery()) return;
 
     setIsProcessing(true);
-    setShowPinPrompt(false);
 
     try {
-      const mappedMethod: PaymentMethod = paymentOption === 'cod' ? 'cod' : 'momo';
       const orderId = await onCheckout(
-        mappedMethod, 
+        'cod', 
         selectedDistrict, 
         deliveryFee, 
         customerPhone, 
@@ -153,87 +116,17 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
       }
 
       setLastOrderId(orderId);
-
-      // Secure Telecom API integration
-      if (paymentOption !== 'cod') {
-        setTelecomProgress('processing');
-        setTelecomLogs([
-          { step: 'INITIAL_REGISTRY', status: 'success', message: `Order #${orderId} locked in collection database.`, timestamp: new Date().toISOString() },
-          { step: 'SECURE_HANDSHAKE', status: 'info', message: 'Initiating secure routing to backend payment orchestrator...', timestamp: new Date().toISOString() }
-        ]);
-
-        // Small initial visual stagger for realistic logging feel
-        await new Promise(resolve => setTimeout(resolve, 600));
-
-        const response = await fetch('/api/payments/charge-momo', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            amount: grandTotal,
-            phone: momoNumber,
-            customerName,
-            orderId,
-            network: paymentOption === 'momo_mtn' ? 'MTN' : 'AIRTEL'
-          })
-        });
-
-        const paymentData = await response.json();
-
-        if (paymentData && paymentData.logs) {
-          // Play a stagger-loader for visual elegance mirroring industrial networks
-          for (let i = 0; i < paymentData.logs.length; i++) {
-            setTelecomLogs(prev => [...prev, paymentData.logs[i]]);
-            await new Promise(resolve => setTimeout(resolve, 800));
-          }
-          setMomoMode(paymentData.mode);
-        }
-
-        if (response.ok && paymentData?.success) {
-          setTelecomProgress('success');
-          // Hold success state momentarily for verification feedback
-          await new Promise(resolve => setTimeout(resolve, 2200));
-          setIsSuccess(true);
-        } else {
-          setTelecomProgress('failed');
-          setValidationError(paymentData?.message || "Telecom gateway terminal rejected charge request.");
-          setIsProcessing(false);
-          return;
-        }
-      } else {
-        setIsSuccess(true);
-      }
+      setIsSuccess(true);
     } catch (error: any) {
       console.error("Checkout transaction error:", error);
-      setValidationError("The billing handshake terminated unexpectedly. Please retry or choose Cash on Delivery.");
-      setTelecomProgress('failed');
+      setValidationError("Your sourcing request signature failed to lock. Please contact support.");
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleWhatsAppInstantSubmit = async () => {
-    if (!validateDelivery()) return;
-    setIsProcessing(true);
-    try {
-      const orderId = await onCheckout(
-        'cod', 
-        selectedDistrict, 
-        deliveryFee, 
-        customerPhone, 
-        `${streetAddress} (Via WhatsApp CoD)`, 
-        customerName
-      );
-      if (orderId) {
-        setLastOrderId(orderId);
-        setIsSuccess(true);
-      }
-    } catch {
-      setValidationError("Sourcing system failed logging WhatsApp metadata.");
-    } finally {
-      setIsProcessing(false);
-    }
+    await handleExecuteCheckout();
   };
 
   if (isSuccess) {
@@ -250,26 +143,26 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
             >
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
               
-              <div className="w-20 h-20 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mb-6 border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.15)] animate-pulse">
-                <CheckCircle2 className="text-emerald-400" size={40} />
+              <div className="w-20 h-20 bg-blue-500/10 rounded-[2rem] flex items-center justify-center mb-6 border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.15)] animate-pulse">
+                <CheckCircle2 className="text-blue-400" size={40} />
               </div>
               
-              <span className="text-[10px] font-mono tracking-[0.4em] text-emerald-400 font-bold uppercase">SECURE DESPATCH LOGGED</span>
-              <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight mt-2 mb-2">Order Committed successfully</h2>
+              <span className="text-[10px] font-mono tracking-[0.4em] text-blue-400 font-bold uppercase">INQUIRY DOCKET COMPILED</span>
+              <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight mt-2 mb-2">Quote Request Sent</h2>
               
-              <div className="text-[9px] font-mono uppercase bg-emerald-500/5 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full mb-6">
-                Active Registry ID: #{lastOrderId}
+              <div className="text-[9px] font-mono uppercase bg-blue-500/5 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full mb-6">
+                Active Inquiry ID: #{lastOrderId}
               </div>
 
               <p className="text-gray-400 text-xs sm:text-sm font-medium leading-relaxed mb-8 max-w-xs">
-                Your hardware slot is secured. An active receipt has been transmitted over WhatsApp, and tracking telemetry is already online.
+                Your luxury hardware list is ready. A detailed quote summary has been compiled and routed to WhatsApp. Click continue to finalize quantities with our team.
               </p>
 
               <button 
                 onClick={() => { setIsSuccess(false); onClose(); }}
                 className="w-full py-4.5 bg-white text-black font-semibold rounded-2xl transition-all uppercase tracking-widest text-xs active:scale-95 duration-100 shadow-xl shadow-white/5"
               >
-                Continue Sourcing
+                Continue Showroom Sourcing
               </button>
             </motion.div>
           </>
@@ -295,10 +188,10 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 <div className="flex items-center gap-2">
                   <h2 className="text-base font-display font-medium text-white flex items-center gap-2 uppercase tracking-tight">
                     <ShoppingCart className="text-zinc-400" size={16} />
-                    Checkout Basket
+                    Inquiry List
                   </h2>
                 </div>
-                <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-widest font-medium">Verify products and address details</p>
+                <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-widest font-medium">Verify hardware collection & delivery parameters</p>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-zinc-900 border border-transparent rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer"><X size={18} /></button>
             </div>
@@ -309,21 +202,14 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 onClick={() => setStep('basket')} 
                 className={cn("flex items-center gap-1.5 transition-colors", step === 'basket' ? "text-white font-extrabold" : "text-zinc-600 hover:text-zinc-400")}
               >
-                Basket
+                1. Selected Products
               </button>
               <ChevronRight size={10} className="text-zinc-800" />
               <button 
                 onClick={() => { if (items.length > 0) setStep('delivery'); }} 
                 className={cn("flex items-center gap-1.5 transition-colors", step === 'delivery' ? "text-white font-extrabold" : "text-zinc-600 hover:text-zinc-400")}
               >
-                Delivery
-              </button>
-              <ChevronRight size={10} className="text-zinc-800" />
-              <button 
-                onClick={() => { if (validateDelivery()) setStep('payment'); }} 
-                className={cn("flex items-center gap-1.5 transition-colors", step === 'payment' ? "text-white font-extrabold" : "text-zinc-600 hover:text-zinc-400")}
-              >
-                Payment
+                2. Contact & Routing
               </button>
             </div>
 
@@ -464,277 +350,6 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     </motion.div>
                   )}
 
-                  {/* Step 3: Payments & MoMo HANDSHAKE */}
-                  {step === 'payment' && (
-                    <motion.div 
-                      key="payment"
-                      initial={{ opacity: 0, x: -10 }} 
-                      animate={{ opacity: 1, x: 0 }} 
-                      exit={{ opacity: 0, x: 10 }} 
-                      className="space-y-6 text-left"
-                    >
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-mono tracking-widest text-[#2563eb] font-black uppercase">CLEARANCE HANDSHAKE</span>
-                        <h3 className="text-sm font-display font-medium text-white">Select Settlement Method</h3>
-                      </div>
-
-                      {/* Payment Grid */}
-                      <div className="space-y-3 font-mono">
-                        
-                        {/* Cash on Delivery Option */}
-                        <button
-                          onClick={() => { setPaymentOption('cod'); setShowPinPrompt(false); }}
-                          className={cn(
-                            "w-full text-left p-4 rounded-2xl border transition-all flex items-start gap-4",
-                            paymentOption === 'cod' 
-                              ? "bg-blue-500/5 border-blue-500 text-white" 
-                              : "bg-white/[0.01] border-white/[0.04] text-gray-400 hover:border-white/10"
-                          )}
-                        >
-                          <div className={cn(
-                            "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5",
-                            paymentOption === 'cod' ? "border-blue-500" : "border-gray-700"
-                          )}>
-                            {paymentOption === 'cod' && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full" />}
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-white uppercase tracking-tight">Deposit on Pickup (COD)</h4>
-                            <p className="text-[9.5px] text-gray-500 mt-1 leading-normal uppercase">Settled on checkout or pickup at our retail desks in Lira.</p>
-                          </div>
-                        </button>
-
-                        {/* MTN MoMo */}
-                        <button
-                          onClick={() => { setPaymentOption('momo_mtn'); setMomoNumber(customerPhone); }}
-                          className={cn(
-                            "w-full text-left p-4 rounded-2xl border transition-all flex items-start gap-4",
-                            paymentOption === 'momo_mtn' 
-                              ? "bg-amber-500/5 border-amber-500 text-white" 
-                              : "bg-white/[0.01] border-white/[0.04] text-gray-400 hover:border-white/10"
-                          )}
-                        >
-                          <div className={cn(
-                            "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5",
-                            paymentOption === 'momo_mtn' ? "border-amber-500" : "border-gray-700"
-                          )}>
-                            {paymentOption === 'momo_mtn' && <div className="w-2.5 h-2.5 bg-amber-500 rounded-full" />}
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="text-xs font-bold text-white uppercase tracking-tight">MTN Mobile Money</h4>
-                            <p className="text-[9.5px] text-gray-500 mt-1 leading-normal uppercase">Simultaneous PIN push authorization simulated over telecom nodes.</p>
-                          </div>
-                        </button>
-
-                        {/* Airtel Money */}
-                        <button
-                          onClick={() => { setPaymentOption('momo_airtel'); setMomoNumber(customerPhone); }}
-                          className={cn(
-                            "w-full text-left p-4 rounded-2xl border transition-all flex items-start gap-4",
-                            paymentOption === 'momo_airtel' 
-                              ? "bg-red-500/5 border-red-500 text-white" 
-                              : "bg-white/[0.01] border-white/[0.04] text-gray-400 hover:border-white/10"
-                          )}
-                        >
-                          <div className={cn(
-                            "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5",
-                            paymentOption === 'momo_airtel' ? "border-red-500" : "border-gray-700"
-                          )}>
-                            {paymentOption === 'momo_airtel' && <div className="w-2.5 h-2.5 bg-red-500 rounded-full" />}
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-white uppercase tracking-tight">Airtel Money Uganda</h4>
-                            <p className="text-[9.5px] text-gray-500 mt-1 leading-normal uppercase">Instant dispatch protocol. Zero handling delays.</p>
-                          </div>
-                        </button>
-
-                      </div>
-
-                      {/* Mobile phone configuration block for MoMo billing */}
-                      {paymentOption !== 'cod' && (
-                        <div className="space-y-4">
-                          <motion.div 
-                            initial={{ opacity: 0, height: 0 }} 
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="space-y-2 font-mono"
-                          >
-                            <label className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest pl-1">Authorized Billing Mobile Number</label>
-                            <input 
-                              type="tel" 
-                              placeholder="Specify MoMo account..." 
-                              value={momoNumber} 
-                              onChange={(e) => setMomoNumber(e.target.value)} 
-                              className="w-full bg-white/[0.01] border border-white/[0.06] rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500"
-                            />
-                          </motion.div>
-
-                          {/* Developer API Setup and Credentials Integration Guide */}
-                          <div className="pt-2.5">
-                            <button
-                              type="button"
-                              onClick={() => setShowApiGuide(!showApiGuide)}
-                              className="w-full flex items-center justify-between p-3.5 bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 rounded-2xl text-blue-400 font-mono text-[9px] uppercase tracking-widest transition-colors font-bold cursor-pointer"
-                            >
-                              <span className="flex items-center gap-2">
-                                <Info size={12} className="text-blue-400" />
-                                {showApiGuide ? 'Hide Connection Manual' : 'Show Live API Manual & Keys'}
-                              </span>
-                              <span className="text-[8px] bg-blue-500/10 px-2 py-0.5 rounded text-blue-300 font-bold">
-                                UGANDA NODE v3.5
-                              </span>
-                            </button>
-
-                            <AnimatePresence>
-                              {showApiGuide && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  className="overflow-hidden space-y-4 mt-2"
-                                >
-                                  <div className="bg-[#030307] border border-white/[0.04] p-5 rounded-3xl space-y-4 font-sans text-xs text-gray-400 leading-relaxed text-left">
-                                    <h4 className="font-display font-semibold text-white uppercase text-[10px] tracking-wider text-blue-400">Mobile Money (MTN & Airtel) Live API Manual</h4>
-                                    <p className="text-[11px] text-gray-400 leading-relaxed">
-                                      Businesses in East Africa handle payment flows via **Direct Telecom API connections** (MTN MoMo API or Airtel Money API). Our system supports direct secure connections under a modular setup!
-                                    </p>
-
-                                    <div className="space-y-3">
-                                      {/* Channel: MTN Direct */}
-                                      <div className="p-3 bg-white/[0.01] border border-white/[0.04] rounded-2xl space-y-1.5">
-                                        <h5 className="font-bold text-white text-[9.5px] uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
-                                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                          Direct MTN Mobile Money API
-                                        </h5>
-                                        <p className="text-[10px] text-gray-500 leading-relaxed">
-                                          Direct Collection OpenAPI routing via MTN MoMo Developer Portal (momodeveloper.mtn.com).
-                                        </p>
-                                        <ol className="list-decimal pl-4 text-[9px] space-y-1 text-gray-500 font-mono uppercase">
-                                          <li>Sign up on MTN Developer portal & subscribe to Collections.</li>
-                                          <li>Create API User (UUIDv4) and Sandbox Key.</li>
-                                          <li>Retrieve subscription Primary Key and enter into .env.</li>
-                                        </ol>
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-2 font-mono">
-                                      <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">Configuration Slots (.env.example Reference)</span>
-                                      <pre className="p-3.5 bg-black/40 border border-white/[0.05] rounded-2xl text-[8.5px] text-blue-300 font-bold overflow-x-auto whitespace-pre no-scrollbar leading-normal select-all select-text">
-{`# DIRECT MTN MOMO COLLECTIONS
-MTN_MOMO_PRIMARY_KEY="Ocp-Apim-Subscription-..."
-MTN_MOMO_API_USER="c88...6" # API User UUID
-MTN_MOMO_API_KEY="53c...1" # API Subscription Key
-MTN_MOMO_TARGET_ENV="sandbox" # sandbox or production`}
-                                      </pre>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Dynamic MoMo PIN Prompt Modal Frame (Simulated UX) */}
-                      <AnimatePresence>
-                        {showPinPrompt && (
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="p-6 bg-white/[0.02] border border-blue-500/30 rounded-3xl space-y-4 font-mono text-center relative overflow-hidden"
-                          >
-                            <div className="absolute top-0 inset-x-0 h-1 bg-blue-500 animate-pulse" />
-                            <div className="text-blue-400 text-xs font-bold uppercase tracking-widest">
-                              Telecom PIN Input Handshake
-                            </div>
-                            <p className="text-[9.5px] text-gray-500 leading-normal uppercase max-w-xs mx-auto">
-                              Please supply your mock 4-digit PIN mapping to verify checkout and authorize the Kampala procurement dispatch.
-                            </p>
-                            <input 
-                              type="password" 
-                              maxLength={4}
-                              placeholder="••••" 
-                              value={pinCode}
-                              onChange={(e) => setPinCode(e.target.value)}
-                              className="bg-black/40 border border-white/[0.08] text-center text-xl tracking-[0.6em] w-32 py-2.5 rounded-xl text-white block mx-auto outline-none focus:border-blue-500 font-mono"
-                            />
-                            <div className="font-sans text-[8px] uppercase tracking-widest text-[#2563eb] animate-pulse">
-                              Active Telecom Pipeline Secured
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {/* Dynamic Telecom Live Telemetry Terminal */}
-                      <AnimatePresence>
-                        {telecomProgress !== 'idle' && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            className="p-5 rounded-3xl bg-[#030307] border border-blue-500/15 overflow-hidden font-mono text-[10px] space-y-3 shadow-2xl relative"
-                          >
-                            <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 animate-pulse" />
-                            
-                            <div className="flex items-center justify-between border-b border-white/[0.04] pb-2 text-gray-400">
-                              <span className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                                <span className="font-extrabold uppercase text-[9px] tracking-wider text-white">Secure API Dispatch Terminal</span>
-                              </span>
-                              <span className="text-[8px] bg-white/[0.05] px-2 py-0.5 rounded uppercase font-bold text-gray-400">
-                                {momoMode === 'production' ? '● Live Production' : momoMode === 'sandbox' ? '● Sandbox Env' : '● Live Simulator'}
-                              </span>
-                            </div>
-
-                            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 no-scrollbar text-left select-none">
-                              {telecomLogs.map((log, index) => (
-                                <div key={index} className="flex gap-2.5 items-start leading-relaxed text-slate-300">
-                                  <span className="text-[9px] text-gray-600 shrink-0">{log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : '00:00:00'}</span>
-                                  <span className={cn(
-                                    "px-1.5 py-0.2 shrink-0 rounded-[4px] text-[7.5px] uppercase font-bold tracking-wider",
-                                    log.status === 'success' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
-                                    log.status === 'error' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/20' :
-                                    log.status === 'warning' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
-                                    'bg-blue-500/15 text-blue-400 border border-blue-500/20'
-                                  )}>
-                                    {log.step ? log.step.slice(0, 15) : 'INFO'}
-                                  </span>
-                                  <span className="flex-1 text-[9.5px] font-sans break-words text-gray-300 leading-normal">{log.message}</span>
-                                </div>
-                              ))}
-                            </div>
-
-                            {telecomProgress === 'processing' && (
-                              <div className="flex items-center gap-2 justify-center py-2 text-blue-400 animate-pulse">
-                                <Loader2 size={12} className="animate-spin text-blue-400" />
-                                <span className="text-[9px] tracking-widest uppercase font-bold text-center">Transmitting ledger sync payload...</span>
-                              </div>
-                            )}
-
-                            {telecomProgress === 'success' && (
-                              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2.5 text-emerald-400">
-                                <Check size={14} className="shrink-0" />
-                                <span className="text-[9.5px] font-sans font-medium uppercase tracking-wide">Handshake Success. Checkout complete.</span>
-                              </div>
-                            )}
-
-                            {telecomProgress === 'failed' && (
-                              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2.5 text-rose-400">
-                                <AlertCircle size={14} className="shrink-0" />
-                                <span className="text-[9.5px] font-sans font-medium uppercase tracking-wide">Transaction aborted. Clear environmental variables.</span>
-                              </div>
-                            )}
-
-                            <div className="pt-2 border-t border-white/[0.04] text-[8px] text-gray-500 uppercase flex justify-between tracking-wider leading-relaxed">
-                              <span>Node Port: 3000 // HTTPS Broker</span>
-                              <span>Reference: {lastOrderId || 'SIMULATED'}</span>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                    </motion.div>
-                  )}
-
                 </AnimatePresence>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -783,63 +398,35 @@ MTN_MOMO_TARGET_ENV="sandbox" # sandbox or production`}
                   {step === 'basket' && (
                     <button 
                       onClick={() => setStep('delivery')}
-                      className="w-full py-4.5 bg-white hover:bg-white/95 text-black font-semibold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 text-xs tracking-widest duration-100 uppercase"
+                      className="w-full py-4.5 bg-white hover:bg-white/95 text-black font-semibold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 text-xs tracking-widest duration-100 uppercase cursor-pointer"
                     >
-                      Process Delivery Parameters
+                      Bespoke Inquiry Details
                       <ArrowRight size={14} />
                     </button>
                   )}
 
                   {step === 'delivery' && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <button 
-                        onClick={() => setStep('basket')}
-                        className="w-full py-4 bg-white/[0.02] hover:bg-white/[0.04] text-white font-semibold rounded-2xl border border-white/[0.05] flex items-center justify-center gap-1 xl:gap-2.5 transition-all active:scale-95 text-[10px] uppercase tracking-wider"
-                      >
-                        Return to Basket
-                      </button>
-                      <button 
-                        onClick={handleNextToPayment}
-                        className="w-full py-4 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-1 xl:gap-2.5 transition-all active:scale-95 text-[10px] uppercase tracking-wider"
-                      >
-                        Go to Settlement
-                      </button>
-                    </div>
-                  )}
-
-                  {step === 'payment' && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-2.5 w-full">
                       <button 
                         onClick={handleExecuteCheckout}
                         disabled={isProcessing}
-                        className="w-full py-4.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-500/15 active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs duration-100 font-sans"
+                        className="w-full py-4.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-500/15 active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs duration-100 cursor-pointer font-sans"
                       >
                         {isProcessing ? <Loader2 className="animate-spin text-white" size={14} /> : (
                           <>
-                            <ShieldCheck size={14} />
-                            {paymentOption === 'cod' ? 'Complete Transaction (COD)' : 'Authorize Telecom Billing'}
+                            <MessageCircle size={14} fill="currentColor" />
+                            Submit Inquiry & Open WhatsApp
                           </>
                         )}
                       </button>
-                      
+
                       <button 
-                        onClick={() => setStep('delivery')}
-                        className="w-full py-3.5 bg-transparent text-gray-500 hover:text-white font-semibold rounded-2xl flex items-center justify-center gap-1 transition-all text-[10px] uppercase tracking-widest font-mono"
+                        onClick={() => setStep('basket')}
+                        className="w-full py-3.5 bg-transparent text-gray-500 hover:text-white font-semibold rounded-2xl flex items-center justify-center gap-1 transition-all text-[10px] uppercase tracking-widest font-mono cursor-pointer"
                       >
-                        Change Address Grid
+                        ← Return to Sourced items
                       </button>
                     </div>
-                  )}
-
-                  {step === 'basket' && (
-                    <button 
-                      onClick={handleWhatsAppInstantSubmit}
-                      disabled={isProcessing}
-                      className="w-full py-4 bg-white/[0.02] hover:bg-white/[0.04] text-green-400 font-semibold rounded-2xl flex items-center justify-center gap-2 transition-all border border-green-500/20 active:scale-95 disabled:opacity-50 uppercase tracking-widest text-[10px] duration-100"
-                    >
-                      <MessageCircle size={14} fill="currentColor" />
-                      Instant WhatsApp Checkout
-                    </button>
                   )}
 
                 </div>
