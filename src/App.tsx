@@ -90,7 +90,47 @@ export default function App() {
         }
         setProducts(INITIAL_PRODUCTS);
       } else if (data) {
-        setProducts(data as Product[]);
+        if (data.length === 0) {
+          console.log("[Supabase] Remote products table is empty. Mounting INITIAL_PRODUCTS and auto-seeding in background...");
+          setProducts(INITIAL_PRODUCTS);
+          
+          // Auto-seed in the background to ensure Supabase database isn't empty
+          try {
+            const seedData = INITIAL_PRODUCTS.map(p => ({
+              id: p.id,
+              name: p.name,
+              description: p.description || '',
+              price: p.price,
+              category: p.category,
+              image: p.image || '',
+              stock: p.stock || 10,
+              featured: p.featured || false,
+              specifications: 'High performance device with official store warranty.',
+              images: [p.image],
+              is_verified: true,
+              rating: 5.0,
+              created_at: new Date().toISOString()
+            }));
+            
+            supabase.from('products').insert(seedData).then(({ error: seedErr }) => {
+              if (seedErr) {
+                console.warn("[Supabase] Background seed issue:", seedErr);
+              } else {
+                console.log("[Supabase] Successfully auto-seeded database in background.");
+                // Re-fetch to sync completely down
+                supabase.from('products').select('*').order('created_at', { ascending: false }).then(({ data: freshData }) => {
+                  if (freshData && freshData.length > 0) {
+                    setProducts(freshData as Product[]);
+                  }
+                });
+              }
+            });
+          } catch (seedErr) {
+            console.warn("[Supabase] Background seeding fail:", seedErr);
+          }
+        } else {
+          setProducts(data as Product[]);
+        }
       }
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
