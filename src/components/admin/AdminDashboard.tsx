@@ -589,14 +589,20 @@ _Thank you for choosing Solo Electronics!_
       // filePath will be returned if successful
       const publicUrl = getPublicUrl(bucket, filePath!);
       
-      updateProgress(next.id, 100, 'done', publicUrl || undefined);
-      // We keep track of the PATH to save it to the DB later
-      setUploadingMedia(prev => prev.map(i => i.id === next.id ? { ...i, path: filePath } : i));
+      console.log(`[Storage] Upload succeeded! Public URL: ${publicUrl}`);
+
+      setUploadingMedia(prev => prev.map(i => i.id === next.id ? { 
+        ...i, 
+        progress: 100, 
+        status: 'done',
+        url: publicUrl || undefined,
+        path: filePath || undefined
+      } : i));
       
       processQueue();
     } catch (err: any) {
-      console.error("Storage upload failed:", err);
-      updateProgress(next.id, 0, 'error', undefined, err.message);
+      console.warn("[Storage] Non-blocking upload exception caught:", err?.message || err);
+      updateProgress(next.id, 0, 'error', undefined, err?.message || "Upload exception");
       processQueue();
     }
   };
@@ -646,9 +652,9 @@ _Thank you for choosing Solo Electronics!_
     setSubmitting(true);
     
     try {
-      // Merge existing (if editing) with new uploads
-      const existingImages = (newProduct.images || []).filter(img => img && (img.startsWith('http') || img.startsWith('blob:') || img.startsWith('data:')));
-      const existingVideos = (newProduct.videos || []).filter(vid => vid && (vid.startsWith('http') || vid.startsWith('blob:') || vid.startsWith('data:')));
+      // Merge existing (if editing) with new uploads - keep ALL non-empty strings (including relative seed paths)
+      const existingImages = (newProduct.images || []).filter(img => img && typeof img === 'string' && img.trim() !== '');
+      const existingVideos = (newProduct.videos || []).filter(vid => vid && typeof vid === 'string' && vid.trim() !== '');
 
       const finalImages = [...existingImages, ...completedImages];
       const finalVideos = [...existingVideos, ...completedVideos];
@@ -675,18 +681,48 @@ _Thank you for choosing Solo Electronics!_
         updated_at: new Date().toISOString()
       };
 
+      let savedProductData = { ...data };
+
       if (editingId) {
-        const { error } = await supabase.from('products').update(data).eq('id', editingId);
-        if (error) throw error;
+        savedProductData.id = editingId;
+        if (isSupabaseConfigured) {
+          const { error } = await supabase.from('products').update(data).eq('id', editingId);
+          if (error) throw error;
+        }
       } else {
-        const { error } = await supabase.from('products').insert({
-          ...data,
-          id: `SOLO-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-          created_at: new Date().toISOString(),
-          rating: 5
-        });
-        if (error) throw error;
+        const newId = `SOLO-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+        savedProductData.id = newId;
+        savedProductData.created_at = new Date().toISOString();
+        savedProductData.rating = 5;
+        
+        if (isSupabaseConfigured) {
+          const { error } = await supabase.from('products').insert(savedProductData);
+          if (error) throw error;
+        }
       }
+
+      // Synchronize with localStorage 'custom_products' to prevent losing changes during preview reloads
+      try {
+        const localCustomRaw = localStorage.getItem('custom_products');
+        let localCustom: any[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
+        if (editingId) {
+          localCustom = localCustom.map(p => p.id === editingId ? { ...p, ...savedProductData } : p);
+        } else {
+          localCustom.push(savedProductData);
+        }
+        localStorage.setItem('custom_products', JSON.stringify(localCustom));
+        
+        // Remove from deleted list if somehow restored
+        const deletedRaw = localStorage.getItem('deleted_product_ids');
+        if (deletedRaw) {
+          const deletedIds: string[] = JSON.parse(deletedRaw);
+          const filtered = deletedIds.filter(id => id !== savedProductData.id);
+          localStorage.setItem('deleted_product_ids', JSON.stringify(filtered));
+        }
+      } catch (localErr) {
+        console.warn("localStorage sync issue:", localErr);
+      }
+
       resetForm();
       if (onRefresh) onRefresh();
     } catch (e: any) {
@@ -720,7 +756,30 @@ _Thank you for choosing Solo Electronics!_
           }
         }
       }
-      await supabase.from('products').delete().eq('id', id);
+      
+      if (isSupabaseConfigured) {
+        await supabase.from('products').delete().eq('id', id);
+      }
+
+      // Also clean up local persistent fallback storage
+      try {
+        const localCustomRaw = localStorage.getItem('custom_products');
+        if (localCustomRaw) {
+          const localCustom: any[] = JSON.parse(localCustomRaw);
+          const filtered = localCustom.filter(p => p.id !== id);
+          localStorage.setItem('custom_products', JSON.stringify(filtered));
+        }
+
+        const deletedRaw = localStorage.getItem('deleted_product_ids');
+        const deletedIds: string[] = deletedRaw ? JSON.parse(deletedRaw) : [];
+        if (!deletedIds.includes(id)) {
+          deletedIds.push(id);
+          localStorage.setItem('deleted_product_ids', JSON.stringify(deletedIds));
+        }
+      } catch (localErr) {
+        console.warn("localStorage delete issue:", localErr);
+      }
+
       if (onRefresh) onRefresh();
     } catch (e) {
       console.error("Delete failed:", e);

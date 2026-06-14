@@ -69,9 +69,51 @@ export default function App() {
     }
   });
 
+  const getMergedProducts = (remoteData: Product[]): Product[] => {
+    try {
+      const localCustomRaw = localStorage.getItem('custom_products');
+      const localCustom: Product[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
+      
+      const deletedRaw = localStorage.getItem('deleted_product_ids');
+      const deletedIds = new Set<string>(deletedRaw ? JSON.parse(deletedRaw) : []);
+      
+      const combined: Product[] = [];
+      const seenIds = new Set<string>();
+      
+      // 1. Process remote products (highest priority, as they are fully synced down)
+      remoteData.forEach(p => {
+        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          combined.push(p);
+        }
+      });
+      
+      // 2. Process local custom products (items created or updated on this client)
+      localCustom.forEach(p => {
+        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          combined.push(p);
+        }
+      });
+      
+      // 3. Process default items (lowest priority)
+      INITIAL_PRODUCTS.forEach(p => {
+        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          combined.push(p);
+        }
+      });
+      
+      return combined;
+    } catch (err) {
+      console.warn("Error merging products:", err);
+      return remoteData.length > 0 ? remoteData : INITIAL_PRODUCTS;
+    }
+  };
+
   const fetchProducts = async () => {
     if (!isSupabaseConfigured) {
-      setProducts(INITIAL_PRODUCTS);
+      setProducts(getMergedProducts([]));
       setLoadingProducts(false);
       return;
     }
@@ -88,11 +130,11 @@ export default function App() {
         } else {
           console.warn("[Supabase] Query warning:", error.message || error);
         }
-        setProducts(INITIAL_PRODUCTS);
+        setProducts(getMergedProducts([]));
       } else if (data) {
         if (data.length === 0) {
           console.log("[Supabase] Remote products table is empty. Mounting INITIAL_PRODUCTS and auto-seeding in background...");
-          setProducts(INITIAL_PRODUCTS);
+          setProducts(getMergedProducts([]));
           
           // Auto-seed in the background to ensure Supabase database isn't empty
           try {
@@ -120,7 +162,7 @@ export default function App() {
                 // Re-fetch to sync completely down
                 supabase.from('products').select('*').order('created_at', { ascending: false }).then(({ data: freshData }) => {
                   if (freshData && freshData.length > 0) {
-                    setProducts(freshData as Product[]);
+                    setProducts(getMergedProducts(freshData as Product[]));
                   }
                 });
               }
@@ -129,7 +171,7 @@ export default function App() {
             console.warn("[Supabase] Background seeding fail:", seedErr);
           }
         } else {
-          setProducts(data as Product[]);
+          setProducts(getMergedProducts(data as Product[]));
         }
       }
     } catch (err: any) {
@@ -138,7 +180,7 @@ export default function App() {
       } else {
         console.warn("[Supabase] Dynamic warning (handled):", err);
       }
-      setProducts(INITIAL_PRODUCTS);
+      setProducts(getMergedProducts([]));
     } finally {
       setLoadingProducts(false);
     }
