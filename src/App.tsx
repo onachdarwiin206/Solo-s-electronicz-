@@ -71,8 +71,9 @@ export default function App() {
 
   const getMergedProducts = (remoteData: Product[]): Product[] => {
     if (isSupabaseConfigured) {
-      // Direct remote-first source of truth: strictly only use products fetched from Supabase
-      return remoteData;
+      // Direct remote-first source of truth: strictly only use products fetched from Supabase.
+      // If the remote table has 0 rows (empty / new project), fallback to INITIAL_PRODUCTS so the UI is never empty.
+      return remoteData.length > 0 ? remoteData : INITIAL_PRODUCTS;
     }
 
     try {
@@ -532,6 +533,13 @@ _Your order is now being processed._
             onAuthClick={() => setView('auth')}
             t={t}
           />
+
+          {!isSupabaseConfigured && (
+            <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-200 py-3 px-4 text-center text-[11px] font-mono tracking-wide relative z-40">
+              <span className="font-extrabold uppercase bg-amber-500 text-black px-1.5 py-0.5 rounded mr-2 text-[9px]">VERCEL DATABASE CONFIG</span>
+              To display your <strong className="font-semibold text-amber-400">28 Supabase Products</strong> on Vercel, go to your <strong className="font-semibold text-amber-400">Vercel Project Dashboard ➜ Settings ➜ Environment Variables</strong>, add <code className="bg-black/40 px-1.5 py-0.5 rounded text-white font-black font-mono">VITE_SUPABASE_URL</code> and <code className="bg-black/40 px-1.5 py-0.5 rounded text-white font-black font-mono">VITE_SUPABASE_ANON_KEY</code>, then <strong>Redeploy</strong> your project.
+            </div>
+          )}
 
           <BottomNav 
             activeView={view} 

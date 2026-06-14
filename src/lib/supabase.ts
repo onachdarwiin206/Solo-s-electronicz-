@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Use environment variables for Supabase configuration
 // We use ?.trim() to ensure no accidental whitespace causes issues
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() || "https://rzbgipdajulkunlswygz.supabase.co"
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 
 // Validation: Ensure environment variables are actually present
