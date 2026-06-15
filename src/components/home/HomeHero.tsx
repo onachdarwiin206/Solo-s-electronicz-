@@ -146,7 +146,16 @@ export function HomeHero({
   // Map out Today's Deals to build a gorgeous Bento Grid layout
   const todayDeals = useMemo(() => {
     if (!products.length) return [];
-    // Ensure we pick highly compelling products for deals
+    // Prioritize products explicitly in the "Deals & Offers" category
+    const dealCategoryProducts = products.filter(p => p.category === 'Deals & Offers');
+    if (dealCategoryProducts.length > 0) {
+      return dealCategoryProducts.slice(0, 3);
+    }
+    // Fallback to featured or sorted items which have compelling content
+    const featured = products.filter(p => p.featured);
+    if (featured.length >= 3) {
+      return featured.slice(0, 3);
+    }
     return [...products]
       .sort((a, b) => (b.rating || 5) - (a.rating || 5))
       .slice(0, 3);
@@ -539,95 +548,7 @@ export function HomeHero({
         )}
       </section>
 
-      {/* 3. TRUST & CREDIBILITY SYSTEM */}
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
-        <div className="border-b border-white/[0.06] pb-4 mb-8 text-left space-y-1">
-          <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-500 uppercase">WARRANTY & TRUST SYSTEMS</span>
-          <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight">Why Smart Buyers Choose Solo Electronics</h2>
-        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 text-left">
-          {[
-            {
-              title: "Genuine Products",
-              desc: "100% brand brand-original warranty protection.",
-              badge: "BRAND GENUINE",
-              icon: ShieldCheck,
-              color: "text-blue-400",
-              bgColor: "bg-blue-500/5",
-              borderColor: "border-blue-500/10"
-            },
-            {
-              title: "Verified Electronics",
-              desc: "Sealed, tested and inspected before dispatch.",
-              badge: "BENCHMARK INSPECTED",
-              icon: CheckCircle2,
-              color: "text-emerald-400",
-              bgColor: "bg-emerald-500/5",
-              borderColor: "border-emerald-500/10"
-            },
-            {
-              title: "Secure Checkout",
-              desc: "Instant digital receipts & escrow tracking.",
-              badge: "ESCROW PLATFORM",
-              icon: Shield,
-              color: "text-indigo-400",
-              bgColor: "bg-indigo-500/5",
-              borderColor: "border-indigo-500/10"
-            },
-            {
-              title: "WhatsApp Support",
-              desc: "Direct 24/7 hotline to Solo's Lira desk owners.",
-              badge: "LIVE ENGAGEMENT",
-              icon: WhatsAppIcon,
-              color: "text-teal-400",
-              bgColor: "bg-teal-500/5",
-              borderColor: "border-teal-500/10"
-            },
-            {
-              title: "Physical Location",
-              desc: "Physical warehouse showroom on Main Road, Lira.",
-              badge: "VISIT SHOWROOM",
-              icon: MapPin,
-              color: "text-orange-400",
-              bgColor: "bg-orange-500/5",
-              borderColor: "border-orange-500/10"
-            },
-            {
-              title: "Setup Assistance",
-              desc: "Direct post-purchase troubleshooting help.",
-              badge: "ON-DEMAND REPAIR",
-              icon: HelpCircle,
-              color: "text-pink-400",
-              bgColor: "bg-pink-500/5",
-              borderColor: "border-pink-500/10"
-            }
-          ].map((item, idx) => {
-            const IconComponent = item.icon;
-            return (
-              <motion.div
-                key={`trust-${idx}`}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className={cn(
-                  "p-5 rounded-2.5xl border bg-[#08090d]/80 backdrop-blur-xl flex flex-col justify-between h-56 transition-all duration-300 shadow-md",
-                  item.borderColor
-                )}
-              >
-                <div className="space-y-4">
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/[0.02]", item.bgColor, item.color)}>
-                    <IconComponent size={18} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-xs sm:text-sm font-display font-medium text-white line-clamp-1">{item.title}</h3>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">{item.desc}</p>
-                  </div>
-                </div>
-                <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest block font-bold pt-2 border-t border-white/[0.02]">{item.badge}</span>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
 
       {/* 4. SEARCH & DISCOVERY UPGRADE */}
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">

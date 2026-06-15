@@ -400,7 +400,11 @@ export default function App() {
   const t = translations[language];
 
   const filteredProducts = useMemo(() => products.filter(p => {
-    const matchesCategory = category ? p.category === category : true;
+    const matchesCategory = category 
+      ? (category === 'Deals & Offers' 
+          ? (p.category === 'Deals & Offers' || p.featured || p.id === 'p1' || p.id === 'p3') 
+          : p.category === category)
+      : true;
     const q = searchQuery?.toLowerCase() ?? '';
     const matchesSearch = (
       (p.name?.toLowerCase() ?? '').includes(q) || 
