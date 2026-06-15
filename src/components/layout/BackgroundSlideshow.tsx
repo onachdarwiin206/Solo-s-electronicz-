@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../ThemeContext';
 
 interface Particle {
@@ -13,10 +13,58 @@ interface Particle {
   pulseSpeed: number;
 }
 
+interface Slide {
+  type: 'video' | 'image';
+  url: string;
+  fallbackUrl: string;
+}
+
+const SLIDES: Slide[] = [
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1600'
+  },
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1600'
+  },
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=1600'
+  },
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=1600'
+  },
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1591453089816-0fbb971b454c?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1591453089816-0fbb971b454c?q=80&w=1600'
+  },
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1600'
+  }
+];
+
 export function BackgroundSlideshow() {
   const { theme } = useTheme();
   const bgRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+
+  // Auto transition dynamic tech video/image slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlideIndex((prev) => (prev + 1) % SLIDES.length);
+    }, 9000); // 9 seconds interval for cinematic feel
+    return () => clearInterval(timer);
+  }, []);
 
   // Responsive device classification
   useEffect(() => {
@@ -164,7 +212,61 @@ export function BackgroundSlideshow() {
         }}
       />
 
-      {/* LAYER 2: LARGE MORPHING BLURRED COGNITIVE MESHES */}
+      {/* LAYER 2: CINEMATIC TECHNICAL VIDEO & IMAGE SLIDESHOW */}
+      <div 
+        className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none"
+        style={{
+          transform: 'translate(calc(var(--mouse-x) * 6px), calc(var(--mouse-y) * 6px))',
+          willChange: 'transform',
+        }}
+      >
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={currentSlideIndex}
+            initial={{ opacity: 0, scale: 1.03 }}
+            animate={{ 
+              opacity: theme === 'light' ? 0.08 : 0.22, 
+              scale: 1 
+            }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 1.8, ease: "easeInOut" }}
+            className="absolute inset-0 w-full h-full"
+          >
+            {SLIDES[currentSlideIndex].type === 'video' ? (
+              <div 
+                className="w-full h-full bg-cover bg-center relative" 
+                style={{ backgroundImage: `url(${SLIDES[currentSlideIndex].fallbackUrl})` }}
+              >
+                <video
+                  src={SLIDES[currentSlideIndex].url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                  onError={() => {
+                    console.info("[BackgroundSlideshow] Transitioning video to standard active wallpaper.");
+                  }}
+                />
+              </div>
+            ) : (
+              <img
+                src={SLIDES[currentSlideIndex].url}
+                alt="Electronic Slides"
+                className="w-full h-full object-cover"
+              />
+            )}
+            
+            {/* Gradient matrix shading to anchor active content cards */}
+            <div className={`absolute inset-0 pointer-events-none ${
+              theme === 'light' ? 'bg-white/10' : 'bg-gradient-to-b from-[#03030c]/20 via-[#03030c]/60 to-[#03030c]'
+            }`} />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* DISMISSED COGNITIVE MESH ELEMENT CODES */}
+      <div className="hidden text-transparent opacity-0 pointer-events-none w-0 h-0">
       <div 
         className={`absolute inset-0 z-0 overflow-hidden blur-[110px] md:blur-[150px] transition-all duration-1000 ${
           theme === 'light' ? 'opacity-[0.5] mix-blend-multiply' : 'opacity-[0.35] mix-blend-screen'
@@ -207,6 +309,7 @@ export function BackgroundSlideshow() {
             className="absolute w-[350px] h-[350px] md:w-[550px] md:h-[550px] rounded-full bg-indigo-600/10 top-[15%] right-[20%] blur-[130px]" 
           />
         )}
+      </div>
       </div>
 
       {/* LAYER 3: INTERACTIVE PARTICLE FIELD */}
