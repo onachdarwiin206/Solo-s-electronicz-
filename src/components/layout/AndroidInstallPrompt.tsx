@@ -5,18 +5,22 @@ import { Download, Smartphone, X, Sparkles, Check } from 'lucide-react';
 export function AndroidInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [installState, setInstallState] = useState<'idle' | 'installing' | 'completed'>('idle');
 
   useEffect(() => {
-    // Check if previously installed or standalone mode active
+    // Check if previously installed or standalone mode active or dismissed
     const checkIfPWA = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
         || (window.navigator as any).standalone 
         || localStorage.getItem('solo_pwa_installed') === 'true';
 
+      const isDismissed = localStorage.getItem('solo_pwa_dismissed') === 'true';
+
       if (isStandalone) {
         setIsInstalled(true);
+        setIsVisible(false);
+      } else if (isDismissed) {
         setIsVisible(false);
       } else {
         setIsVisible(window.scrollY <= 80);
@@ -29,8 +33,8 @@ export function AndroidInstallPrompt() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Ensure we display official badge
-      if (localStorage.getItem('solo_pwa_installed') !== 'true') {
+      // Ensure we display official badge if not dismissed
+      if (localStorage.getItem('solo_pwa_installed') !== 'true' && localStorage.getItem('solo_pwa_dismissed') !== 'true') {
         setIsVisible(window.scrollY <= 80);
       }
     };
@@ -54,19 +58,35 @@ export function AndroidInstallPrompt() {
     };
   }, []);
 
-  // Monitor Scroll Activities: Only deactivates when app is installed OR when the user scrolls the website.
+  // Monitor Scroll Activities: Displays the prompt when scrolling up or at the top of the page.
   useEffect(() => {
+    let lastScrollY = window.scrollY;
+
     const handleScroll = () => {
-      // If the user scrolls down, hide/deactivate the badge.
-      // If they are back at the top and NOT installed, keep it visible!
-      if (window.scrollY > 80) {
+      const isDismissed = localStorage.getItem('solo_pwa_dismissed') === 'true';
+      if (isDismissed) {
         setIsVisible(false);
-      } else {
-        // Only show back at top if not installed
+        return;
+      }
+
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY <= 80) {
+        // At or near the top: Show if not already installed/dismissed
         if (!isInstalled && localStorage.getItem('solo_pwa_installed') !== 'true') {
           setIsVisible(true);
         }
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up: Show prompt if not already installed/dismissed
+        if (!isInstalled && localStorage.getItem('solo_pwa_installed') !== 'true') {
+          setIsVisible(true);
+        }
+      } else {
+        // Scrolling down: Hide prompt
+        setIsVisible(false);
       }
+
+      lastScrollY = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -104,6 +124,7 @@ export function AndroidInstallPrompt() {
 
   const handleDismiss = () => {
     setIsVisible(false);
+    localStorage.setItem('solo_pwa_dismissed', 'true');
   };
 
   if (isInstalled || installState === 'completed') {
