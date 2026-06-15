@@ -47,7 +47,18 @@ export function ProductCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const images = product.images && product.images.length > 0 ? product.images : [product.image];
+  const getFilteredImages = () => {
+    const rawImages = product.images && product.images.length > 0 ? product.images : [product.image];
+    const filtered = rawImages.filter(img => 
+      typeof img === 'string' && 
+      !img.includes('photo-1518770660439-4636190af475') &&
+      !img.includes('photo-1550745165-9bc0b252726f') &&
+      !img.toLowerCase().includes('placeholder')
+    );
+    return filtered.length > 0 ? filtered : [''];
+  };
+
+  const images = getFilteredImages();
 
   useEffect(() => {
     if (images.length <= 1 || product.video_url) return;
@@ -260,14 +271,6 @@ export function ProductCard({
               <span className="text-zinc-500 uppercase tracking-widest font-black">
                 {product.category}
               </span>
-              <div className="flex items-center gap-1">
-                <div className="flex text-amber-500 shrink-0 select-none">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={8} fill={i < Math.floor(product.rating || 5) ? "currentColor" : "none"} className="text-amber-500 fill-amber-500" />
-                  ))}
-                </div>
-                <span className="text-zinc-400 font-bold">{product.rating || 5}.0</span>
-              </div>
             </div>
 
             {/* Product Name (Space Grotesk style paired) */}

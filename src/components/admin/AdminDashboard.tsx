@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import imageCompression from 'browser-image-compression';
-import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle, User, QrCode, Printer, TrendingUp, ExternalLink, Search } from 'lucide-react';
+import { Plus, Package, DollarSign, Tag, Image as ImageIcon, Video, Trash2, Save, X, Star, Loader2, Clock, CheckCircle, Truck, ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle, User, QrCode, Printer, TrendingUp, ExternalLink, Search, Camera, CameraOff, FlipHorizontal, Radio } from 'lucide-react';
 import { ResponsiveContainer, ComposedChart, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, Line, Area } from 'recharts';
 import { Product, Category, Order, OrderStatus, Review } from '../../types';
 import { PRODUCT_CATEGORIES, INITIAL_PRODUCTS } from '../../constants';
@@ -532,6 +532,188 @@ _Thank you for choosing Solo Electronics!_
     
     const whatsappUrl = `https://wa.me/${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(receiptTemplate)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  // Camera Modal States and Refs
+  const [showCameraSuite, setShowCameraSuite] = useState(false);
+  const [cameraMode, setCameraMode] = useState<'image' | 'video'>('image');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      const constraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: cameraMode === 'video'
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.warn(e));
+      }
+      setCameraActive(true);
+    } catch (err: any) {
+      console.error("Camera access failed:", err);
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facingMode }
+        });
+        streamRef.current = fallbackStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+          videoRef.current.play().catch(e => console.warn(e));
+        }
+        setCameraActive(true);
+      } catch (fallbackErr: any) {
+        setCameraError("Unable to access camera or microphone. Please verify site permission logs.");
+        setCameraActive(false);
+      }
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+    setRecording(false);
+    setRecordingSeconds(0);
+  };
+
+  useEffect(() => {
+    if (showCameraSuite) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [showCameraSuite, cameraMode, facingMode]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (recording) {
+      timer = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+    } else {
+      setRecordingSeconds(0);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [recording]);
+
+  const handleSnapPhoto = () => {
+    if (!videoRef.current) return;
+    try {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const fileName = `camera_snap_${Date.now()}.jpg`;
+            const file = new File([blob], fileName, { type: 'image/jpeg' });
+            
+            const newUpload = {
+              id: uuidv4().substr(0, 8),
+              type: 'image' as const,
+              file: file,
+              status: 'queued' as const,
+              progress: 0,
+              localPreview: URL.createObjectURL(file)
+            };
+            setUploadingMedia(prev => [...prev, newUpload]);
+          }
+        }, 'image/jpeg', 0.9);
+      }
+    } catch (e) {
+      console.error("Failed to snap photo:", e);
+    }
+  };
+
+  const handleStartRecording = () => {
+    if (!streamRef.current) return;
+    try {
+      chunksRef.current = [];
+      let options = { mimeType: 'video/webm' };
+      if (MediaRecorder.isTypeSupported('video/mp4')) {
+        options = { mimeType: 'video/mp4' };
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        options = { mimeType: 'video/webm;codecs=vp9' };
+      }
+      
+      const recorder = new MediaRecorder(streamRef.current, options);
+      mediaRecorderRef.current = recorder;
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        const mimeType = mediaRecorderRef.current?.mimeType || 'video/webm';
+        const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const fileName = `camera_rec_${Date.now()}.${extension}`;
+        const file = new File([blob], fileName, { type: mimeType });
+        
+        const newUpload = {
+          id: uuidv4().substr(0, 8),
+          type: 'video' as const,
+          file: file,
+          status: 'queued' as const,
+          progress: 0,
+          localPreview: URL.createObjectURL(file)
+        };
+        setUploadingMedia(prev => [...prev, newUpload]);
+      };
+      
+      recorder.start();
+      setRecording(true);
+      setRecordingSeconds(0);
+    } catch (e) {
+      console.error("Failed to start recording:", e);
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && recording) {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+    }
   };
 
   const [uploadSessionId, setUploadSessionId] = useState(uuidv4());
@@ -1136,6 +1318,20 @@ _Thank you for choosing Solo Electronics!_
                             </div>
                           </div>
 
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCameraMode('image');
+                                setShowCameraSuite(true);
+                              }}
+                              className="w-full py-3.5 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 hover:from-blue-600/35 hover:via-indigo-600/35 hover:to-purple-600/35 text-white border border-blue-500/20 active:scale-[0.99] transition-all rounded-[1.5rem] flex items-center justify-center gap-2.5 text-[10px] font-black uppercase tracking-widest"
+                            >
+                              <Camera size={14} className="text-blue-400 animate-pulse" />
+                              Launch Live Camera & Video Suite
+                            </button>
+                          </div>
+
                           <div className="pt-2 text-center">
                             {isSupabaseConfigured ? (
                               <div className="flex items-center justify-center gap-1.5 text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/10 rounded-xl py-2 px-3 text-[9px] font-mono uppercase tracking-widest">
@@ -1639,6 +1835,188 @@ _Thank you for choosing Solo Electronics!_
                 >
                   Copy URL
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showCameraSuite && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-card border border-border rounded-[2.5rem] p-8 max-w-2xl w-full relative shadow-2xl space-y-6 text-left"
+            >
+              <button 
+                onClick={() => {
+                  stopCamera();
+                  setShowCameraSuite(false);
+                }} 
+                className="absolute top-5 right-5 p-2 rounded-full hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-all z-10"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="space-y-1 w-11/12">
+                <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Hardware Interceptor Suite</span>
+                <h3 className="text-xl font-black italic uppercase tracking-tight text-foreground">Interactive Camera Console</h3>
+                <p className="text-muted-foreground text-[10px] uppercase tracking-widest leading-relaxed">
+                  Quickly capture images or video clips and sync them directly with your active product assets queue.
+                </p>
+              </div>
+
+              {/* Facing Mode and Mode Selector controls */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-foreground/5 p-4 rounded-2xl border border-border">
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (recording) return;
+                      setCameraMode('image');
+                    }}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                      cameraMode === 'image' 
+                        ? "bg-blue-600 text-white shadow-md" 
+                        : "text-muted-foreground hover:text-foreground bg-transparent"
+                    )}
+                    disabled={recording}
+                  >
+                    Photo Mode
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (recording) return;
+                      setCameraMode('video');
+                    }}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                      cameraMode === 'video' 
+                        ? "bg-blue-600 text-white shadow-md" 
+                        : "text-muted-foreground hover:text-foreground bg-transparent"
+                    )}
+                    disabled={recording}
+                  >
+                    Video Clip Mode
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (recording) return;
+                      setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+                    }}
+                    className="p-2 bg-foreground/5 border border-border rounded-xl hover:bg-foreground/10 text-foreground transition-all"
+                    disabled={recording}
+                    title="Flip camera lens"
+                  >
+                    <FlipHorizontal size={14} className="text-muted-foreground hover:text-foreground" />
+                  </button>
+                  <span className="text-[9px] font-bold font-mono uppercase text-muted-foreground">
+                    {facingMode === 'user' ? 'Front Lens' : 'Rear Lens'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Live Preview Monitor Screen */}
+              <div className="relative aspect-video w-full rounded-3xl bg-black border border-border overflow-hidden group flex items-center justify-center">
+                {cameraActive && !cameraError ? (
+                  <video 
+                    ref={videoRef}
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center p-6 space-y-3">
+                    {cameraError ? (
+                      <>
+                        <CameraOff size={36} className="text-red-500 mx-auto animate-bounce" />
+                        <p className="text-red-400 font-bold text-xs uppercase tracking-wider">{cameraError}</p>
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 size={36} className="text-blue-500 mx-auto animate-spin" />
+                        <p className="text-muted-foreground font-mono text-[9px] uppercase tracking-widest">Activating media pipeline & lens sensors...</p>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Left floating recording duration HUD */}
+                {recording && (
+                  <div className="absolute top-4 left-4 bg-red-600 text-white text-[9px] font-mono font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-white block animate-ping" />
+                    REC {Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60).toString().padStart(2, '0')}
+                  </div>
+                )}
+
+                {/* Right floating resolution/codec HUD */}
+                {cameraActive && (
+                  <div className="absolute top-4 right-4 bg-black/60 text-[9px] font-mono uppercase tracking-wider px-3 py-1 rounded-full text-zinc-400 border border-zinc-700/50">
+                    {cameraMode === 'image' ? '1280x720 • JPEG' : 'WEBM • DUAL CH'}
+                  </div>
+                )}
+              </div>
+
+              {/* Live Capturing Controls */}
+              <div className="flex items-center justify-center py-2">
+                {cameraMode === 'image' ? (
+                  <button
+                    type="button"
+                    onClick={handleSnapPhoto}
+                    disabled={!cameraActive}
+                    className={cn(
+                      "px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl active:scale-95 text-xs font-black uppercase tracking-wider shadow-lg flex items-center gap-2.5 transition-all",
+                      !cameraActive && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    <Camera size={16} />
+                    Snap Photo Asset
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    {!recording ? (
+                      <button
+                        type="button"
+                        onClick={handleStartRecording}
+                        disabled={!cameraActive}
+                        className={cn(
+                          "px-8 py-4 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white rounded-2xl active:scale-95 text-xs font-black uppercase tracking-wider shadow-lg flex items-center gap-2.5 transition-all animate-pulse",
+                          !cameraActive && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        <Radio size={16} />
+                        Start Clip Recording
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleStopRecording}
+                        className="px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-2xl active:scale-95 text-xs font-black uppercase tracking-wider shadow-lg flex items-center gap-2.5 transition-all"
+                      >
+                        <Video size={16} />
+                        Stop & Save Asset
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="text-center pt-4 border-t border-border/40">
+                <p className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground">
+                  Saved assets are automatically queued in the uploads panel below and synchronized directly to Supabase Storage.
+                </p>
               </div>
             </motion.div>
           </motion.div>

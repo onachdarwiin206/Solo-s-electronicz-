@@ -9,7 +9,7 @@ import { Product } from '../../types';
 import { OptimizedImage } from '../ui/OptimizedImage';
 import { cn } from '../../lib/utils';
 import { triggerWhatsAppFlow } from '../ui/WhatsAppFloat';
-import { ReviewSystem } from '../reviews/ReviewSystem';
+// ReviewSystem removed
 
 interface ProductDetailProps {
   product: Product;
@@ -68,7 +68,18 @@ export default function ProductDetail({
   ].filter(Boolean) as string[];
 
   // Remove duplicates while preserving order
-  const uniqueMedia = Array.from(new Set(allMedia));
+  let uniqueMedia = Array.from(new Set(allMedia));
+
+  // Filter out default placeholder image (photo-1518770660439-4636190af475) or other generic placeholder paths
+  const filtered = uniqueMedia.filter(media => {
+    if (typeof media !== 'string') return false;
+    return (
+      !media.includes('photo-1518770660439-4636190af475') &&
+      !media.toLowerCase().includes('placeholder')
+    );
+  });
+  
+  uniqueMedia = filtered.length > 0 ? filtered : [''];
 
   useEffect(() => {
     if (uniqueMedia.length <= 1) return;
@@ -275,13 +286,6 @@ export default function ProductDetail({
             </h1>
             
             <div className="flex items-center gap-4 py-2 border-b border-zinc-900 pb-4">
-              <div className="flex text-amber-500 gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={13} fill={i < Math.round(product.rating || 5) ? "currentColor" : "none"} />
-                ))}
-              </div>
-              <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">{product.rating || 5.0} Score</span>
-              <div className="h-3 w-px bg-zinc-800" />
               <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">ID Log: {product.id.slice(0, 8).toUpperCase()}</span>
             </div>
           </div>
@@ -372,10 +376,7 @@ export default function ProductDetail({
         </div>
       </section>
 
-      {/* STAGE C: REVIEWS AND CUSTOMER FEEDBACK */}
-      <section className="pt-8 border-t border-zinc-900">
-        <ReviewSystem product={product} />
-      </section>
+      {/* STAGE C: REVIEWS AND CUSTOMER FEEDBACK removed */}
 
       {/* STAGE D: RELATED PRODUCTS Drawer */}
       {relatedProducts.length > 0 && (
@@ -405,17 +406,13 @@ export default function ProductDetail({
                   <span className="px-2.5 py-1 bg-[#121215] rounded-full text-[8.5px] font-mono text-zinc-400 uppercase tracking-widest truncate">
                     {item.category.split(' ')[0]}
                   </span>
-                  <span className="flex items-center gap-0.5 text-yellow-500 text-[10px] font-mono font-black">
-                    <Star size={10} fill="currentColor" /> {getProductRating(item.name)}
-                  </span>
                 </div>
 
                 <div className="h-32 w-full flex items-center justify-center relative my-1 overflow-hidden">
-                  <img 
+                  <OptimizedImage 
                     src={item.image} 
                     alt={item.name} 
                     className="max-h-full max-w-full object-contain filter drop-shadow-[0_10px_20px_rgba(255,255,255,0.02)] transform transition-transform duration-500 group-hover:scale-105"
-                    referrerPolicy="no-referrer"
                   />
                 </div>
 

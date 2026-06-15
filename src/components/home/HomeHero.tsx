@@ -11,6 +11,7 @@ import { Product } from '../../types';
 import { PRODUCT_CATEGORIES } from '../../constants';
 import { cn } from '../../lib/utils';
 import { ProductCard } from '../shop/ProductCard';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface HomeHeroProps {
   products: Product[];
@@ -245,11 +246,10 @@ export function HomeHero({
                     transition={{ repeat: Infinity, duration: 5.5, ease: "easeInOut" }}
                     className="relative w-[75%] h-[55%] flex items-center justify-center my-2"
                   >
-                    <img 
+                    <OptimizedImage 
                       src={activeShowcaseProduct.image} 
                       alt={activeShowcaseProduct.name} 
                       className="max-h-full max-w-full object-contain filter drop-shadow-[0_25px_40px_rgba(59,130,246,0.18)] transform group-hover:scale-[1.03] transition-transform duration-700"
-                      referrerPolicy="no-referrer"
                     />
                   </motion.div>
 
@@ -389,7 +389,7 @@ export function HomeHero({
 
                   {/* Product graphic spot */}
                   <div className="w-full md:w-[45%] h-56 md:h-full flex items-center justify-center relative bg-foreground/[0.015] rounded-3xl p-4">
-                    <img 
+                    <OptimizedImage 
                       src={item.image} 
                       alt={item.name} 
                       className="max-h-full max-w-full object-contain filter drop-shadow-[0_20px_40px_rgba(255,255,255,0.05)] transform group-hover:scale-[1.04] transition-transform duration-700"
@@ -491,7 +491,7 @@ export function HomeHero({
                     </div>
 
                     <div className="w-[30%] h-28 flex items-center justify-center bg-foreground/[0.01] rounded-2xl p-2 shrink-0">
-                      <img 
+                      <OptimizedImage 
                         src={item.image} 
                         alt={item.name} 
                         className="max-h-full max-w-full object-contain filter drop-shadow-[0_10px_20px_rgba(255,255,255,0.03)] transform group-hover:scale-105 transition-transform duration-500"
@@ -774,11 +774,10 @@ export function HomeHero({
                   className="group relative rounded-2xl bg-[#08080c] hover:bg-[#0c0c12] border border-white/[0.04] p-3 flex flex-col justify-between h-48 transition-all duration-300 cursor-pointer"
                 >
                   <div className="h-20 w-full flex items-center justify-center relative overflow-hidden my-1">
-                    <img 
+                    <OptimizedImage 
                       src={item.image} 
                       alt={item.name} 
                       className="max-h-full max-w-full object-contain filter drop-shadow-[0_6px_12px_rgba(255,255,255,0.05)] transform transition-transform duration-500 group-hover:scale-105 select-none"
-                      referrerPolicy="no-referrer"
                     />
                   </div>
                   <div className="space-y-1 text-left mt-auto">

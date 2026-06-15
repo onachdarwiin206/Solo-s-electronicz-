@@ -680,7 +680,7 @@ _Your order is now being processed._
                     />
                   )}
 
-                  {view === 'marketing' && <MarketingPortal />}
+                  {view === 'marketing' && <MarketingPortal products={products} />}
                   {view === 'auth' && (
                     <div className="max-w-md mx-auto px-4 py-20 text-center">
                       <div className="bg-foreground/5 border border-white/[0.06] rounded-[2rem] p-8 space-y-4">

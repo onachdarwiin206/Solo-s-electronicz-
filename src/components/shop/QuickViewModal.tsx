@@ -30,10 +30,21 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
   const [activeMedia, setActiveMedia] = useState(0);
   if (!product) return null;
 
-  const allMedia = [
+  let allMedia = [
     ...(product.images || [product.image]),
     ...(product.videos || (product.video_url ? [product.video_url] : []))
   ].filter(Boolean);
+
+  // Filter out default placeholder images
+  const filtered = allMedia.filter(media => {
+    if (typeof media !== 'string') return false;
+    return (
+      !media.includes('photo-1518770660439-4636190af475') &&
+      !media.toLowerCase().includes('placeholder')
+    );
+  });
+  
+  allMedia = filtered.length > 0 ? filtered : [''];
 
   useEffect(() => {
     if (allMedia.length <= 1) return;
@@ -186,11 +197,6 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
                     {product.name}
                   </h2>
                   <div className="flex items-center gap-3">
-                    <div className="flex text-amber-500 gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={12} fill={i < (product.rating || 5) ? "currentColor" : "none"} />
-                      ))}
-                    </div>
                     <span className="text-xs font-black text-muted-foreground uppercase tracking-widest font-mono">
                       Ref #{product.id.slice(0, 8)}
                     </span>
