@@ -11,6 +11,53 @@ interface OptimizedImageProps {
   bucket?: string;
 }
 
+const isKnownBrokenUrl = (url: string): boolean => {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes('iphone%2016%20pro%20max') ||
+    lower.includes('iphone 16 pro max') ||
+    lower.includes('lenovo%20tab') ||
+    lower.includes('lenovo tab')
+  );
+};
+
+const getSmartFallbackUrl = (urlOrPath: string, altText: string): string => {
+  const cleanStr = (urlOrPath + " " + altText).toLowerCase();
+  
+  if (cleanStr.includes('iphone 16') || cleanStr.includes('iphone16')) {
+    return 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('lenovo tab') || cleanStr.includes('lenovotab') || cleanStr.includes('lenovo')) {
+    return 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('laptop') || cleanStr.includes('macbook') || cleanStr.includes('computer') || cleanStr.includes('thinkpad') || cleanStr.includes('hp spectre')) {
+    return 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('phone') || cleanStr.includes('galaxy') || cleanStr.includes('samsung') || cleanStr.includes('pixel') || cleanStr.includes('infinix') || cleanStr.includes('tecno')) {
+    return 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('watch') || cleanStr.includes('smartwatch') || cleanStr.includes('wearable')) {
+    return 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('gaming') || cleanStr.includes('console') || cleanStr.includes('playstation') || cleanStr.includes('xbox') || cleanStr.includes('switch')) {
+    return 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('headphone') || cleanStr.includes('audio') || cleanStr.includes('earbud') || cleanStr.includes('soundbar') || cleanStr.includes('speaker') || cleanStr.includes('airpods')) {
+    return 'https://images.unsplash.com/photo-1583394838336-acd977736f90?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('tablet') || cleanStr.includes('ipad') || cleanStr.includes('android tab')) {
+    return 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('tv') || cleanStr.includes('television') || cleanStr.includes('monitor') || cleanStr.includes('oled')) {
+    return 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?q=80&w=800&auto=format&fit=crop';
+  }
+  if (cleanStr.includes('camera') || cleanStr.includes('gopro') || cleanStr.includes('security')) {
+    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=800&auto=format&fit=crop';
+  }
+  return 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&auto=format&fit=crop';
+};
+
 export function OptimizedImage({ src, alt, className, fallback, bucket = 'product-images' }: OptimizedImageProps) {
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,6 +72,13 @@ export function OptimizedImage({ src, alt, className, fallback, bucket = 'produc
     // 2 & 3. Ensure src is a valid string
     if (!src || typeof src !== 'string') {
       setResolvedUrl(fallback || DEFAULT_PLACEHOLDER);
+      return;
+    }
+
+    // Intercept known broken or missing Supabase images with highly polished equivalents
+    if (isKnownBrokenUrl(src)) {
+      const smartUrl = getSmartFallbackUrl(src, alt);
+      setResolvedUrl(smartUrl);
       return;
     }
 

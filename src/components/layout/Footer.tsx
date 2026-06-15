@@ -45,9 +45,9 @@ export function Footer({ t, onCategorySelect, onAdminPanelClick }: FooterProps) 
                 href="https://www.google.com/maps/dir/?api=1&destination=2.2328081,32.8932380"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3- py-1.5 px-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl text-[10px] font-mono font-black uppercase tracking-wider transition-all shadow-lg cursor-pointer"
+                className="flex items-center gap-2.5 py-3 px-6 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-2xl text-[11px] font-mono font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/25 border border-blue-400/20 cursor-pointer"
               >
-                <Navigation size={11} className="animate-pulse" />
+                <Navigation size={14} className="animate-pulse" />
                 GET DIRECTIONS
               </a>
             </div>

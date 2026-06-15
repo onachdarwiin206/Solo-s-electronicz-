@@ -135,11 +135,11 @@ export function AndroidInstallPrompt() {
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          initial={{ opacity: 0, y: -100, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 30, scale: 0.9 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed bottom-4 left-4 right-4 md:right-auto md:left-8 md:max-w-md z-[120] pointer-events-auto"
+          exit={{ opacity: 0, y: -100, scale: 0.95 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 210 }}
+          className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:max-w-xl z-[130] pointer-events-auto"
         >
           <div className="bg-[#0b0c11]/95 border border-blue-500/25 rounded-3xl p-5 shadow-[0_20px_50px_rgba(59,130,246,0.18)] backdrop-blur-xl flex flex-col gap-4 relative overflow-hidden">
             

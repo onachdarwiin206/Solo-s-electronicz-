@@ -117,13 +117,84 @@ export default function App() {
     }
   };
 
-  const fetchProducts = async () => {
+  const syncLocalProductsToSupabase = async () => {
+    if (!isSupabaseConfigured) return;
+    try {
+      // 1. Sync custom products (additions / updates)
+      const localCustomRaw = localStorage.getItem('custom_products');
+      if (localCustomRaw) {
+        const localCustomsRaw: Product[] = JSON.parse(localCustomRaw);
+        const validCategories = [
+          'Phones & Tablets',
+          'Computers & Laptops',
+          'Gaming & Consoles',
+          'TVs & Audio',
+          'Accessories',
+          'Networking',
+          'Home Appliances',
+          'Smart Devices',
+          'Cameras & Security',
+          'Deals & Offers'
+        ];
+        
+        const localCustoms = localCustomsRaw.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || '',
+          price: Number(p.price) || 0,
+          category: validCategories.includes(p.category) ? p.category : 'Phones & Tablets',
+          image: p.image || '',
+          stock: Number(p.stock) || 0,
+          featured: !!p.featured,
+          specifications: p.specifications || 'High performance device with official store warranty.',
+          images: Array.isArray(p.images) ? p.images : [p.image || ''],
+          videos: Array.isArray(p.videos) ? p.videos : [],
+          is_verified: !!p.is_verified,
+          rating: Number(p.rating) || 5.0,
+          created_at: p.created_at || new Date().toISOString(),
+          updated_at: p.updated_at || new Date().toISOString()
+        }));
+
+        if (localCustoms.length > 0) {
+          console.log(`[Supabase Sync] Upserting ${localCustoms.length} offline custom/edited products to remote database...`);
+          const { error } = await supabase.from('products').upsert(localCustoms);
+          if (error) {
+            console.error("[Supabase Sync] Product upsert failed:", error);
+          } else {
+            console.log("[Supabase Sync] Successfully synchronized all local products to Supabase.");
+          }
+        }
+      }
+
+      // 2. Sync local deletions
+      const deletedRaw = localStorage.getItem('deleted_product_ids');
+      if (deletedRaw) {
+        const deletedIds: string[] = JSON.parse(deletedRaw);
+        if (deletedIds.length > 0) {
+          console.log(`[Supabase Sync] Syncing ${deletedIds.length} deletions to remote database...`);
+          for (const id of deletedIds) {
+            await supabase.from('products').delete().eq('id', id);
+          }
+          localStorage.setItem('deleted_product_ids', JSON.stringify([]));
+        }
+      }
+    } catch (err) {
+      console.warn("[Supabase Sync] Error during automatic synchronization pass:", err);
+    }
+  };
+
+  const fetchProducts = async (silent = false) => {
     if (!isSupabaseConfigured) {
       setProducts(getMergedProducts([]));
       setLoadingProducts(false);
       return;
     }
-    setLoadingProducts(true);
+    
+    if (!silent) {
+      await syncLocalProductsToSupabase();
+      setLoadingProducts(true);
+    }
+    
     try {
       const { data, error } = await supabase
         .from('products')
@@ -188,7 +259,9 @@ export default function App() {
       }
       setProducts(getMergedProducts([]));
     } finally {
-      setLoadingProducts(false);
+      if (!silent) {
+        setLoadingProducts(false);
+      }
     }
   };
 
@@ -198,7 +271,7 @@ export default function App() {
     if (isSupabaseConfigured) {
       try {
         channel = supabase.channel('products_changes')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts(true))
           .subscribe();
       } catch (e) {
         console.warn("[Realtime] Subscription failed.", e);
@@ -514,7 +587,7 @@ _Your order is now being processed._
       <WhatsAppFloat user={user} />
       
       {authResolving ? (
-        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
           <div className="w-16 h-16 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin z-10" />
           <p className="mt-4 text-white font-black tracking-widest uppercase italic animate-pulse">Syncing Hardware Feed...</p>
         </div>
@@ -586,6 +659,7 @@ _Your order is now being processed._
                           onToggleWishlist={handleToggleWishlist}
                           isItemLiked={isItemLiked}
                           onToggleLike={handleToggleLike}
+                          onSearch={setSearchQuery}
                           t={t}
                         />
                       )}

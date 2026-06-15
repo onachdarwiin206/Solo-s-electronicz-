@@ -25,6 +25,18 @@ interface ProductDetailProps {
 
 const WHATSAPP_NUMBER = "256793405517";
 
+const WhatsAppIcon = ({ size = 15, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    style={{ width: size, height: size }} 
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M17.472 14.382c-.022-.008-.115-.062-.272-.14-.08-.041-.268-.137-.358-.183-.09-.045-.155-.068-.22.031-.064.098-.25.314-.306.377-.056.062-.112.07-.22.031-.088-.044-.361-.133-.687-.424-.253-.226-.425-.506-.475-.591-.05-.084-.005-.13.038-.172.039-.038.08-.098.12-.147.04-.05.053-.085.08-.142.027-.057.013-.109-.007-.15-.02-.04-.155-.375-.213-.513-.057-.138-.114-.12-.156-.12-.04-.002-.087-.003-.135-.003-.048 0-.127.018-.193.088-.066.07-.254.248-.254.604 0 .357.259.702.295.751.036.049.51.777 1.235 1.09.173.074.308.118.414.152.173.055.33.047.454.028.138-.02 2.802-1.146 2.802-1.146.036-.046.072-.102.102-.156s.013-.105.007-.15-.022-.06-.051-.085zm-5.419 6.203h-.004a8.194 8.194 0 01-4.18-1.148l-.3-.178-3.1 1.018a.333.333 0 01-.42-.42l1.018-3.1-.178-.3a8.194 8.194 0 01-1.148-4.18C3.12 6.551 7.11 2.561 12 2.561c4.89 0 8.879 3.99 8.879 8.88 0 4.89-3.99 8.879-8.88 8.879l.063-.057zm0-16.791c-5.46 0-9.897 4.437-9.897 9.897 0 1.761.461 3.473 1.336 4.981l-.06-.102-1.42 4.33a.333.333 0 00.419.42l4.33-1.42.1.06a9.897 9.897 0 004.981 1.335h.001c5.46 0 9.897-4.437 9.897-9.897 0-5.46-4.437-9.897-9.897-9.897z" />
+  </svg>
+);
+
 export default function ProductDetail({ 
   product, 
   products = [],
@@ -43,7 +55,7 @@ export default function ProductDetail({
     try {
       const stored = localStorage.getItem('recently_viewed');
       let items: string[] = stored ? JSON.parse(stored) : [];
-      items = [product.id, ...items.filter(id => id !== product.id)].slice(0, 5);
+      items = [product.id, ...items.filter(id => id !== product.id)].slice(0, 4);
       localStorage.setItem('recently_viewed', JSON.stringify(items));
     } catch {}
   }, [product.id]);
@@ -57,6 +69,20 @@ export default function ProductDetail({
 
   // Remove duplicates while preserving order
   const uniqueMedia = Array.from(new Set(allMedia));
+
+  useEffect(() => {
+    if (uniqueMedia.length <= 1) return;
+    
+    const currentMedia = uniqueMedia[activeMedia];
+    const isVideo = currentMedia?.includes('video') || currentMedia?.includes('.mp4');
+    if (isVideo) return; // Do not auto-cycle while a video is playing
+    
+    const interval = setInterval(() => {
+      setActiveMedia((prev) => (prev + 1) % uniqueMedia.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [uniqueMedia.length, activeMedia]);
 
   const handleWhatsAppBuy = () => {
     const message = `*Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I'm interested in this unit. Is it available for delivery in Lira?`;
@@ -91,7 +117,7 @@ export default function ProductDetail({
     <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
-      className="max-w-7xl mx-auto py-12 md:py-16 px-4 sm:px-6 lg:px-8 space-y-24 bg-black text-white text-left"
+      className="max-w-7xl mx-auto py-12 md:py-16 px-4 sm:px-6 lg:px-8 space-y-24 bg-card/40 backdrop-blur-3xl border border-border rounded-[2rem] text-card-foreground text-left p-6 sm:p-10 mb-12"
     >
       {/* HEADER BREADCRUMBS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-900">
@@ -122,9 +148,18 @@ export default function ProductDetail({
               <motion.div
                 key={activeMedia}
                 initial={{ opacity: 0, scale: 1.04 }}
-                animate={{ opacity: 1, scale: 1 }}
+                animate={uniqueMedia.length === 1 && !isVideo ? {
+                  opacity: [1, 0.35, 1],
+                  scale: [1, 0.98, 1]
+                } : { opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.4 }}
+                transition={uniqueMedia.length === 1 && !isVideo ? {
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatType: "mirror" as const,
+                  ease: "easeInOut",
+                  repeatDelay: 6
+                } : { duration: 0.4 }}
                 className="w-full h-full p-8 flex items-center justify-center"
               >
                 {isVideo ? (
@@ -307,16 +342,16 @@ export default function ProductDetail({
             <button 
               onClick={() => onAddToCart(product)} 
               disabled={(product.stock || 0) <= 0}
-              className="py-4.5 bg-white hover:bg-neutral-100 text-black font-black text-xs font-mono tracking-widest rounded-full flex items-center justify-center gap-2.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              className="py-4.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs font-mono tracking-widest rounded-full flex items-center justify-center gap-2.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-lg shadow-blue-500/10"
             >
               <ShoppingCart size={15} /> 
               ADD TO BASKET
             </button>
             <button 
               onClick={handleWhatsAppBuy} 
-              className="py-4.5 bg-[#25D366] hover:bg-emerald-500 text-white font-black text-xs font-mono tracking-widest rounded-full flex items-center justify-center gap-2.5 transition-all active:scale-95 cursor-pointer"
+              className="py-4.5 bg-[#25D366] hover:bg-emerald-500 text-white font-black text-xs font-mono tracking-widest rounded-full flex items-center justify-center gap-2.5 transition-all active:scale-95 cursor-pointer shadow-lg shadow-emerald-950/10"
             >
-              <MessageCircle size={15} fill="currentColor" /> 
+              <WhatsAppIcon size={15} /> 
               SECURE VIA WHATSAPP
             </button>
           </div>

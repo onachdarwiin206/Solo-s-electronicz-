@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShoppingCart, MessageCircle, BadgeCheck, Star, Shield, Zap, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../../types';
@@ -14,6 +14,18 @@ interface QuickViewModalProps {
 
 const WHATSAPP_NUMBER = "256793405517";
 
+const WhatsAppIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    style={{ width: size, height: size }} 
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M17.472 14.382c-.022-.008-.115-.062-.272-.14-.08-.041-.268-.137-.358-.183-.09-.045-.155-.068-.22.031-.064.098-.25.314-.306.377-.056.062-.112.07-.22.031-.088-.044-.361-.133-.687-.424-.253-.226-.425-.506-.475-.591-.05-.084-.005-.13.038-.172.039-.038.08-.098.12-.147.04-.05.053-.085.08-.142.027-.057.013-.109-.007-.15-.02-.04-.155-.375-.213-.513-.057-.138-.114-.12-.156-.12-.04-.002-.087-.003-.135-.003-.048 0-.127.018-.193.088-.066.07-.254.248-.254.604 0 .357.259.702.295.751.036.049.51.777 1.235 1.09.173.074.308.118.414.152.173.055.33.047.454.028.138-.02 2.802-1.146 2.802-1.146.036-.046.072-.102.102-.156s.013-.105.007-.15-.022-.06-.051-.085zm-5.419 6.203h-.004a8.194 8.194 0 01-4.18-1.148l-.3-.178-3.1 1.018a.333.333 0 01-.42-.42l1.018-3.1-.178-.3a8.194 8.194 0 01-1.148-4.18C3.12 6.551 7.11 2.561 12 2.561c4.89 0 8.879 3.99 8.879 8.88 0 4.89-3.99 8.879-8.88 8.879l.063-.057zm0-16.791c-5.46 0-9.897 4.437-9.897 9.897 0 1.761.461 3.473 1.336 4.981l-.06-.102-1.42 4.33a.333.333 0 00.419.42l4.33-1.42.1.06a9.897 9.897 0 004.981 1.335h.001c5.46 0 9.897-4.437 9.897-9.897 0-5.46-4.437-9.897-9.897-9.897z" />
+  </svg>
+);
+
 export default function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModalProps) {
   const [activeMedia, setActiveMedia] = useState(0);
   if (!product) return null;
@@ -22,6 +34,20 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
     ...(product.images || [product.image]),
     ...(product.videos || (product.video_url ? [product.video_url] : []))
   ].filter(Boolean);
+
+  useEffect(() => {
+    if (allMedia.length <= 1) return;
+    
+    const currentMedia = allMedia[activeMedia];
+    const isVideo = currentMedia?.includes('video') || currentMedia?.includes('.mp4');
+    if (isVideo) return; // Do not auto-cycle while a video is playing
+    
+    const interval = setInterval(() => {
+      setActiveMedia((prev) => (prev + 1) % allMedia.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [allMedia.length, activeMedia]);
 
   const handleWhatsAppBuy = () => {
     const message = `*Quick Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I saw this in the quick view. Is it in stock?`;
@@ -58,22 +84,42 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
             <div className="grid grid-cols-1 md:grid-cols-2 min-h-[600px]">
               <div className="relative bg-foreground/5 flex flex-col">
                 <div className="flex-1 relative overflow-hidden group">
-                  {isVideo ? (
-                    <video 
-                      src={currentMedia} 
-                      className="w-full h-full object-contain bg-black dark:bg-card" 
-                      autoPlay 
-                      muted 
-                      loop 
-                      playsInline 
-                    />
-                  ) : (
-                    <OptimizedImage 
-                      src={currentMedia} 
-                      className="w-full h-full object-contain" 
-                      alt={product.name} 
-                    />
-                  )}
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeMedia}
+                      initial={{ opacity: 0 }}
+                      animate={allMedia.length === 1 && !isVideo ? {
+                        opacity: [1, 0.35, 1],
+                        scale: [1, 0.98, 1]
+                      } : { opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={allMedia.length === 1 && !isVideo ? {
+                        duration: 3,
+                        repeat: Infinity,
+                        repeatType: "mirror" as const,
+                        ease: "easeInOut",
+                        repeatDelay: 6
+                      } : { duration: 0.3 }}
+                      className="w-full h-full"
+                    >
+                      {isVideo ? (
+                        <video 
+                          src={currentMedia} 
+                          className="w-full h-full object-contain bg-black dark:bg-card" 
+                          autoPlay 
+                          muted 
+                          loop 
+                          playsInline 
+                        />
+                      ) : (
+                        <OptimizedImage 
+                          src={currentMedia} 
+                          className="w-full h-full object-contain" 
+                          alt={product.name} 
+                        />
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
 
                   {allMedia.length > 1 && (
                     <>
@@ -180,12 +226,15 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
                   <button 
                     onClick={() => { onAddToCart(product); onClose(); }} 
                     disabled={(product.stock || 0) <= 0}
-                    className="group py-6 bg-foreground hover:bg-blue-600 text-background hover:text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 text-[11px] uppercase tracking-[0.2em] shadow-xl disabled:opacity-50"
+                    className="group py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-blue-500/15 disabled:opacity-50 cursor-pointer"
                   >
                     <ShoppingCart size={18} className="group-hover:scale-110 transition-transform" /> Commit to Inventory
                   </button>
-                  <button onClick={handleWhatsAppBuy} className="py-6 bg-green-600 font-black rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 text-[11px] uppercase tracking-[0.2em] text-white">
-                    <MessageCircle size={18} fill="currentColor" /> Encrypted Inquiry
+                  <button 
+                    onClick={handleWhatsAppBuy} 
+                    className="py-6 bg-[#25D366] hover:bg-emerald-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 text-[11px] uppercase tracking-[0.2em] cursor-pointer shadow-xl shadow-emerald-950/10"
+                  >
+                    <WhatsAppIcon size={18} /> Encrypted Inquiry
                   </button>
                 </div>
               </div>

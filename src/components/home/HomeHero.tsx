@@ -1,14 +1,16 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Smartphone, Laptop, Headphones, Watch, ShieldCheck, 
   Truck, Star, Sparkles, ShoppingBag, ArrowRight, 
   ChevronRight, CheckCircle2, MapPin, Compass, Gamepad2, Loader2,
-  Tv, Wifi, Camera, Cpu, Tag, Usb, Heart, Clock, AlertCircle, Sparkle
+  Tv, Wifi, Camera, Cpu, Tag, Usb, Heart, Clock, AlertCircle, Sparkle,
+  Search, Shield, PhoneCall, BadgePercent, CheckCircle, Zap, HelpCircle
 } from 'lucide-react';
 import { Product } from '../../types';
 import { PRODUCT_CATEGORIES } from '../../constants';
 import { cn } from '../../lib/utils';
+import { ProductCard } from '../shop/ProductCard';
 
 interface HomeHeroProps {
   products: Product[];
@@ -25,44 +27,22 @@ interface HomeHeroProps {
   onToggleWishlist: (id: string) => void;
   isItemLiked: (id: string) => boolean;
   onToggleLike: (id: string) => void;
+  onSearch?: (query: string) => void;
   t: any;
 }
 
-// Deterministic ratings
-const getProductRating = (name: string): string => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const ratingVal = 4.6 + (Math.abs(hash) % 4) / 10;
-  return ratingVal.toFixed(1);
-};
-
-// Deterministic delivery
-const getProductDelivery = (category: string): string => {
-  if (category.toLowerCase().includes('phone') || category.toLowerCase().includes('tablet')) {
-    return 'Same-Day Dispatch';
-  }
-  if (category.toLowerCase().includes('computer') || category.toLowerCase().includes('laptop')) {
-    return '24hr Handover';
-  }
-  return 'Immediate Dispatch';
-};
-
-const getProductStockText = (stock: number | undefined): string => {
-  const stockNum = stock !== undefined ? stock : 12;
-  if (stockNum === 0) return 'Sold Out';
-  return `${stockNum} Units Available`;
-};
-
-const getCategoryIcon = (cat: string) => {
-  const norm = cat.toLowerCase();
-  if (norm.includes('phone') || norm.includes('tablet')) return <Smartphone size={13} className="text-zinc-400 shrink-0" />;
-  if (norm.includes('computer') || norm.includes('laptop')) return <Laptop size={13} className="text-zinc-400 shrink-0" />;
-  if (norm.includes('gaming') || norm.includes('console')) return <Gamepad2 size={13} className="text-zinc-400 shrink-0" />;
-  if (norm.includes('tv') || norm.includes('audio')) return <Headphones size={13} className="text-zinc-400 shrink-0" />;
-  return <Sparkles size={13} className="text-zinc-400 shrink-0" />;
-};
+// WhatsApp icon SVG component helper
+const WhatsAppIcon = ({ size = 12, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    style={{ width: size, height: size }} 
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M17.472 14.382c-.022-.008-.115-.062-.272-.14-.08-.041-.268-.137-.358-.183-.09-.045-.155-.068-.22.031-.064.098-.25.314-.306.377-.056.062-.112.07-.22.031-.088-.044-.361-.133-.687-.424-.253-.226-.425-.506-.475-.591-.05-.084-.005-.13.038-.172.039-.038.08-.098.12-.147.04-.05.053-.085.08-.142.027-.057.013-.109-.007-.15-.02-.04-.155-.375-.213-.513-.057-.138-.114-.12-.156-.12-.04-.002-.087-.003-.135-.003-.048 0-.127.018-.193.088-.066.07-.254.248-.254.604 0 .357.259.702.295.751.036.049.51.777 1.235 1.09.173.074.308.118.414.152.173.055.33.047.454.028.138-.02 2.802-1.146 2.802-1.146.036-.046.072-.102.102-.156s.013-.105.007-.15-.022-.06-.051-.085zm-5.419 6.203h-.004a8.194 8.194 0 01-4.18-1.148l-.3-.178-3.1 1.018a.333.333 0 01-.42-.42l1.018-3.1-.178-.3a8.194 8.194 0 01-1.148-4.18C3.12 6.551 7.11 2.561 12 2.561c4.89 0 8.879 3.99 8.879 8.88 0 4.89-3.99 8.879-8.88 8.879l.063-.057zm0-16.791c-5.46 0-9.897 4.437-9.897 9.897 0 1.761.461 3.473 1.336 4.981l-.06-.102-1.42 4.33a.333.333 0 00.419.42l4.33-1.42.1.06a9.897 9.897 0 004.981 1.335h.001c5.46 0 9.897-4.437 9.897-9.897 0-5.46-4.437-9.897-9.897-9.897z" />
+  </svg>
+);
 
 export function HomeHero({ 
   products, 
@@ -79,10 +59,41 @@ export function HomeHero({
   onToggleWishlist,
   isItemLiked,
   onToggleLike,
+  onSearch,
   t 
 }: HomeHeroProps) {
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
   const [activeShowcaseIdx, setActiveShowcaseIdx] = useState(0);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+  
+  // Clean continuous ticking countdown timer state
+  const [timeLeft, setTimeLeft] = useState({ hrs: '03', mins: '44', secs: '19' });
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+      const diffMs = endOfToday.getTime() - now.getTime();
+      
+      const totalSecs = Math.max(0, Math.floor(diffMs / 1000));
+      const hours = Math.floor(totalSecs / 3600);
+      const minutes = Math.floor((totalSecs % 3600) / 60);
+      const seconds = totalSecs % 60;
+      
+      setTimeLeft({
+        hrs: hours.toString().padStart(2, '0'),
+        mins: minutes.toString().padStart(2, '0'),
+        secs: seconds.toString().padStart(2, '0')
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Synchronize dynamic updates to search box state
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
 
   useEffect(() => {
     try {
@@ -97,141 +108,157 @@ export function HomeHero({
     if (!recentlyViewedIds.length || !products.length) return [];
     return recentlyViewedIds
       .map(id => products.find(p => p.id === id))
-      .filter((p): p is Product => !!p);
+      .filter((p): p is Product => !!p)
+      .slice(0, 4);
   }, [recentlyViewedIds, products]);
 
-  // Premium flagship items for Apple-style presentation carousel on the right side
+  // Premium flagship items representing different sectors for the rotating display slider
   const premiumShowcase = useMemo(() => {
     if (!products.length) return [];
-    // Prioritize high-end smartphones, computers, watches
-    const score = (p: Product) => {
-      const name = p.name.toLowerCase();
-      if (name.includes('iphone') || name.includes('macbook') || name.includes('watch') || name.includes('ultra') || name.includes('pro')) return 10;
-      if (p.featured) return 5;
-      return 1;
-    };
-    return [...products].sort((a, b) => score(b) - score(a)).slice(0, 4);
+    // Carefully select a balanced matrix representing Smartphones, Laptops, Smartwatches, Earbuds
+    const smartphones = products.filter(p => p.category.toLowerCase().includes('phone') || p.name.toLowerCase().includes('galaxy') || p.name.toLowerCase().includes('iphone'));
+    const laptops = products.filter(p => p.category.toLowerCase().includes('laptop') || p.category.toLowerCase().includes('computer'));
+    const earbuds = products.filter(p => p.category.toLowerCase().includes('audio') || p.name.toLowerCase().includes('airpods') || p.name.toLowerCase().includes('headphone') || p.name.toLowerCase().includes('sony'));
+    const otherFeatured = products.filter(p => p.featured || p.rating && p.rating >= 4.8);
+
+    const items: Product[] = [];
+    if (smartphones[0]) items.push(smartphones[0]);
+    if (laptops[0]) items.push(laptops[0]);
+    if (earbuds[0]) items.push(earbuds[0]);
+    if (otherFeatured[1]) items.push(otherFeatured[1]);
+
+    // Fallback if not populated
+    return items.length >= 2 ? items : products.slice(0, 4);
   }, [products]);
 
-  // Auto-rotate the featured right showcase product
+  // Auto-rotate the featured right showcase product slowly
   useEffect(() => {
     if (premiumShowcase.length < 2) return;
     const interval = setInterval(() => {
       setActiveShowcaseIdx(prev => (prev + 1) % premiumShowcase.length);
-    }, 6000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [premiumShowcase]);
 
   const activeShowcaseProduct = premiumShowcase[activeShowcaseIdx];
 
-  return (
-    <div className="space-y-20 pb-32 bg-[#000000] text-white overflow-hidden relative">
-      {/* Cinematic ambient radial flares - Apple style luxury lens */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-blue-500/[0.04] via-transparent to-transparent blur-[160px] pointer-events-none" />
-      <div className="absolute top-[15%] left-[-10%] w-[600px] h-[600px] bg-indigo-600/[0.015] blur-[200px] rounded-full pointer-events-none" />
-      <div className="absolute top-[35%] right-[-10%] w-[600px] h-[600px] bg-sky-500/[0.015] blur-[220px] rounded-full pointer-events-none" />
+  // Map out Today's Deals to build a gorgeous Bento Grid layout
+  const todayDeals = useMemo(() => {
+    if (!products.length) return [];
+    // Ensure we pick highly compelling products for deals
+    return [...products]
+      .sort((a, b) => (b.rating || 5) - (a.rating || 5))
+      .slice(0, 3);
+  }, [products]);
 
-      {/* 1. HERO ARCHITECTURAL STAGE */}
-      <section className="relative pt-20 md:pt-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+  const handlePopularSearch = (term: string) => {
+    setLocalSearch(term);
+    onSearch?.(term);
+    document.getElementById('tech-portfolio')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const clearSearch = () => {
+    setLocalSearch('');
+    onSearch?.('');
+  };
+
+  return (
+    <div className="space-y-24 pb-32 bg-[#03030c] text-white overflow-hidden relative">
+      {/* Background aesthetic glow grids */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-blue-500/[0.04] via-transparent to-transparent blur-[160px] pointer-events-none" />
+      <div className="absolute top-[12%] left-[-10%] w-[550px] h-[550px] bg-blue-600/[0.02] blur-[180px] rounded-full pointer-events-none" />
+      <div className="absolute top-[28%] right-[-10%] w-[550px] h-[550px] bg-indigo-500/[0.02] blur-[180px] rounded-full pointer-events-none" />
+
+      {/* 1. HERO SECTION REDESIGN */}
+      <section className="relative pt-24 md:pt-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
-          {/* LEFT WRITER COLUMN (Occupies 35% on large screens) */}
-          <div className="lg:col-span-5 text-left space-y-8">
-            {/* Apple-style minimalist indicator */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-900/40 border border-zinc-800/60 rounded-full backdrop-blur-xl">
-              <span className="flex h-1.5 w-1.5 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+          {/* LEFT COLUMN: Clean typography hierarchy (35% focus) */}
+          <div className="lg:col-span-5 text-left space-y-7 xl:pr-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
               </span>
-              <span className="text-[9px] font-mono font-bold tracking-widest text-zinc-400 uppercase">
-                Lira Central Hub • In Stock
+              <span className="text-[9px] font-mono font-bold tracking-widest text-blue-400 uppercase">
+                Uganda's Premier Tech Vault
               </span>
             </div>
 
-            {/* Headline: Maximum 6 words */}
-            <h1 className="text-4xl sm:text-5xl lg:text-4xl xl:text-5xl font-display font-medium tracking-tight text-white leading-[1.08]">
-              Premium Sealed Electronics.<br />
+            {/* Title is strictly 6 words maximum */}
+            <h1 className="text-4xl sm:text-5xl lg:text-4xl xl:text-5.5xl font-display font-medium tracking-tight text-white leading-[1.05]">
+              Genuine Sealed Electronics.<br />
               Delivered Direct.
             </h1>
 
-            {/* Subheadline: Maximum 12 words */}
+            {/* Value Proposition is exactly 1 clean line in standard body */}
             <p className="text-zinc-400 text-sm md:text-base leading-relaxed font-sans font-medium max-w-md">
-              Authentic devices with physical 1-year guarantee shipped straight to Lira hubs.
+              Enjoy brand-new authentic products backed by physical warranties and local support desks.
             </p>
 
-            {/* One primary CTA only */}
-            <div className="flex pt-2">
+            <div className="flex pt-2 gap-4">
               <button
                 onClick={() => {
-                  document.getElementById('tech-portfolio')?.scrollIntoView({ behavior: 'smooth' });
+                  document.getElementById('todays-deals-zone')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="group px-8 py-4 bg-white hover:bg-neutral-100 text-black font-semibold text-xs font-mono tracking-widest rounded-full active:scale-95 transition-all text-center flex items-center justify-center gap-3.5 shadow-2xl cursor-pointer"
+                className="group px-7 py-3.5 bg-white hover:bg-neutral-100 text-black font-semibold text-xs font-mono tracking-widest rounded-full active:scale-95 transition-all text-center flex items-center justify-center gap-2.5 shadow-xl cursor-pointer"
               >
-                DISCOVER THE PORTFOLIO
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform text-black" />
+                EXPLORE DEALS
+                <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform text-black" />
               </button>
-            </div>
-
-            {/* Compact Platform Badges */}
-            <div className="pt-4 border-t border-zinc-900/60 flex items-center gap-3">
-              <span className="text-[9px] font-mono font-bold tracking-wider text-zinc-500 uppercase">Showcase Features:</span>
-              <div className="flex items-center gap-1.5">
-                <span className="px-2 py-1 bg-blue-500/5 border border-blue-500/20 text-blue-400 text-[8px] font-mono font-bold rounded-lg uppercase">Direct Quote</span>
-                <span className="px-2 py-1 bg-purple-500/5 border border-purple-500/20 text-purple-400 text-[8px] font-mono font-bold rounded-lg uppercase">Showroom Lira</span>
-              </div>
             </div>
           </div>
 
-          {/* RIGHT PRODUCT SHOWCASE (Occupies 65% - 70-80% visual attention) */}
-          <div className="lg:col-span-7 relative h-[450px] sm:h-[520px] flex items-center justify-center">
+          {/* RIGHT COLUMN: Large Interactive Slider (65% focus, occupies 70-80% visual focal weight) */}
+          <div className="lg:col-span-7 relative h-[440px] sm:h-[500px] flex items-center justify-center">
             
-            {/* Ambient Background Glow behind product */}
-            <div className="absolute inset-0 bg-radial-gradient from-blue-600/[0.05] to-transparent blur-3xl pointer-events-none" />
+            {/* Visual background platform */}
+            <div className="absolute inset-0 bg-radial-gradient from-blue-600/[0.04] to-transparent blur-3xl pointer-events-none" />
 
             <AnimatePresence mode="wait">
               {activeShowcaseProduct && (
                 <motion.div
                   key={activeShowcaseProduct.id}
-                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  initial={{ opacity: 0, scale: 0.96, y: 12 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 1.05, y: -15 }}
-                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  onClick={() => onProductClick(activeShowcaseProduct)}
-                  className="relative w-full max-w-sm aspect-square bg-[#0c0c0f]/80 border border-zinc-900 rounded-[3rem] p-8 flex flex-col items-center justify-between shadow-[0_25px_60px_rgba(0,0,0,0.8)] cursor-pointer group focus:outline-none"
+                  exit={{ opacity: 0, scale: 1.04, y: -12 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  onClick={() => onQuickView(activeShowcaseProduct)}
+                  className="relative w-full max-w-md aspect-square bg-[#08090d]/85 border border-white/[0.04] hover:border-blue-500/30 rounded-[2.75rem] p-8 flex flex-col items-center justify-between shadow-[0_30px_70px_rgba(0,0,0,0.7)] cursor-pointer group select-none"
                 >
-                  {/* Subtle inner glass highlight */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent rounded-[3rem] pointer-events-none" />
+                  {/* Glowing halo glass shadow */}
+                  <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.015] to-transparent pointer-events-none rounded-t-[2.75rem]" />
 
                   {/* Top Flagship row */}
                   <div className="w-full flex justify-between items-center z-10">
-                    <span className="px-3 py-1 bg-white/[0.02] border border-white/[0.04] rounded-full text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
+                    <span className="px-2.5 py-1 bg-white/[0.03] border border-white/[0.06] rounded-full text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
                       {activeShowcaseProduct.category}
                     </span>
-                    <span className="flex items-center gap-0.5 text-yellow-500 text-[10px] font-mono font-black">
-                      <Star size={11} fill="currentColor" /> {getProductRating(activeShowcaseProduct.name)}
+                    <span className="flex items-center gap-1 text-amber-400 text-[10px] font-mono font-bold">
+                      <Star size={11} className="fill-amber-400 text-amber-400" /> RECOMMENDED
                     </span>
                   </div>
 
-                  {/* Huge floating central product visual (Highly responsive and interactive) */}
+                  {/* Large floating display representing devices */}
                   <motion.div 
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-                    className="relative w-[75%] h-[60%] flex items-center justify-center my-4"
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ repeat: Infinity, duration: 5.5, ease: "easeInOut" }}
+                    className="relative w-[75%] h-[55%] flex items-center justify-center my-2"
                   >
                     <img 
                       src={activeShowcaseProduct.image} 
                       alt={activeShowcaseProduct.name} 
-                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_20px_45px_rgba(37,99,235,0.22)] select-none transform group-hover:scale-105 transition-transform duration-700"
+                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_25px_40px_rgba(59,130,246,0.18)] transform group-hover:scale-[1.03] transition-transform duration-700"
                       referrerPolicy="no-referrer"
                     />
                   </motion.div>
 
-                  {/* Showcase Product Details */}
-                  <div className="w-full text-center space-y-1.5 z-10">
-                    <h3 className="text-base sm:text-lg font-display font-medium text-white group-hover:text-blue-400 transition-colors tracking-tight line-clamp-1">
+                  {/* Showcase Product details */}
+                  <div className="w-full text-center space-y-1 z-10 bg-black/20 p-3 rounded-2xl border border-white/[0.02]">
+                    <h3 className="text-sm sm:text-base font-display font-medium text-white group-hover:text-blue-400 transition-colors tracking-tight line-clamp-1">
                       {activeShowcaseProduct.name}
                     </h3>
-                    <p className="text-xs sm:text-sm font-mono text-zinc-400">
+                    <p className="text-xs font-mono font-bold text-blue-400">
                       UGX {activeShowcaseProduct.price.toLocaleString()}
                     </p>
                   </div>
@@ -239,79 +266,64 @@ export function HomeHero({
               )}
             </AnimatePresence>
 
-            {/* SUBTLE FLOATING INFO CARDS (Absolutely positioned, floating around the center product) */}
-            {/* 1. Fast Delivery */}
-            <motion.div 
-              animate={{ y: [0, -6, 0] }}
-              transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut", delay: 0.2 }}
-              className="absolute -top-4 -left-2 sm:-left-6 p-3.5 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/70 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-none select-none max-w-[170px]"
-            >
-              <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
-                <Truck size={14} />
-              </div>
-              <div className="text-left">
-                <h4 className="text-[10.5px] font-bold text-white leading-none">Fast Delivery</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">24hr Region Transit</p>
-              </div>
-            </motion.div>
-
-            {/* 2. Showroom Location */}
-            <motion.div 
-              animate={{ y: [0, 6, 0] }}
-              transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.8 }}
-              className="absolute top-1/2 -left-6 sm:-left-12 p-3.5 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/70 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-none select-none max-w-[180px]"
-            >
-              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
-                <MapPin size={14} />
-              </div>
-              <div className="text-left">
-                <h4 className="text-[10.5px] font-bold text-white leading-none">Premium Showroom</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">Lira City, Uganda</p>
-              </div>
-            </motion.div>
-
-            {/* 3. Direct Sourcing */}
-            <motion.div 
-              animate={{ y: [0, -8, 0] }}
-              transition={{ repeat: Infinity, duration: 5.2, ease: "easeInOut", delay: 1.4 }}
-              className="absolute top-[40%] -right-6 sm:-right-8 p-3.5 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/70 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-none select-none max-w-[180px]"
-            >
-              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
-                <Cpu size={14} />
-              </div>
-              <div className="text-left">
-                <h4 className="text-[10.5px] font-bold text-white leading-none">Direct Sourcing</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">On-Demand Requests</p>
-              </div>
-            </motion.div>
-
-            {/* 4. Instant Quote Desk */}
-            <motion.div 
-              animate={{ y: [0, 8, 0] }}
-              transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 0.5 }}
-              className="absolute -bottom-4 left-1/4 p-3.5 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/70 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-none select-none max-w-[170px]"
-            >
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-                <CheckCircle2 size={14} />
-              </div>
-              <div className="text-left">
-                <h4 className="text-[10.5px] font-bold text-white leading-none">WhatsApp Desk</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">Instant Advice</p>
-              </div>
-            </motion.div>
-
-            {/* 5. Authentic Products */}
+            {/* FLOATING TRUST BADGES: Strictly formatted with custom gravity effects for spatial depth */}
+            {/* 1. Genuine Electronics */}
             <motion.div 
               animate={{ y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", delay: 1.1 }}
-              className="absolute bottom-12 -right-4 sm:-right-10 p-3.5 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/70 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-none select-none max-w-[170px]"
+              transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 0.1 }}
+              className="absolute -top-3 left-0 sm:-left-4 p-3 bg-zinc-950/90 backdrop-blur-xl border border-white/[0.04] rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none select-none max-w-[170px]"
             >
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
                 <ShieldCheck size={14} />
               </div>
               <div className="text-left">
-                <h4 className="text-[10.5px] font-bold text-white leading-none">Authentic Tech</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-0.5 whitespace-nowrap">1-Year Sealed Warranty</p>
+                <h4 className="text-[10px] font-bold text-white leading-none">Genuine Electronics</h4>
+                <p className="text-[8px] font-mono text-zinc-500 mt-1 whitespace-nowrap">Official Guarantee</p>
+              </div>
+            </motion.div>
+
+            {/* 2. Fast Delivery */}
+            <motion.div 
+              animate={{ y: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 4.4, ease: "easeInOut", delay: 0.8 }}
+              className="absolute top-1/2 -left-6 sm:-left-10 p-3 bg-zinc-950/90 backdrop-blur-xl border border-white/[0.04] rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none select-none max-w-[170px]"
+            >
+              <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
+                <Truck size={14} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-[10px] font-bold text-white leading-none">Fast Delivery</h4>
+                <p className="text-[8px] font-mono text-zinc-500 mt-1 whitespace-nowrap">Reliable Transit</p>
+              </div>
+            </motion.div>
+
+            {/* 3. WhatsApp Support */}
+            <motion.div 
+              animate={{ y: [0, -6, 0] }}
+              transition={{ repeat: Infinity, duration: 5.2, ease: "easeInOut", delay: 1.5 }}
+              className="absolute top-[35%] -right-4 sm:-right-8 p-3 bg-zinc-950/90 backdrop-blur-xl border border-white/[0.04] rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none select-none max-w-[170px]"
+            >
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <WhatsAppIcon size={14} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-[10px] font-bold text-white leading-none">WhatsApp Support</h4>
+                <p className="text-[8px] font-mono text-zinc-500 mt-1 whitespace-nowrap">Instant Catalog Advice</p>
+              </div>
+            </motion.div>
+
+            {/* 4. Secure Shopping */}
+            <motion.div 
+              animate={{ y: [0, 6, 0] }}
+              transition={{ repeat: Infinity, duration: 4.6, ease: "easeInOut", delay: 0.5 }}
+              className="absolute -bottom-4 right-1/4 p-3 bg-zinc-950/90 backdrop-blur-xl border border-white/[0.04] rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none select-none max-w-[170px]"
+            >
+              <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                <ShieldCheck size={14} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-[10px] font-bold text-white leading-none">Secure Shopping</h4>
+                <p className="text-[8px] font-mono text-zinc-500 mt-1 whitespace-nowrap">Receipt Proof Verified</p>
               </div>
             </motion.div>
 
@@ -319,35 +331,396 @@ export function HomeHero({
         </div>
       </section>
 
-      {/* 2. DYNAMIC SHIELD SECTION: SECTOR CATEGORY TABS */}
-      <section id="tech-portfolio" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-10 scroll-mt-24">
-        
-        {/* Category Header with Clean Apple aesthetic styling */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-zinc-900 pb-4 mb-8 gap-4 text-left">
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-500 uppercase">INVENTORY FEED</span>
+      {/* 2. DEAL ZONE SECTION (TODAY'S DEALS BENTO GRID) */}
+      <section id="todays-deals-zone" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
+        {/* Deal Zone Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/[0.06] pb-5 mb-8 gap-6 text-left">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="p-1 px-2.5 bg-rose-500 text-white font-mono font-bold text-[8.5px] uppercase tracking-widest rounded-full leading-none flex items-center gap-1 animate-pulse">
+                <Sparkle size={8} fill="currentColor" /> HOT OFFERS
+              </span>
+              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">DEAL ZONE</span>
+            </div>
             <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight">
-              {category ? `${category}` : "Explore the Portfolio"}
+              Today's Super Deals
             </h2>
           </div>
 
-          {/* Micro active count */}
-          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950 border border-zinc-900 px-3 py-1 rounded-full flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+          {/* Golden Urgency Timer */}
+          <div className="flex items-center gap-3 bg-[#0d0e14] border border-white/[0.04] p-3 rounded-2.5xl px-5 shadow-inner">
+            <Clock className="text-rose-500 animate-pulse shrink-0" size={14} />
+            <span className="text-[10px] font-mono uppercase font-bold text-zinc-400 tracking-wider">OFFERS EXPIRE:</span>
+            <div className="flex items-center gap-1.5 font-mono text-xs text-white">
+              <span className="bg-rose-500 text-white px-2.5 py-1.5 rounded-lg font-black min-w-[32px] text-center">{timeLeft.hrs}</span>
+              <span className="text-rose-500 font-bold">:</span>
+              <span className="bg-rose-500 text-white px-2.5 py-1.5 rounded-lg font-black min-w-[32px] text-center">{timeLeft.mins}</span>
+              <span className="text-rose-500 font-bold">:</span>
+              <span className="bg-rose-500 text-white px-2.5 py-1.5 rounded-lg font-black min-w-[32px] text-center animate-pulse">{timeLeft.secs}</span>
+            </div>
+          </div>
+        </div>
+
+        {todayDeals.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Bento Grid: Left Giant Featured Deal (7 columns) */}
+            {todayDeals[0] && (() => {
+              const item = todayDeals[0];
+              const multiplier = item.id === 'p1' ? 1.18 : 1.15;
+              const originalPrice = Math.round((item.price * multiplier) / 10000) * 10000;
+              const discountPercentage = Math.round((1 - (item.price / originalPrice)) * 100);
+              const savingsAmount = originalPrice - item.price;
+              
+              return (
+                <div 
+                  onClick={() => onProductClick(item)}
+                  className="lg:col-span-7 relative bg-[#090a10] border border-white/[0.04] hover:border-blue-500/40 rounded-[2.5rem] p-6 sm:p-9 flex flex-col md:flex-row justify-between gap-8 shadow-2xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] cursor-pointer group select-none"
+                >
+                  {/* Glowing halo glass shadow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] to-transparent pointer-events-none rounded-[2.5rem]" />
+                  
+                  {/* Top-left promo badge */}
+                  <div className="absolute top-5 left-5 z-20">
+                    <span className="px-3.5 py-1.5 bg-rose-600 text-white text-[10px] font-mono font-bold tracking-tight rounded-full uppercase shadow-lg shadow-rose-900/30 flex items-center gap-1.5">
+                      <Zap size={10} fill="white" /> FEATURED DEAL
+                    </span>
+                  </div>
+
+                  {/* Product graphic spot */}
+                  <div className="w-full md:w-[45%] h-56 md:h-full flex items-center justify-center relative bg-foreground/[0.015] rounded-3xl p-4">
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_20px_40px_rgba(255,255,255,0.05)] transform group-hover:scale-[1.04] transition-transform duration-700"
+                    />
+                  </div>
+
+                  {/* Text details and conversions */}
+                  <div className="w-full md:w-[55%] flex flex-col justify-between text-left space-y-6 pt-1">
+                    <div className="space-y-3">
+                      <span className="px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-mono font-bold rounded-lg uppercase tracking-widest leading-none self-start">
+                        {item.category}
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-display font-medium text-white group-hover:text-blue-400 transition-colors leading-snug">
+                        {item.name}
+                      </h3>
+                      <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    {/* Stock depletion urgency meter */}
+                    <div className="space-y-1.5 bg-zinc-950/40 p-3 rounded-2xl border border-white/[0.02]">
+                      <div className="flex justify-between items-center text-[8.5px] font-mono font-bold uppercase tracking-wider">
+                        <span className="text-rose-500 flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping inline-block" />
+                          Hurry! Only 3 Units Left
+                        </span>
+                        <span className="text-zinc-500">DEAL PROGRESS</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-rose-500 to-orange-500 rounded-full" style={{ width: '25%' }} />
+                      </div>
+                    </div>
+
+                    {/* Highly Compelling Price calculations inside deep box */}
+                    <div className="p-4 bg-[#0d0e15] border border-white/[0.02] rounded-2.5xl flex flex-col justify-center gap-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl sm:text-2xl font-mono font-black text-rose-500">
+                          UGX {item.price.toLocaleString()}
+                        </span>
+                        <span className="text-xs font-mono font-medium text-zinc-500 line-through">
+                          UGX {originalPrice.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-mono font-semibold">
+                        <span className="text-emerald-400">SAVE UGX {savingsAmount.toLocaleString()}</span>
+                        <span className="text-emerald-400 tracking-tight">(-{discountPercentage}% OFF)</span>
+                      </div>
+                    </div>
+
+                    {/* Instant purchasing CTAs */}
+                    <div className="grid grid-cols-2 gap-2.5 pt-1">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddToCart(item);
+                        }}
+                        className="py-3 bg-white hover:bg-neutral-100 text-black font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-white/5 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                      >
+                        <ShoppingBag size={11} />
+                        Get Deal
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const message = `Halo Solo Electronics, I would like to lock in this Daily Super Deal: *${item.name}* (UGX ${item.price.toLocaleString()}). Is it still available at this promo-rate?`;
+                          window.open(`https://wa.me/256793405517?text=${encodeURIComponent(message)}`, '_blank');
+                        }}
+                        className="py-3 bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                      >
+                        <WhatsAppIcon size={11} />
+                        WhatsApp Buy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Bento Grid: Right Column containing 2 Supporting Deals (5 columns) */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
+              {todayDeals.slice(1, 3).map((item) => {
+                const multiplier = item.id === 'p3' ? 1.15 : 1.12;
+                const originalPrice = Math.round((item.price * multiplier) / 10000) * 10000;
+                const discountPercentage = Math.round((1 - (item.price / originalPrice)) * 100);
+                const savingsAmount = originalPrice - item.price;
+                
+                return (
+                  <div 
+                    key={`bento-sub-${item.id}`}
+                    onClick={() => onProductClick(item)}
+                    className="relative flex bg-[#090a10] border border-white/[0.04] hover:border-blue-500/35 rounded-3xl p-4 sm:p-5 gap-5 shadow-xl transition-all duration-300 hover:shadow-[0_15px_30px_rgba(59,130,246,0.06)] cursor-pointer group flex-1 items-center select-none"
+                  >
+                    {/* Glowing percentage disk */}
+                    <div className="absolute top-3 space-y-1 left-3 z-10 flex flex-col">
+                      <span className="px-2.5 py-1 bg-rose-600 text-white text-[8px] font-mono font-bold rounded-full uppercase leading-none shadow-md">
+                        -{discountPercentage}%
+                      </span>
+                    </div>
+
+                    <div className="w-[30%] h-28 flex items-center justify-center bg-foreground/[0.01] rounded-2xl p-2 shrink-0">
+                      <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        className="max-h-full max-w-full object-contain filter drop-shadow-[0_10px_20px_rgba(255,255,255,0.03)] transform group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+
+                    <div className="w-[70%] text-left space-y-2.5 flex flex-col justify-center">
+                      <div>
+                        <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest">{item.category}</span>
+                        <h3 className="text-sm font-display font-medium text-white group-hover:text-blue-400 transition-colors line-clamp-1">
+                          {item.name}
+                        </h3>
+                      </div>
+
+                      {/* Micro stock indicator */}
+                      <span className="text-[8px] font-mono font-black text-orange-400 uppercase tracking-wider block">
+                        ⚡ Limited Stock Left
+                      </span>
+
+                      {/* Pricing block */}
+                      <div className="border-t border-white/[0.03] pt-1.5 flex flex-col">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xs sm:text-sm font-mono font-black text-rose-500 whitespace-nowrap">
+                            UGX {item.price.toLocaleString()}
+                          </span>
+                          <span className="text-[9.5px] font-mono font-medium text-zinc-500 line-through whitespace-nowrap">
+                            UGX {originalPrice.toLocaleString()}
+                          </span>
+                        </div>
+                        <span className="text-[8px] font-mono font-semibold text-emerald-400 uppercase mt-0.5 whitespace-nowrap">
+                          Save UGX {savingsAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        ) : (
+          <div className="py-12 text-center bg-[#07080c] border border-white/[0.04] rounded-3xl text-zinc-500 text-xs font-mono tracking-widest uppercase">
+            Recalibrating high-yield promo catalog...
+          </div>
+        )}
+      </section>
+
+      {/* 3. TRUST & CREDIBILITY SYSTEM */}
+      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
+        <div className="border-b border-white/[0.06] pb-4 mb-8 text-left space-y-1">
+          <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-500 uppercase">WARRANTY & TRUST SYSTEMS</span>
+          <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight">Why Smart Buyers Choose Solo Electronics</h2>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 text-left">
+          {[
+            {
+              title: "Genuine Products",
+              desc: "100% brand brand-original warranty protection.",
+              badge: "BRAND GENUINE",
+              icon: ShieldCheck,
+              color: "text-blue-400",
+              bgColor: "bg-blue-500/5",
+              borderColor: "border-blue-500/10"
+            },
+            {
+              title: "Verified Electronics",
+              desc: "Sealed, tested and inspected before dispatch.",
+              badge: "BENCHMARK INSPECTED",
+              icon: CheckCircle2,
+              color: "text-emerald-400",
+              bgColor: "bg-emerald-500/5",
+              borderColor: "border-emerald-500/10"
+            },
+            {
+              title: "Secure Checkout",
+              desc: "Instant digital receipts & escrow tracking.",
+              badge: "ESCROW PLATFORM",
+              icon: Shield,
+              color: "text-indigo-400",
+              bgColor: "bg-indigo-500/5",
+              borderColor: "border-indigo-500/10"
+            },
+            {
+              title: "WhatsApp Support",
+              desc: "Direct 24/7 hotline to Solo's Lira desk owners.",
+              badge: "LIVE ENGAGEMENT",
+              icon: WhatsAppIcon,
+              color: "text-teal-400",
+              bgColor: "bg-teal-500/5",
+              borderColor: "border-teal-500/10"
+            },
+            {
+              title: "Physical Location",
+              desc: "Physical warehouse showroom on Main Road, Lira.",
+              badge: "VISIT SHOWROOM",
+              icon: MapPin,
+              color: "text-orange-400",
+              bgColor: "bg-orange-500/5",
+              borderColor: "border-orange-500/10"
+            },
+            {
+              title: "Setup Assistance",
+              desc: "Direct post-purchase troubleshooting help.",
+              badge: "ON-DEMAND REPAIR",
+              icon: HelpCircle,
+              color: "text-pink-400",
+              bgColor: "bg-pink-500/5",
+              borderColor: "border-pink-500/10"
+            }
+          ].map((item, idx) => {
+            const IconComponent = item.icon;
+            return (
+              <motion.div
+                key={`trust-${idx}`}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                className={cn(
+                  "p-5 rounded-2.5xl border bg-[#08090d]/80 backdrop-blur-xl flex flex-col justify-between h-56 transition-all duration-300 shadow-md",
+                  item.borderColor
+                )}
+              >
+                <div className="space-y-4">
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/[0.02]", item.bgColor, item.color)}>
+                    <IconComponent size={18} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs sm:text-sm font-display font-medium text-white line-clamp-1">{item.title}</h3>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">{item.desc}</p>
+                  </div>
+                </div>
+                <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest block font-bold pt-2 border-t border-white/[0.02]">{item.badge}</span>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 4. SEARCH & DISCOVERY UPGRADE */}
+      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
+        <div className="bg-[#08090e]/95 border border-white/[0.05] rounded-[3rem] p-6 sm:p-10 shadow-2xl relative text-left">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/[0.01] to-purple-600/[0.01] pointer-events-none rounded-[3rem]" />
+          
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="space-y-1 text-center">
+              <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-blue-400 uppercase">SECURE SEARCH PLATFORM</span>
+              <h2 className="text-xl sm:text-2xl font-display font-medium text-white tracking-tight">Looking for something specific?</h2>
+              <p className="text-zinc-500 text-[11px]">Instant live matching across our verified Lira warehouses & direct brand imports</p>
+            </div>
+
+            {/* Immersive high contrast search input bar */}
+            <div className="relative group/search">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within/search:text-blue-400 transition-colors" size={18} />
+              <input
+                type="text"
+                value={localSearch}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setLocalSearch(val);
+                  onSearch?.(val);
+                }}
+                placeholder="Search smart devices, laptops, sound systems, accessories..."
+                className="w-full bg-black/60 border border-white/[0.06] rounded-2.5xl py-4.5 pl-14 pr-12 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/40 transition-all font-mono placeholder:text-zinc-500"
+              />
+              {localSearch && (
+                <button 
+                  onClick={clearSearch}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] uppercase font-mono font-bold text-zinc-500 hover:text-white transition-colors bg-white/5 border border-white/5 px-2 py-1 rounded"
+                >
+                  CLEAR
+                </button>
+              )}
+            </div>
+
+            {/* Premium Suggestion & Popular searches Row */}
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <span className="text-[10px] font-mono text-zinc-500 mr-2 uppercase tracking-wide">Popular searches:</span>
+              {[
+                "iPhone",
+                "Samsung",
+                "Infinix",
+                "Tecno",
+                "Laptops",
+                "Smart Watches"
+              ].map((term) => (
+                <button
+                  key={`trend-${term}`}
+                  onClick={() => handlePopularSearch(term)}
+                  className={cn(
+                    "px-3.5 py-1.5 bg-[#12131a] active:scale-95 border rounded-full text-[10px] font-mono transition-all font-bold cursor-pointer",
+                    localSearch.toLowerCase() === term.toLowerCase()
+                      ? "border-blue-400 text-blue-400 bg-blue-500/[0.02]"
+                      : "border-white/[0.04] text-zinc-400 hover:text-white hover:border-zinc-700"
+                  )}
+                >
+                  {term}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. PORTFOLIO & CATEGORIES FEED */}
+      <section id="tech-portfolio" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24">
+        
+        {/* Dynamic header display */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/[0.06] pb-4 mb-8 gap-4 text-left">
+          <div className="space-y-1.5">
+            <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-500 uppercase">DIRECT TECH CATALOG</span>
+            <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight">
+              {category ? `${category}` : "Browse the Showroom"}
+            </h2>
+          </div>
+
+          <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950/80 border border-white/[0.04] px-3 py-1 rounded-full flex items-center gap-1.5 shrink-0 self-start sm:self-auto select-none">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             {category ? `${filteredProducts.length} Items Locked` : `${products.length} Units Online`}
           </span>
         </div>
 
-        {/* Dynamic Category Selector */}
-        <div className="mb-10 flex overflow-x-auto no-scrollbar gap-2.5 pb-2.5 border-b border-zinc-900/40 text-left">
-          {/* All Sector block tag */}
+        {/* Dynamic Category selectors */}
+        <div className="mb-10 flex overflow-x-auto no-scrollbar gap-2.5 pb-2.5 border-b border-white/[0.03] text-left">
           <button
             onClick={() => onCategorySelect(null)}
             className={cn(
-              "relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all text-xs font-medium tracking-wide shrink-0 border",
+              "relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all text-xs font-mono font-bold uppercase tracking-wider shrink-0 border cursor-pointer",
               category === null
                 ? "bg-white text-black border-transparent shadow-lg shadow-white/5 font-semibold"
-                : "bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                : "bg-transparent border-white/[0.04] text-zinc-400 hover:text-white hover:border-zinc-700"
             )}
           >
             <Compass size={13} />
@@ -361,10 +734,10 @@ export function HomeHero({
                 key={cat}
                 onClick={() => onCategorySelect(cat)}
                 className={cn(
-                  "relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all text-xs font-medium tracking-wide shrink-0 border",
+                  "relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all text-xs font-mono font-bold uppercase tracking-wider shrink-0 border cursor-pointer",
                   isActive
-                    ? "bg-white text-black border-transparent shadow-lg shadow-white/5 font-semibold"
-                    : "bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                    ? "bg-white text-black border-transparent shadow-lg shadow-white/5 font-italic"
+                    : "bg-transparent border-white/[0.04] text-zinc-400 hover:text-white hover:border-zinc-700"
                 )}
               >
                 {getCategoryIcon(cat)}
@@ -374,31 +747,31 @@ export function HomeHero({
           })}
         </div>
 
-        {/* 3. RECENTLY VIEWED CONTAINER */}
+        {/* RECENTLY VIEWED CONTAINER */}
         {category === null && searchQuery === '' && recentlyViewedProducts.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-14 p-6 bg-zinc-950/40 border border-zinc-900 rounded-[2rem] space-y-4 text-left"
+            className="mb-14 p-6 bg-zinc-950/40 border border-white/[0.03] rounded-3xl space-y-4 text-left shadow-lg"
           >
-            <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+            <div className="flex items-center justify-between border-b border-white/[0.02] pb-2">
               <div className="flex items-center gap-2">
                 <Clock size={13} className="text-zinc-500" />
-                <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400">
+                <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
                   Recently Viewed Units
                 </h3>
               </div>
-              <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950/80 border border-zinc-900 px-2 py-0.5 rounded-md">
+              <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950/80 border border-white/[0.02] px-2 py-0.5 rounded-md">
                 {recentlyViewedProducts.length} Cache Logged
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {recentlyViewedProducts.map((item) => (
                 <div
                   key={`rec-${item.id}`}
                   onClick={() => onProductClick(item)}
-                  className="group relative rounded-2xl bg-[#09090b] hover:bg-[#0c0c10] border border-zinc-900/60 p-3 flex flex-col justify-between h-48 transition-all duration-300 cursor-pointer"
+                  className="group relative rounded-2xl bg-[#08080c] hover:bg-[#0c0c12] border border-white/[0.04] p-3 flex flex-col justify-between h-48 transition-all duration-300 cursor-pointer"
                 >
                   <div className="h-20 w-full flex items-center justify-center relative overflow-hidden my-1">
                     <img 
@@ -412,7 +785,7 @@ export function HomeHero({
                     <h4 className="text-[10.5px] font-medium text-white group-hover:text-blue-400 transition-colors truncate">
                       {item.name}
                     </h4>
-                    <span className="text-[9.5px] font-mono text-zinc-500">
+                    <span className="text-[9.5px] font-mono text-zinc-500 font-bold block">
                       UGX {item.price.toLocaleString()}
                     </span>
                   </div>
@@ -422,120 +795,54 @@ export function HomeHero({
           </motion.div>
         )}
 
-        {/* 4. PRIMARY FEED GRID */}
+        {/* FEED GRID USING REDESIGNED PRODUCT CARD */}
         {loadingProducts ? (
           <div className="py-24 flex flex-col items-center justify-center">
-            <Loader2 className="animate-spin text-zinc-500 mb-4" size={36} />
-            <p className="text-[10px] font-mono tracking-widest uppercase text-zinc-500">Syncing database feed...</p>
+            <Loader2 className="animate-spin text-zinc-500 mb-4" size={32} />
+            <p className="text-[10px] font-mono tracking-widest uppercase text-zinc-500">Synchronizing certified tech rates...</p>
           </div>
         ) : (category || searchQuery) && filteredProducts.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="py-20 text-center bg-zinc-950/40 border border-zinc-900 rounded-[2.5rem] relative overflow-hidden"
+            className="py-20 text-center bg-zinc-950/40 border border-white/[0.03] rounded-[2.5rem] relative overflow-hidden"
           >
              <div className="relative z-10 max-w-sm mx-auto space-y-6 px-4">
-              <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center mx-auto text-zinc-400">
+              <div className="w-12 h-12 bg-zinc-900 border border-white/[0.03] rounded-2xl flex items-center justify-center mx-auto text-zinc-400">
                 <AlertCircle size={20} />
               </div>
               <div className="space-y-2">
-                <h3 className="text-base font-display font-medium text-white">No items found</h3>
+                <h3 className="text-base font-display font-medium text-white">No products found</h3>
                 <p className="text-zinc-500 text-xs leading-relaxed max-w-xs mx-auto">
-                  There are currently no products matching your search query or selected sector.
+                  We currently do not have matching units in stock. Refine your query or check back later!
                 </p>
               </div>
               <button 
                 onClick={() => onCategorySelect(null)}
                 className="py-3 px-6 bg-white hover:bg-neutral-100 text-black font-semibold text-xs rounded-full transition-all active:scale-95 cursor-pointer font-mono tracking-wider"
               >
-                RESET SECTORS
+                RESET FILTERS
               </button>
             </div>
           </motion.div>
-        ) : category || searchQuery ? (
+        ) : (category || searchQuery) ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8">
-            {filteredProducts.map((item, idx) => (
-              <motion.div
+            {filteredProducts.map((item) => (
+              <ProductCard
                 key={item.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.02 }}
+                product={item}
+                onAddToCart={onAddToCart}
                 onClick={() => onProductClick(item)}
-                className="group relative rounded-[2rem] bg-[#070709] border border-zinc-900/80 hover:border-zinc-700/60 p-6 flex flex-col justify-between h-[360px] transition-all duration-300 shadow-xl text-left cursor-pointer overflow-hidden"
-              >
-                <div className="flex justify-between items-center z-10 mb-4">
-                  <span className="px-2.5 py-1 bg-white/[0.02] border border-white/[0.04] rounded-full text-[9px] font-mono text-zinc-400 uppercase tracking-widest truncate max-w-[120px]">
-                    {item.category}
-                  </span>
-                  <span className="flex items-center gap-0.5 text-yellow-500 text-[10.5px] font-mono font-black">
-                    <Star size={11} fill="currentColor" /> {getProductRating(item.name)}
-                  </span>
-                </div>
-
-                {/* Highly structured photography spot */}
-                <div className="h-40 w-full flex items-center justify-center relative my-2 overflow-hidden bg-transparent rounded-2xl">
-                  <img 
-                    src={item.image} 
-                    alt={item.name} 
-                    className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_24px_rgba(255,255,255,0.03)] transform transition-transform duration-700 group-hover:scale-105 select-none"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-
-                <div className="space-y-4 z-10 mt-auto">
-                  <div>
-                    <h3 className="text-sm sm:text-base font-display font-medium text-white group-hover:text-blue-400 transition-colors truncate">
-                      {item.name}
-                    </h3>
-                    <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 mt-1 select-none">
-                      <span>{getProductDelivery(item.category)}</span>
-                      <span className="text-emerald-400 font-bold uppercase">{getProductStockText(item.stock)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3.5 border-t border-zinc-900/60 gap-3">
-                    <div className="text-left font-mono">
-                      <span className="text-[7.5px] text-zinc-500 block leading-none uppercase tracking-wider font-bold">UG RATE</span>
-                      <span className="text-xs sm:text-sm font-black text-white whitespace-nowrap">
-                        UGX {item.price.toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleWishlist(item.id);
-                        }}
-                        className={cn(
-                          "p-2 rounded-xl border transition-all active:scale-95 cursor-pointer",
-                          isItemWishlisted(item.id)
-                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                            : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white'
-                        )}
-                        title="Wishlist"
-                      >
-                        <Heart size={11} fill={isItemWishlisted(item.id) ? "currentColor" : "none"} />
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAddToCart(item);
-                        }}
-                        className="py-2 px-3 bg-white hover:bg-neutral-100 text-black text-[10px] font-mono font-bold rounded-xl transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                      >
-                        <span>ADD</span>
-                        <ShoppingBag size={10} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+                onQuickView={onQuickView}
+                isWishlisted={isItemWishlisted(item.id)}
+                onToggleWishlist={onToggleWishlist}
+                isLiked={isItemLiked(item.id)}
+                onToggleLike={onToggleLike}
+              />
             ))}
           </div>
         ) : (
-          // Standard Category blocks
+          // Segmented categorized visual blocks
           groupedMainProducts && !loadingProducts && (
             <div className="space-y-16">
               {Object.entries(groupedMainProducts)
@@ -548,99 +855,34 @@ export function HomeHero({
                   return idxA - idxB;
                 })
                 .map(([cat, catProducts]) => (
-                  <div key={cat} className="space-y-6 text-left">
-                    <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                  <div key={cat} className="space-y-8 text-left">
+                    <div className="flex items-center justify-between border-b border-white/[0.04] pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                        <div className="w-8 h-8 rounded-xl bg-[#09090d] border border-white/[0.04] flex items-center justify-center text-zinc-400">
                           {getCategoryIcon(cat)}
                         </div>
                         <h3 className="text-base sm:text-lg font-display font-medium text-white">
                           {cat}
                         </h3>
                       </div>
-                      <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950 border border-zinc-900 px-3 py-1 rounded-full">
-                        {catProducts.length} Units Available
+                      <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950 border border-white/[0.02] px-3 py-1 rounded-full font-bold">
+                        {catProducts.length} UNITS
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8">
-                      {catProducts.map((item, idx) => (
-                        <motion.div
+                      {catProducts.map((item) => (
+                        <ProductCard
                           key={item.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.01 }}
+                          product={item}
+                          onAddToCart={onAddToCart}
                           onClick={() => onProductClick(item)}
-                          className="group relative rounded-[2rem] bg-[#070709] border border-zinc-900/80 hover:border-zinc-700/60 p-6 flex flex-col justify-between h-[360px] transition-all duration-300 shadow-xl text-left cursor-pointer overflow-hidden animate-reveal"
-                        >
-                          <div className="flex justify-between items-center z-10 mb-4">
-                            <span className="px-2.5 py-1 bg-white/[0.02] border border-white/[0.04] rounded-full text-[9px] font-mono text-zinc-400 uppercase tracking-widest truncate max-w-[120px]">
-                              {cat.split(' ')[0]}
-                            </span>
-                            <span className="flex items-center gap-0.5 text-yellow-500 text-[10.5px] font-mono font-black">
-                              <Star size={11} fill="currentColor" /> {getProductRating(item.name)}
-                            </span>
-                          </div>
-
-                          <div className="h-40 w-full flex items-center justify-center relative my-2 overflow-hidden bg-transparent rounded-2xl">
-                            <img 
-                              src={item.image} 
-                              alt={item.name} 
-                              className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_24px_rgba(255,255,255,0.03)] transform transition-transform duration-700 group-hover:scale-105 select-none"
-                              referrerPolicy="no-referrer"
-                            />
-                          </div>
-
-                          <div className="space-y-4 z-10 mt-auto">
-                            <div>
-                              <h3 className="text-sm sm:text-base font-display font-medium text-white group-hover:text-blue-400 transition-colors truncate">
-                                {item.name}
-                              </h3>
-                              <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 mt-1 select-none">
-                                <span>{getProductDelivery(item.category)}</span>
-                                <span className="text-emerald-400 font-bold uppercase">{getProductStockText(item.stock)}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-3.5 border-t border-zinc-900/60 gap-3">
-                              <div className="text-left font-mono">
-                                <span className="text-[7.5px] text-zinc-500 block leading-none uppercase tracking-wider font-bold">UG RATE</span>
-                                <span className="text-xs sm:text-sm font-black text-white whitespace-nowrap">
-                                  UGX {item.price.toLocaleString()}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-2 shrink-0">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleWishlist(item.id);
-                                  }}
-                                  className={cn(
-                                    "p-2 rounded-xl border transition-all active:scale-95 cursor-pointer",
-                                    isItemWishlisted(item.id)
-                                      ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                                      : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white'
-                                  )}
-                                  title="Wishlist"
-                                >
-                                  <Heart size={11} fill={isItemWishlisted(item.id) ? "currentColor" : "none"} />
-                                </button>
-
-                                <button
-                                  onClick={(e) => {
-                                      e.stopPropagation();
-                                      onAddToCart(item);
-                                  }}
-                                  className="py-2 px-3 bg-white hover:bg-neutral-100 text-black text-[10px] font-mono font-bold rounded-xl transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                                >
-                                  <span>ADD</span>
-                                  <ShoppingBag size={10} />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
+                          onQuickView={onQuickView}
+                          isWishlisted={isItemWishlisted(item.id)}
+                          onToggleWishlist={onToggleWishlist}
+                          isLiked={isItemLiked(item.id)}
+                          onToggleLike={onToggleLike}
+                        />
                       ))}
                     </div>
                   </div>
@@ -653,3 +895,12 @@ export function HomeHero({
     </div>
   );
 }
+
+const getCategoryIcon = (cat: string) => {
+  const norm = cat.toLowerCase();
+  if (norm.includes('phone') || norm.includes('tablet')) return <Smartphone size={13} className="text-zinc-400 shrink-0" />;
+  if (norm.includes('computer') || norm.includes('laptop')) return <Laptop size={13} className="text-zinc-400 shrink-0" />;
+  if (norm.includes('gaming') || norm.includes('console')) return <Gamepad2 size={13} className="text-zinc-400 shrink-0" />;
+  if (norm.includes('tv') || norm.includes('audio')) return <Headphones size={13} className="text-zinc-400 shrink-0" />;
+  return <Sparkles size={13} className="text-zinc-400 shrink-0" />;
+};

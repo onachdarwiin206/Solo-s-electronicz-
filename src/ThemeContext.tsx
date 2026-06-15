@@ -16,7 +16,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       const saved = localStorage.getItem('theme') as Theme | null;
       if (saved === 'light' || saved === 'dark' || saved === 'glass') return saved;
     }
-    return 'glass';
+    return 'light';
   });
 
   useEffect(() => {

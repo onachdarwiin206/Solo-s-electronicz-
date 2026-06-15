@@ -26,39 +26,39 @@
 
 @layer base {
   :root {
-    --background: #000000;
-    --foreground: #ffffff;
-    --card: #111111;
-    --card-foreground: #ffffff;
-    --border: rgba(255, 255, 255, 0.1);
-    --ring: #3b82f6;
+    --background: #03030c;
+    --foreground: #f3f4f6;
+    --card: #0a0b14;
+    --card-foreground: #f9fafb;
+    --border: rgba(255, 255, 255, 0.07);
+    --ring: #6366f1;
   }
 
   .dark {
-    --background: #000000;
-    --foreground: #ffffff;
-    --card: #111111;
-    --card-foreground: #ffffff;
-    --border: rgba(255, 255, 255, 0.1);
-    --ring: #3b82f6;
+    --background: #03030c;
+    --foreground: #f3f4f6;
+    --card: #0a0b14;
+    --card-foreground: #f9fafb;
+    --border: rgba(255, 255, 255, 0.07);
+    --ring: #6366f1;
   }
 
   .light {
-    --background: #f8fafc;
-    --foreground: #0f172a;
-    --card: #ffffff;
-    --card-foreground: #0f172a;
-    --border: rgba(15, 23, 42, 0.08);
-    --ring: #2563eb;
+    --background: #ffffff;
+    --foreground: #090d16;
+    --card: #fcfdfe;
+    --card-foreground: #090d16;
+    --border: rgba(9, 13, 22, 0.06);
+    --ring: #3b82f6;
   }
 
   .glass {
-    --background: rgba(10, 12, 22, 0.25);
+    --background: rgba(8, 8, 16, 0.4);
     --foreground: #ffffff;
-    --card: rgba(255, 255, 255, 0.04);
+    --card: rgba(255, 255, 255, 0.03);
     --card-foreground: #ffffff;
-    --border: rgba(255, 255, 255, 0.15);
-    --ring: #3b82f6;
+    --border: rgba(255, 255, 255, 0.1);
+    --ring: #6366f1;
   }
 
   body {

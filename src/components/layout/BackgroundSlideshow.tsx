@@ -91,7 +91,7 @@ export function BackgroundSlideshow() {
       ref={bgRef}
       className="fixed inset-0 z-[-1] overflow-hidden select-none pointer-events-none"
       style={{
-        backgroundColor: theme === 'light' ? '#f8fafc' : '#000002',
+        backgroundColor: theme === 'light' ? '#ffffff' : '#03030c',
         '--mouse-x': '0',
         '--mouse-y': '0',
         '--scroll-y': '0px',
@@ -138,7 +138,7 @@ export function BackgroundSlideshow() {
         }
 
         .glass-contrast-overlay {
-          background-image: radial-gradient(circle at 50% 50%, transparent 20%, ${theme === 'light' ? '#f8fafc' : '#000002'} 95%);
+          background-image: radial-gradient(circle at 50% 50%, transparent 20%, ${theme === 'light' ? '#ffffff' : '#03030c'} 95%);
         }
 
         .tech-fineline-grid {
@@ -156,8 +156,8 @@ export function BackgroundSlideshow() {
       <div 
         className={`absolute inset-0 bg-gradient-to-tr bg-[length:200%_200%] transition-all duration-1000 ${
           theme === 'light' 
-            ? "from-[#e2e8f0] via-[#f1f5f9] to-[#f8fafc]" 
-            : "from-[#000002] via-[#010104] to-[#03030b]"
+            ? "from-[#f1f5f9] via-[#f8fafc] to-[#ffffff]" 
+            : "from-[#020208] via-[#050616] to-[#0a0515]"
         }`}
         style={{
           animation: 'bgBaseBreath 40s infinite ease-in-out',
@@ -174,26 +174,26 @@ export function BackgroundSlideshow() {
           willChange: 'transform',
         }}
       >
-        {/* Blob A - Electric Blue */}
+        {/* Blob A - Electric Blue/Teal */}
         <div 
           className={`animated-mesh-primary absolute w-[240px] h-[240px] md:w-[480px] md:h-[480px] rounded-full transition-colors duration-1000 ${
-            theme === 'light' ? 'bg-blue-300/30' : 'bg-blue-600/6'
+            theme === 'light' ? 'bg-blue-300/30' : 'bg-cyan-500/8'
           } top-[-10%] left-[-5%]`} 
           style={{ willChange: 'transform' }}
         />
         
-        {/* Blob B - Dark Navy Accent */}
+        {/* Blob B - Deep Rich Indigo Accent */}
         <div 
           className={`animated-mesh-secondary absolute w-[300px] h-[300px] md:w-[600px] md:h-[600px] rounded-full transition-colors duration-1000 ${
-            theme === 'light' ? 'bg-indigo-200/30' : 'bg-indigo-950/20'
+            theme === 'light' ? 'bg-indigo-200/30' : 'bg-indigo-500/12'
           } bottom-[-15%] right-[-5%]`} 
           style={{ willChange: 'transform' }}
         />
 
-        {/* Blob C - Soft Purple Glow */}
+        {/* Blob C - Vibrant Fuchsia Glow */}
         <div 
           className={`animated-mesh-primary absolute w-[200px] h-[200px] md:w-[450px] md:h-[450px] rounded-full transition-colors duration-1000 ${
-            theme === 'light' ? 'bg-purple-200/20' : 'bg-purple-900/4'
+            theme === 'light' ? 'bg-purple-200/20' : 'bg-fuchsia-500/8'
           } top-[25%] left-[30%]`} 
           style={{ 
             animationDelay: '-15s',
@@ -204,7 +204,7 @@ export function BackgroundSlideshow() {
         {/* Dynamic theme-specific supplemental blur in Glass Mode for rich refraction */}
         {theme === 'glass' && (
           <div 
-            className="absolute w-[350px] h-[350px] md:w-[550px] md:h-[550px] rounded-full bg-blue-500/8 top-[15%] right-[20%] blur-[130px]" 
+            className="absolute w-[350px] h-[350px] md:w-[550px] md:h-[550px] rounded-full bg-indigo-600/10 top-[15%] right-[20%] blur-[130px]" 
           />
         )}
       </div>
