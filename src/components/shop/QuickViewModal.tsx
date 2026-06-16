@@ -28,26 +28,27 @@ const WhatsAppIcon = ({ size = 16, className = "" }: { size?: number; className?
 
 export default function QuickViewModal({ product, onClose, onAddToCart }: QuickViewModalProps) {
   const [activeMedia, setActiveMedia] = useState(0);
-  if (!product) return null;
 
-  let allMedia = [
-    ...(product.images || [product.image]),
-    ...(product.videos || (product.video_url ? [product.video_url] : []))
-  ].filter(Boolean);
+  // Reset active media when product changes
+  useEffect(() => {
+    setActiveMedia(0);
+  }, [product?.id]);
 
-  // Filter out default placeholder images
-  const filtered = allMedia.filter(media => {
-    if (typeof media !== 'string') return false;
-    return (
-      !media.includes('photo-1518770660439-4636190af475') &&
-      !media.toLowerCase().includes('placeholder')
-    );
-  });
-  
-  allMedia = filtered.length > 0 ? filtered : [''];
+  // Extract and filter media safely
+  const allMedia = React.useMemo(() => {
+    if (!product) return [''];
+    let mediaList = [
+      ...(product.images || [product.image]),
+      ...(product.videos || (product.video_url ? [product.video_url] : []))
+    ].filter(Boolean);
+
+    const filtered = mediaList.filter(media => typeof media === 'string' && media.trim() !== '');
+    
+    return filtered.length > 0 ? filtered : [''];
+  }, [product]);
 
   useEffect(() => {
-    if (allMedia.length <= 1) return;
+    if (!product || allMedia.length <= 1) return;
     
     const currentMedia = allMedia[activeMedia];
     const isVideo = currentMedia?.includes('video') || currentMedia?.includes('.mp4');
@@ -58,7 +59,9 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [allMedia.length, activeMedia]);
+  }, [product, allMedia, activeMedia]);
+
+  if (!product) return null;
 
   const handleWhatsAppBuy = () => {
     const message = `*Quick Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I saw this in the quick view. Is it in stock?`;

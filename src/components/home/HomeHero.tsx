@@ -143,24 +143,6 @@ export function HomeHero({
 
   const activeShowcaseProduct = premiumShowcase[activeShowcaseIdx];
 
-  // Map out Today's Deals to build a gorgeous Bento Grid layout
-  const todayDeals = useMemo(() => {
-    if (!products.length) return [];
-    // Prioritize products explicitly in the "Deals & Offers" category
-    const dealCategoryProducts = products.filter(p => p.category === 'Deals & Offers');
-    if (dealCategoryProducts.length > 0) {
-      return dealCategoryProducts.slice(0, 3);
-    }
-    // Fallback to featured or sorted items which have compelling content
-    const featured = products.filter(p => p.featured);
-    if (featured.length >= 3) {
-      return featured.slice(0, 3);
-    }
-    return [...products]
-      .sort((a, b) => (b.rating || 5) - (a.rating || 5))
-      .slice(0, 3);
-  }, [products]);
-
   const handlePopularSearch = (term: string) => {
     setLocalSearch(term);
     onSearch?.(term);
@@ -209,11 +191,11 @@ export function HomeHero({
             <div className="flex pt-2 gap-4">
               <button
                 onClick={() => {
-                  document.getElementById('todays-deals-zone')?.scrollIntoView({ behavior: 'smooth' });
+                  document.getElementById('tech-portfolio')?.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className="group px-7 py-3.5 bg-white hover:bg-neutral-100 text-black font-semibold text-xs font-mono tracking-widest rounded-full active:scale-95 transition-all text-center flex items-center justify-center gap-2.5 shadow-xl cursor-pointer"
               >
-                EXPLORE DEALS
+                EXPLORE CATALOG
                 <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform text-black" />
               </button>
             </div>
@@ -340,213 +322,7 @@ export function HomeHero({
         </div>
       </section>
 
-      {/* 2. DEAL ZONE SECTION (TODAY'S DEALS BENTO GRID) */}
-      <section id="todays-deals-zone" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
-        {/* Deal Zone Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/[0.06] pb-5 mb-8 gap-6 text-left">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="p-1 px-2.5 bg-rose-500 text-white font-mono font-bold text-[8.5px] uppercase tracking-widest rounded-full leading-none flex items-center gap-1 animate-pulse">
-                <Sparkle size={8} fill="currentColor" /> HOT OFFERS
-              </span>
-              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">DEAL ZONE</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight">
-              Today's Super Deals
-            </h2>
-          </div>
 
-          {/* Golden Urgency Timer */}
-          <div className="flex items-center gap-3 bg-[#0d0e14] border border-white/[0.04] p-3 rounded-2.5xl px-5 shadow-inner">
-            <Clock className="text-rose-500 animate-pulse shrink-0" size={14} />
-            <span className="text-[10px] font-mono uppercase font-bold text-zinc-400 tracking-wider">OFFERS EXPIRE:</span>
-            <div className="flex items-center gap-1.5 font-mono text-xs text-white">
-              <span className="bg-rose-500 text-white px-2.5 py-1.5 rounded-lg font-black min-w-[32px] text-center">{timeLeft.hrs}</span>
-              <span className="text-rose-500 font-bold">:</span>
-              <span className="bg-rose-500 text-white px-2.5 py-1.5 rounded-lg font-black min-w-[32px] text-center">{timeLeft.mins}</span>
-              <span className="text-rose-500 font-bold">:</span>
-              <span className="bg-rose-500 text-white px-2.5 py-1.5 rounded-lg font-black min-w-[32px] text-center animate-pulse">{timeLeft.secs}</span>
-            </div>
-          </div>
-        </div>
-
-        {todayDeals.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            {/* Bento Grid: Left Giant Featured Deal (7 columns) */}
-            {todayDeals[0] && (() => {
-              const item = todayDeals[0];
-              const multiplier = item.id === 'p1' ? 1.18 : 1.15;
-              const originalPrice = Math.round((item.price * multiplier) / 10000) * 10000;
-              const discountPercentage = Math.round((1 - (item.price / originalPrice)) * 100);
-              const savingsAmount = originalPrice - item.price;
-              
-              return (
-                <div 
-                  onClick={() => onProductClick(item)}
-                  className="lg:col-span-7 relative bg-[#090a10] border border-white/[0.04] hover:border-blue-500/40 rounded-[2.5rem] p-6 sm:p-9 flex flex-col md:flex-row justify-between gap-8 shadow-2xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] cursor-pointer group select-none"
-                >
-                  {/* Glowing halo glass shadow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] to-transparent pointer-events-none rounded-[2.5rem]" />
-                  
-                  {/* Top-left promo badge */}
-                  <div className="absolute top-5 left-5 z-20">
-                    <span className="px-3.5 py-1.5 bg-rose-600 text-white text-[10px] font-mono font-bold tracking-tight rounded-full uppercase shadow-lg shadow-rose-900/30 flex items-center gap-1.5">
-                      <Zap size={10} fill="white" /> FEATURED DEAL
-                    </span>
-                  </div>
-
-                  {/* Product graphic spot */}
-                  <div className="w-full md:w-[45%] h-56 md:h-full flex items-center justify-center relative bg-foreground/[0.015] rounded-3xl p-4">
-                    <OptimizedImage 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_20px_40px_rgba(255,255,255,0.05)] transform group-hover:scale-[1.04] transition-transform duration-700"
-                    />
-                  </div>
-
-                  {/* Text details and conversions */}
-                  <div className="w-full md:w-[55%] flex flex-col justify-between text-left space-y-6 pt-1">
-                    <div className="space-y-3">
-                      <span className="px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-mono font-bold rounded-lg uppercase tracking-widest leading-none self-start">
-                        {item.category}
-                      </span>
-                      <h3 className="text-xl sm:text-2xl font-display font-medium text-white group-hover:text-blue-400 transition-colors leading-snug">
-                        {item.name}
-                      </h3>
-                      <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-
-                    {/* Stock depletion urgency meter */}
-                    <div className="space-y-1.5 bg-zinc-950/40 p-3 rounded-2xl border border-white/[0.02]">
-                      <div className="flex justify-between items-center text-[8.5px] font-mono font-bold uppercase tracking-wider">
-                        <span className="text-rose-500 flex items-center gap-1.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping inline-block" />
-                          Hurry! Only 3 Units Left
-                        </span>
-                        <span className="text-zinc-500">DEAL PROGRESS</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-rose-500 to-orange-500 rounded-full" style={{ width: '25%' }} />
-                      </div>
-                    </div>
-
-                    {/* Highly Compelling Price calculations inside deep box */}
-                    <div className="p-4 bg-[#0d0e15] border border-white/[0.02] rounded-2.5xl flex flex-col justify-center gap-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xl sm:text-2xl font-mono font-black text-rose-500">
-                          UGX {item.price.toLocaleString()}
-                        </span>
-                        <span className="text-xs font-mono font-medium text-zinc-500 line-through">
-                          UGX {originalPrice.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] font-mono font-semibold">
-                        <span className="text-emerald-400">SAVE UGX {savingsAmount.toLocaleString()}</span>
-                        <span className="text-emerald-400 tracking-tight">(-{discountPercentage}% OFF)</span>
-                      </div>
-                    </div>
-
-                    {/* Instant purchasing CTAs */}
-                    <div className="grid grid-cols-2 gap-2.5 pt-1">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAddToCart(item);
-                        }}
-                        className="py-3 bg-white hover:bg-neutral-100 text-black font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-white/5 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                      >
-                        <ShoppingBag size={11} />
-                        Get Deal
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const message = `Halo Solo Electronics, I would like to lock in this Daily Super Deal: *${item.name}* (UGX ${item.price.toLocaleString()}). Is it still available at this promo-rate?`;
-                          window.open(`https://wa.me/256793405517?text=${encodeURIComponent(message)}`, '_blank');
-                        }}
-                        className="py-3 bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                      >
-                        <WhatsAppIcon size={11} />
-                        WhatsApp Buy
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Bento Grid: Right Column containing 2 Supporting Deals (5 columns) */}
-            <div className="lg:col-span-5 flex flex-col gap-6">
-              {todayDeals.slice(1, 3).map((item) => {
-                const multiplier = item.id === 'p3' ? 1.15 : 1.12;
-                const originalPrice = Math.round((item.price * multiplier) / 10000) * 10000;
-                const discountPercentage = Math.round((1 - (item.price / originalPrice)) * 100);
-                const savingsAmount = originalPrice - item.price;
-                
-                return (
-                  <div 
-                    key={`bento-sub-${item.id}`}
-                    onClick={() => onProductClick(item)}
-                    className="relative flex bg-[#090a10] border border-white/[0.04] hover:border-blue-500/35 rounded-3xl p-4 sm:p-5 gap-5 shadow-xl transition-all duration-300 hover:shadow-[0_15px_30px_rgba(59,130,246,0.06)] cursor-pointer group flex-1 items-center select-none"
-                  >
-                    {/* Glowing percentage disk */}
-                    <div className="absolute top-3 space-y-1 left-3 z-10 flex flex-col">
-                      <span className="px-2.5 py-1 bg-rose-600 text-white text-[8px] font-mono font-bold rounded-full uppercase leading-none shadow-md">
-                        -{discountPercentage}%
-                      </span>
-                    </div>
-
-                    <div className="w-[30%] h-28 flex items-center justify-center bg-foreground/[0.01] rounded-2xl p-2 shrink-0">
-                      <OptimizedImage 
-                        src={item.image} 
-                        alt={item.name} 
-                        className="max-h-full max-w-full object-contain filter drop-shadow-[0_10px_20px_rgba(255,255,255,0.03)] transform group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-
-                    <div className="w-[70%] text-left space-y-2.5 flex flex-col justify-center">
-                      <div>
-                        <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest">{item.category}</span>
-                        <h3 className="text-sm font-display font-medium text-white group-hover:text-blue-400 transition-colors line-clamp-1">
-                          {item.name}
-                        </h3>
-                      </div>
-
-                      {/* Micro stock indicator */}
-                      <span className="text-[8px] font-mono font-black text-orange-400 uppercase tracking-wider block">
-                        ⚡ Limited Stock Left
-                      </span>
-
-                      {/* Pricing block */}
-                      <div className="border-t border-white/[0.03] pt-1.5 flex flex-col">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-xs sm:text-sm font-mono font-black text-rose-500 whitespace-nowrap">
-                            UGX {item.price.toLocaleString()}
-                          </span>
-                          <span className="text-[9.5px] font-mono font-medium text-zinc-500 line-through whitespace-nowrap">
-                            UGX {originalPrice.toLocaleString()}
-                          </span>
-                        </div>
-                        <span className="text-[8px] font-mono font-semibold text-emerald-400 uppercase mt-0.5 whitespace-nowrap">
-                          Save UGX {savingsAmount.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
-        ) : (
-          <div className="py-12 text-center bg-[#07080c] border border-white/[0.04] rounded-3xl text-zinc-500 text-xs font-mono tracking-widest uppercase">
-            Recalibrating high-yield promo catalog...
-          </div>
-        )}
-      </section>
 
 
 

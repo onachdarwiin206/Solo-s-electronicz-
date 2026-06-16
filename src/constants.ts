@@ -9,8 +9,7 @@ export const PRODUCT_CATEGORIES = [
   'Networking',
   'Home Appliances',
   'Smart Devices',
-  'Cameras & Security',
-  'Deals & Offers'
+  'Cameras & Security'
 ] as const;
 
 export const INITIAL_PRODUCTS: Product[] = [

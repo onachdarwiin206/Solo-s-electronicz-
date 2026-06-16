@@ -1,5 +1,5 @@
 import { useState, ChangeEvent, useRef, useEffect } from 'react';
-import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList, Sun, Moon } from 'lucide-react';
+import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList, Sun, Moon, Smartphone, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
@@ -208,7 +208,18 @@ export function Navbar({
               </button>
             </Tooltip>
 
-
+            <Tooltip content="Install Mobile App">
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('triggerPwaPrompt'));
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/25 active:scale-95 text-blue-500 hover:text-blue-400 border border-blue-500/20 rounded-xl text-[10px] font-mono font-black uppercase tracking-wider transition-all cursor-pointer shrink-0"
+                id="header-pwa-install-btn"
+              >
+                <Smartphone size={13} className="animate-pulse" />
+                <span className="hidden sm:inline-block">INSTALL</span> APP
+              </button>
+            </Tooltip>
 
             <button
               onClick={() => setIsOpen(!isOpen)}

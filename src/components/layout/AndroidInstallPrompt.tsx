@@ -52,9 +52,20 @@ export function AndroidInstallPrompt() {
 
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    const handleTriggerPwa = () => {
+      localStorage.removeItem('solo_pwa_dismissed');
+      localStorage.removeItem('solo_pwa_installed');
+      setIsInstalled(false);
+      setInstallState('idle');
+      setIsVisible(true);
+    };
+
+    window.addEventListener('triggerPwaPrompt', handleTriggerPwa);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('triggerPwaPrompt', handleTriggerPwa);
     };
   }, []);
 

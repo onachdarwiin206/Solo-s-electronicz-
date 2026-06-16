@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Twitter, Mail, MapPin, Phone, Github, MessageSquare, Home, Navigation } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Mail, MapPin, Phone, Github, MessageSquare, Home, Navigation, Smartphone } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Tooltip } from '../ui/Tooltip';
 
@@ -50,6 +50,17 @@ export function Footer({ t, onCategorySelect, onAdminPanelClick }: FooterProps) 
                 <Navigation size={14} className="animate-pulse" />
                 GET DIRECTIONS
               </a>
+
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('triggerPwaPrompt'));
+                }}
+                className="flex items-center gap-2.5 py-3 px-6 bg-[#0e1017]/40 hover:bg-[#121520]/80 active:scale-95 text-zinc-300 hover:text-white rounded-2xl text-[11px] font-mono font-black uppercase tracking-widest transition-all shadow-xl border border-white/[0.04] hover:border-blue-500/25 cursor-pointer"
+                id="footer-pwa-install-btn"
+              >
+                <Smartphone size={14} className="text-blue-500 animate-pulse" />
+                INSTALL APP
+              </button>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getPublicUrl } from '../../lib/storage';
-import { Loader2, ImageOff } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface OptimizedImageProps {
@@ -11,62 +11,70 @@ interface OptimizedImageProps {
   bucket?: string;
 }
 
-const isKnownBrokenUrl = (url: string): boolean => {
-  if (!url) return false;
-  const lower = url.toLowerCase();
-  return (
-    lower.includes('iphone%2016%20pro%20max') ||
-    lower.includes('iphone 16 pro max') ||
-    lower.includes('lenovo%20tab') ||
-    lower.includes('lenovo tab')
-  );
+const getFallbackProductImage = (name: string): string => {
+  const n = (name || '').toLowerCase();
+  
+  if (n.includes('s24') || n.includes('samsung') || n.includes('galaxy') || n.includes('phone') || n.includes('iphone') || n.includes('mobile')) {
+    return 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=800&auto=format&fit=crop';
+  }
+  if (n.includes('macbook') || n.includes('laptop') || n.includes('computer') || n.includes('spectre') || n.includes('xps') || n.includes('dell') || n.includes('hp') || n.includes('desktop') || n.includes('pro') || n.includes('m3')) {
+    return 'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=800&auto=format&fit=crop';
+  }
+  if (n.includes('airpods') || n.includes('wh-1000') || n.includes('headphones') || n.includes('earphone') || n.includes('audio') || n.includes('max') || n.includes('sound') || n.includes('speaker') || n.includes('sony')) {
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop';
+  }
+  if (n.includes('console') || n.includes('ps5') || n.includes('xbox') || n.includes('switch') || n.includes('gaming') || n.includes('game') || n.includes('playstation')) {
+    return 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?q=80&w=800&auto=format&fit=crop';
+  }
+  if (n.includes('watch') || n.includes('band') || n.includes('smartwatch') || n.includes('apple watch') || n.includes('fitbit')) {
+    return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=800&auto=format&fit=crop';
+  }
+  return 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=800&auto=format&fit=crop'; // default beautiful premium tech accessories
 };
 
 const isFakeOrPlaceholder = (url: string | null | undefined): boolean => {
   if (!url) return true;
-  const lower = url.toLowerCase();
-  return (
-    lower.includes('photo-1518770660439-4636190af475') ||
-    lower.includes('photo-1550745165-9bc0b252726f') ||
-    lower.includes('placeholder') ||
-    lower.trim() === ''
-  );
+  return url.trim() === '';
 };
 
 export function OptimizedImage({ src, alt, className, fallback, bucket = 'product-images' }: OptimizedImageProps) {
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Initialize with the URL immediately if it's already a full web URL to avoid mount flickering
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(() => {
+    if (src && typeof src === 'string' && !isFakeOrPlaceholder(src)) {
+      if (src.startsWith('http') || src.startsWith('blob:') || src.startsWith('data:') || src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) {
+        return src;
+      }
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(() => {
+    if (src && typeof src === 'string' && !isFakeOrPlaceholder(src)) {
+      if (src.startsWith('http') || src.startsWith('blob:') || src.startsWith('data:') || src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  });
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // 5. Add console debugging
     console.log("IMAGE SRC:", src, typeof src);
 
-    // 2 & 3. Ensure src is a valid string
     if (!src || typeof src !== 'string' || isFakeOrPlaceholder(src)) {
       setResolvedUrl(null);
       return;
     }
 
-    // Intercept known broken or missing Supabase images with null / blank representation
-    if (isKnownBrokenUrl(src)) {
-      setResolvedUrl(null);
-      return;
-    }
-
-    // 26: If it's already a full URL (http), use it directly
     if (src.startsWith('http') || src.startsWith('blob:') || src.startsWith('data:')) {
-      if (isFakeOrPlaceholder(src)) {
-        setResolvedUrl(null);
-      } else {
-        setResolvedUrl(src);
-      }
+      setResolvedUrl(src);
+      setError(false);
       return;
     }
 
-    // 32: If it's a relative path starting with / or ./ or ../, it's likely a local asset
     if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) {
       setResolvedUrl(src);
+      setError(false);
       return;
     }
 
@@ -79,15 +87,14 @@ export function OptimizedImage({ src, alt, className, fallback, bucket = 'produc
         setResolvedUrl(url);
       } else {
         console.warn("Could not resolve Supabase URL for:", src);
-        setResolvedUrl(null);
+        setResolvedUrl(src); // Fallback to raw src
       }
     } catch (err) {
       console.error("Failed to resolve image path:", src, err);
-      setResolvedUrl(null);
-      setError(true);
+      setResolvedUrl(src); // Fallback to raw src
     }
     setLoading(false);
-  }, [src, fallback, bucket]);
+  }, [src, alt, fallback, bucket]);
 
   if (loading && !resolvedUrl) {
     return (
@@ -97,25 +104,18 @@ export function OptimizedImage({ src, alt, className, fallback, bucket = 'produc
     );
   }
 
-  // 8. Add onError fallback handling for broken images
   const handleError = () => {
-    console.info("[OptimizedImage] Image placeholder fallback applied for:", resolvedUrl);
+    console.info("[OptimizedImage] Fallback to premium category image for:", alt);
     setError(true);
-    setResolvedUrl(null);
   };
 
-  if (!resolvedUrl || error || isFakeOrPlaceholder(resolvedUrl)) {
-    return (
-      <div className={cn("w-full h-full bg-zinc-950/40 border border-white/[0.02] flex items-center justify-center text-zinc-700/50", className)}>
-        {/* Completely blank - no fake/mock images as requested */}
-      </div>
-    );
-  }
+  // Render the real image linked to Supabase first; only use a fallback if the link is completely empty
+  const currentUrl = resolvedUrl || src || getFallbackProductImage(alt);
 
   return (
     <div className={cn("relative overflow-hidden group/optimg bg-neutral-900", className)}>
       <img 
-        src={resolvedUrl} 
+        src={currentUrl} 
         alt={alt} 
         className={cn(
           "w-full h-full transition-transform duration-700",

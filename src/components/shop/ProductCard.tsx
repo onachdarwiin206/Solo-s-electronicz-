@@ -49,12 +49,7 @@ export function ProductCard({
 
   const getFilteredImages = () => {
     const rawImages = product.images && product.images.length > 0 ? product.images : [product.image];
-    const filtered = rawImages.filter(img => 
-      typeof img === 'string' && 
-      !img.includes('photo-1518770660439-4636190af475') &&
-      !img.includes('photo-1550745165-9bc0b252726f') &&
-      !img.toLowerCase().includes('placeholder')
-    );
+    const filtered = rawImages.filter(img => typeof img === 'string' && img.trim() !== '');
     return filtered.length > 0 ? filtered : [''];
   };
 
@@ -157,18 +152,9 @@ export function ProductCard({
               <motion.div
                 key={currentImageIndex}
                 initial={{ opacity: 0 }}
-                animate={images.length === 1 ? {
-                  opacity: [1, 0.35, 1],
-                  scale: [1, 0.98, 1]
-                } : { opacity: 1 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={images.length === 1 ? {
-                  duration: 3,
-                  repeat: Infinity,
-                  repeatType: "mirror" as const,
-                  ease: "easeInOut",
-                  repeatDelay: 6
-                } : { duration: 0.3 }}
+                transition={{ duration: 0.3 }}
                 className="w-full h-full"
               >
                 <OptimizedImage

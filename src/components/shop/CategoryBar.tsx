@@ -32,7 +32,6 @@ const getCategoryIcon = (category: string) => {
     case 'Home Appliances': return Home;
     case 'Smart Devices': return Watch;
     case 'Cameras & Security': return Camera;
-    case 'Deals & Offers': return Zap;
     default: return LayoutGrid;
   }
 };

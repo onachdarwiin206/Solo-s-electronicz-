@@ -32,8 +32,7 @@ export type Category =
   | 'Networking'
   | 'Home Appliances'
   | 'Smart Devices'
-  | 'Cameras & Security'
-  | 'Deals & Offers';
+  | 'Cameras & Security';
 
 export interface UserProfile {
   id: string;

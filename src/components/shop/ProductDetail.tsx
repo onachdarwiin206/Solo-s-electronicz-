@@ -70,14 +70,7 @@ export default function ProductDetail({
   // Remove duplicates while preserving order
   let uniqueMedia = Array.from(new Set(allMedia));
 
-  // Filter out default placeholder image (photo-1518770660439-4636190af475) or other generic placeholder paths
-  const filtered = uniqueMedia.filter(media => {
-    if (typeof media !== 'string') return false;
-    return (
-      !media.includes('photo-1518770660439-4636190af475') &&
-      !media.toLowerCase().includes('placeholder')
-    );
-  });
+  const filtered = uniqueMedia.filter(media => typeof media === 'string' && media.trim() !== '');
   
   uniqueMedia = filtered.length > 0 ? filtered : [''];
 
