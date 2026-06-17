@@ -155,7 +155,7 @@ export function HomeHero({
   };
 
   return (
-    <div className="space-y-24 pb-32 bg-[#03030c] text-white overflow-hidden relative">
+    <div className="space-y-24 pb-32 bg-transparent text-foreground overflow-hidden relative">
       {/* Background aesthetic glow grids */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-blue-500/[0.04] via-transparent to-transparent blur-[160px] pointer-events-none" />
       <div className="absolute top-[12%] left-[-10%] w-[550px] h-[550px] bg-blue-600/[0.02] blur-[180px] rounded-full pointer-events-none" />
@@ -178,7 +178,7 @@ export function HomeHero({
             </div>
 
             {/* Title is strictly 6 words maximum */}
-            <h1 className="text-4xl sm:text-5xl lg:text-4xl xl:text-5.5xl font-display font-medium tracking-tight text-white leading-[1.05]">
+            <h1 className="text-4xl sm:text-5xl lg:text-4xl xl:text-5.5xl font-display font-medium tracking-tight text-foreground leading-[1.05]">
               Genuine Sealed Electronics.<br />
               Delivered Direct.
             </h1>

@@ -394,7 +394,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
   }, [campaigns]);
 
   return (
-    <div className="min-h-screen bg-[#03030c] text-white pt-24 pb-32 relative overflow-hidden">
+    <div className="min-h-screen bg-transparent text-foreground pt-24 pb-32 relative overflow-hidden">
       {/* Visual Ambient Grid Backdrops */}
       <div className="absolute top-0 left-0 right-0 h-96 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/15 via-indigo-950/2 to-transparent pointer-events-none" />
       <div className="absolute top-1/3 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />

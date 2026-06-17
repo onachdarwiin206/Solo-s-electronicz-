@@ -26,12 +26,12 @@
 
 @layer base {
   :root {
-    --background: #03030c;
-    --foreground: #f3f4f6;
-    --card: #0a0b14;
-    --card-foreground: #f9fafb;
-    --border: rgba(255, 255, 255, 0.07);
-    --ring: #6366f1;
+    --background: #f3f4f6;
+    --foreground: #090d16;
+    --card: #ffffff;
+    --card-foreground: #090d16;
+    --border: rgba(9, 13, 22, 0.08);
+    --ring: #3b82f6;
   }
 
   .dark {
