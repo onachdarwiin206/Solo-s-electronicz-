@@ -89,7 +89,7 @@ export default function ProductDetail({
   }, [uniqueMedia.length, activeMedia]);
 
   const handleWhatsAppBuy = () => {
-    const message = `*Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Solo's Electronics, I'm interested in this unit. Is it available for delivery in Lira?`;
+    const message = `*Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello [Business Name]'s Electronics, I'm interested in this unit. Is it available for delivery in Lira?`;
     triggerWhatsAppFlow(message);
   };
 

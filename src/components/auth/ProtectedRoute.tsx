@@ -26,7 +26,7 @@ export function ProtectedRoute({ children, requireAdmin = false, fallback }: Pro
       <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-white/5 rounded-[2.5rem] border border-white/10">
         <ShieldAlert className="w-12 h-12 text-blue-500 mb-4" />
         <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-2">Security Clearance Required</h3>
-        <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">This hardware segment is restricted to authorized Solo Electronics administrators only.</p>
+        <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">This hardware segment is restricted to authorized [Business Name] Electronics administrators only.</p>
         <button 
           onClick={() => window.dispatchEvent(new CustomEvent('openAdmin'))}
           className="px-8 py-4 bg-blue-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20"

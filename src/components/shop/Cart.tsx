@@ -389,7 +389,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 </div>
 
                 <p className="text-[7.5px] text-center text-gray-600 mt-5 font-bold uppercase tracking-[0.25em] opacity-60 font-mono">
-                  SOLO COMPLIANCE SHIELD // HUB CONSOLE v3.5
+                  [BUSINESS NAME] COMPLIANCE SHIELD // HUB CONSOLE v3.5
                 </p>
               </div>
             )}

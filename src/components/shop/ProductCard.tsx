@@ -90,7 +90,7 @@ export function ProductCard({
 
   const handleWhatsAppBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const message = `Hello Solo Electronics, I want to buy the *${product.name}* (UGX ${product.price.toLocaleString()}).\n\nLink: ${window.location.origin}/product/${product.id}`;
+    const message = `Hello [Business Name] Electronics, I want to buy the *${product.name}* (UGX ${product.price.toLocaleString()}).\n\nLink: ${window.location.origin}/product/${product.id}`;
     triggerWhatsAppFlow(message);
   };
 

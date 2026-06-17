@@ -223,7 +223,7 @@ export function ReviewSystem({ product, onReviewAdded }: ReviewSystemProps) {
             <div className="p-6 bg-foreground/5 border border-border rounded-3xl flex items-start gap-4">
                <AlertCircle size={20} className="text-blue-500 mt-1 flex-shrink-0" />
                <p className="text-[11px] text-muted-foreground leading-relaxed uppercase font-medium">
-                 Reviews are cloud-synced and verified. Your technical feedback helps the Solo engineering community.
+                 Reviews are cloud-synced and verified. Your technical feedback helps the [Business Name] engineering community.
                </p>
             </div>
           </div>

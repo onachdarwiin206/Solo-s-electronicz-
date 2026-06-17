@@ -186,7 +186,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
             <div className="relative z-10 space-y-3">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-widest text-blue-400">
                 <Sparkles size={10} />
-                Solo Electronics v3.0
+                [Business Name] Electronics v3.0
               </div>
               <h3 className="text-3xl font-black text-foreground italic uppercase tracking-tighter leading-tight">
                 Secure Cloud Sync

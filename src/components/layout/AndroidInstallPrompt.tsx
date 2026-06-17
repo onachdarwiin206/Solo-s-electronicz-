@@ -43,7 +43,7 @@ export function AndroidInstallPrompt() {
 
     // Track real installation finish
     const handleAppInstalled = () => {
-      console.log('[PWA] Solo App successfully installed!');
+      console.log('[PWA] [Business Name] App successfully installed!');
       localStorage.setItem('solo_pwa_installed', 'true');
       setIsInstalled(true);
       setIsVisible(false);
@@ -166,7 +166,7 @@ export function AndroidInstallPrompt() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-mono font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-full">SOLO PREMIUM PWA</span>
+                    <span className="text-[9px] font-mono font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-full">[BUSINESS NAME] PREMIUM PWA</span>
                     <span className="flex items-center gap-0.5 text-[8.5px] font-bold text-amber-400 uppercase">
                       <Sparkles size={10} className="fill-amber-400" />
                       HQ

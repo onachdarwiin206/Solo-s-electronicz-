@@ -227,11 +227,11 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
 
   // Connected accounts mock configuration state
   const [connectedProfiles, setConnectedProfiles] = useState({
-    instagram: { connected: true, handle: "@solos_tech_ug" },
-    facebook: { connected: true, handle: "Solo's Phones & Electronics" },
-    twitter: { connected: true, handle: "@solos_electronics" },
+    instagram: { connected: true, handle: "@[business_name]_tech_ug" },
+    facebook: { connected: true, handle: "[Business Name]'s Phones & Electronics" },
+    twitter: { connected: true, handle: "@[business_name]_electronics" },
     linkedin: { connected: false, handle: null },
-    tiktok: { connected: true, handle: "@soloselectronics" }
+    tiktok: { connected: true, handle: "@[business_name]electronics" }
   });
 
   // Selected product object
@@ -1010,10 +1010,10 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-yellow-500 via-pink-500 to-purple-500 p-[1.5px] shrink-0">
-                                <span className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center text-[10px] font-black text-rose-500">S</span>
+                                <span className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center text-[10px] font-black text-rose-500">B</span>
                               </div>
                               <div className="text-left leading-none">
-                                <span className="text-[10px] font-bold text-zinc-200 block">solos_tech_ug</span>
+                                <span className="text-[10px] font-bold text-zinc-200 block">[business_name]_tech_ug</span>
                                 <span className="text-[8px] text-zinc-500">Kampala Showroom</span>
                               </div>
                             </div>
@@ -1042,7 +1042,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                           {/* Captions space */}
                           <div className="space-y-0.5 leading-snug text-left">
                             <p className="text-[9px] text-zinc-350">
-                              <span className="font-bold text-zinc-250 mr-1.5">solos_tech_ug</span>
+                              <span className="font-bold text-zinc-250 mr-1.5">[business_name]_tech_ug</span>
                               {caption || "Boss, the caption text you compose will automatically appear formatted in real time."}
                             </p>
                             <span className="text-[7px] text-zinc-500 uppercase tracking-wider block pt-1 font-mono">2 minutes ago</span>
@@ -1060,12 +1060,12 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                           className="space-y-3"
                         >
                           <div className="flex items-start gap-2.5">
-                            <span className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-[11px] font-black text-white shrink-0 border border-white/5 font-display">S</span>
+                            <span className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-[11px] font-black text-white shrink-0 border border-white/5 font-display">B</span>
                             <div className="flex-1 min-w-0 text-left leading-tight">
                               <div className="flex items-center gap-1">
-                                <span className="text-[10px] font-extrabold text-zinc-200">Solo's Tech</span>
+                                <span className="text-[10px] font-extrabold text-zinc-200">[Business Name] Tech</span>
                                 <span className="text-[9px] text-blue-400">☑️</span>
-                                <span className="text-[8px] text-zinc-500">@solos • 1m</span>
+                                <span className="text-[8px] text-zinc-500">@[business_name] • 1m</span>
                               </div>
                               <p className="text-[10px] text-zinc-300 leading-normal pt-1 break-words">
                                 {caption || "What are you launching today?"}
@@ -1496,7 +1496,7 @@ Contact directly on WhatsApp: [Direct Handshake]
                   <div className="flex gap-3 items-start bg-zinc-950/30 p-3.5 rounded-xl border border-white/[0.02]">
                     <span className="p-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-mono leading-none font-bold">4</span>
                     <p className="leading-snug">
-                      <strong className="text-white">Active Product Linkages:</strong> Add specific shortlinks like <code className="text-blue-400 font-mono text-[10px]">solos.tech/shop/id</code> to redirect viewers directly into the showroom details.
+                      <strong className="text-white">Active Product Linkages:</strong> Add specific shortlinks like <code className="text-blue-400 font-mono text-[10px]">[business_name].tech/shop/id</code> to redirect viewers directly into the showroom details.
                     </p>
                   </div>
                 </div>

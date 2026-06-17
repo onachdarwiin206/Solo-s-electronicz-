@@ -286,7 +286,7 @@ export default function AdminDashboard({ products: initialProducts, onRefresh }:
         </head>
         <body>
           <div class="label-card">
-            <div class="brand">⚡ SOLO ELECTRONICS ⚡</div>
+            <div class="brand">⚡ [BUSINESS NAME] ELECTRONICS ⚡</div>
             <div class="title">${productToPrint.name}</div>
             <div class="category">${productToPrint.category || 'General Electronics'}</div>
             <div class="price">UGX ${(productToPrint.price || 0).toLocaleString()}</div>
@@ -513,7 +513,7 @@ export default function AdminDashboard({ products: initialProducts, onRefresh }:
   const shareReceiptToCustomer = (order: Order) => {
     const cartSummary = order.items.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
     const receiptTemplate = `
-🧾 *SOLO ELECTRONICS - DIGITAL RECEIPT*
+🧾 *[BUSINESS NAME] ELECTRONICS - DIGITAL RECEIPT*
 ---------------------------------------
 *Order ID:* ${order.id}
 *Customer:* ${order.customer_name}
@@ -527,7 +527,7 @@ ${cartSummary}
 *DELIVERY TO:*
 ${order.district}, ${order.delivery_address}
 
-_Thank you for choosing Solo Electronics!_
+_Thank you for choosing [Business Name] Electronics!_
     `.trim();
     
     const whatsappUrl = `https://wa.me/${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(receiptTemplate)}`;
@@ -889,7 +889,7 @@ _Thank you for choosing Solo Electronics!_
           if (error) throw error;
         }
       } else {
-        const newId = `SOLO-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+        const newId = `[BUSINESS_NAME]-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
         savedProductData.id = newId;
         savedProductData.created_at = new Date().toISOString();
         savedProductData.rating = 5;
@@ -1148,7 +1148,7 @@ _Thank you for choosing Solo Electronics!_
                                   <TrendingUp size={14} className="text-blue-500" />
                                   <span className="text-[10px] font-black uppercase tracking-widest text-[#2563eb]">Market Pricing Comps Search</span>
                                 </div>
-                                <span className="text-[7.5px] font-mono text-muted-foreground/80 uppercase">Solo-Intel v2.1</span>
+                                <span className="text-[7.5px] font-mono text-muted-foreground/80 uppercase">[Business Name]-Intel v2.1</span>
                               </div>
                               <p className="text-[10px] text-muted-foreground/90 leading-tight">
                                 Compare "{newProduct.name}" specs across global & regional retail pipelines to optimize margins.
@@ -1472,7 +1472,7 @@ _Thank you for choosing Solo Electronics!_
                           <span>Verification Seal</span>
                           <span className="text-emerald-500 flex items-center gap-1">
                             <CheckCircle size={10} />
-                            Authentic Solo Asset
+                            Authentic [Business Name] Asset
                           </span>
                         </div>
                         
@@ -1827,7 +1827,7 @@ _Thank you for choosing Solo Electronics!_
                 <div className="absolute top-2 right-2 bg-blue-600/10 text-blue-400 font-black text-[7px] uppercase px-2 py-0.5 rounded-full">
                   Shelf Ready Accent
                 </div>
-                <div className="text-[10px] uppercase tracking-widest text-[#2563eb] font-black italic">⚡ SOLO ELECTRONICS ⚡</div>
+                <div className="text-[10px] uppercase tracking-widest text-[#2563eb] font-black italic">⚡ [BUSINESS NAME] ELECTRONICS ⚡</div>
                 
                 <h4 className="text-base font-black text-foreground uppercase tracking-tight mt-3">{selectedQRProduct.name}</h4>
                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">{selectedQRProduct.category}</p>
