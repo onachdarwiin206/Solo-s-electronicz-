@@ -21,8 +21,8 @@ interface AdminDashboardProps {
 }
 
 function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
-  const stages: OrderStatus[] = ['pending', 'confirmed', 'delivering', 'delivered'];
-  const currentIndex = stages.indexOf(currentStatus);
+  const stages: OrderStatus[] = ['pending', 'confirmed'];
+  const currentIndex = Math.max(0, stages.indexOf(currentStatus));
 
   return (
     <div className="w-full py-6">
@@ -31,7 +31,7 @@ function StatusProgress({ currentStatus }: { currentStatus: OrderStatus }) {
         <div className="absolute top-2 left-0 w-full h-0.5 bg-foreground/10" />
         <div 
           className="absolute top-2 left-0 h-0.5 bg-blue-500 transition-all duration-1000" 
-          style={{ width: `${(currentIndex / (stages.length - 1)) * 100}%` }}
+          style={{ width: `${(currentIndex / Math.max(1, stages.length - 1)) * 100}%` }}
         />
         
         {stages.map((stage, i) => {
@@ -647,7 +647,7 @@ _Thank you for choosing Solo Electronics!_
             const file = new File([blob], fileName, { type: 'image/jpeg' });
             
             const newUpload = {
-              id: uuidv4().substr(0, 8),
+              id: uuidv4().substring(0, 8),
               type: 'image' as const,
               file: file,
               status: 'queued' as const,
@@ -691,7 +691,7 @@ _Thank you for choosing Solo Electronics!_
         const file = new File([blob], fileName, { type: mimeType });
         
         const newUpload = {
-          id: uuidv4().substr(0, 8),
+          id: uuidv4().substring(0, 8),
           type: 'video' as const,
           file: file,
           status: 'queued' as const,
@@ -795,7 +795,7 @@ _Thank you for choosing Solo Electronics!_
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const newUploads = Array.from(files).map(file => ({
-      id: uuidv4().substr(0, 8),
+      id: uuidv4().substring(0, 8),
       type,
       file,
       status: 'queued' as const,
@@ -806,6 +806,23 @@ _Thank you for choosing Solo Electronics!_
   };
 
   const removeMedia = (url: string | undefined, id: string) => {
+    const item = uploadingMedia.find(m => m.id === id);
+    if (item?.localPreview) {
+      try {
+        URL.revokeObjectURL(item.localPreview);
+      } catch (err) {
+        console.warn("[Media Audit] Error revoking blob URL:", err);
+      }
+    }
+    
+    if (item?.status === 'done' && item.path) {
+      const bucket = item.type === 'image' ? 'product-images' : 'product-videos';
+      console.log(`[Storage Audit] Cleaning up removed media file: ${item.path}`);
+      deleteFile(bucket, item.path).catch(err => {
+        console.warn("[Storage Audit] Failed to delete file on media removal:", err);
+      });
+    }
+
     setUploadingMedia(prev => prev.filter(item => item.id !== id));
   };
 
@@ -1340,8 +1357,8 @@ _Thank you for choosing Solo Electronics!_
                               </div>
                             ) : (
                               <div className="flex items-center justify-center gap-1.5 text-amber-400/90 bg-amber-500/5 border border-amber-500/10 rounded-xl py-2 px-3 text-[9px] font-mono uppercase tracking-widest">
-                                <AlertCircle size={11} className="animate-pulse" />
-                                Sandbox Mode: Uploading locally (Blob Simulators)
+                                <ShieldCheck size={11} className="animate-pulse" />
+                                Local Storage Cache Active: Seamless Mode Enabled
                               </div>
                             )}
                           </div>
@@ -1495,6 +1512,26 @@ _Thank you for choosing Solo Electronics!_
 
       {activeTab === 'inventory' && (
         <div className="space-y-12">
+          {/* Local Analytics Reset */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-foreground/5 p-6 rounded-3xl border border-border gap-4">
+            <div>
+              <h5 className="text-xs font-black text-foreground font-mono uppercase tracking-wider">Sales Analytics & Node Registry</h5>
+              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">Flush transaction receipts to baseline inventory charts and performance trackers.</p>
+            </div>
+            <button
+              onClick={async () => {
+                if (window.confirm("Are you sure you want to reset your local sales analytics? This will clear local charts.")) {
+                  localStorage.removeItem('solo_sandbox_orders');
+                  await fetchOrders();
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/20 active:scale-95 transition-all rounded-xl text-[10px] font-black uppercase tracking-widest shrink-0 self-stretch sm:self-auto justify-center"
+            >
+              <Trash2 size={12} />
+              Reset Local Analytics
+            </button>
+          </div>
+
           {/* Logistics Analytics Visualization: Daily Sales Volume vs Inventory Stock Levels */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-foreground/5 p-8 rounded-[2.5rem] border border-border">
             {/* Column 1: Category Allocation index */}
@@ -1665,8 +1702,6 @@ _Thank you for choosing Solo Electronics!_
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
                 <option value="confirmed">Confirmed</option>
-                <option value="delivering">Delivering</option>
-                <option value="delivered">Delivered</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -1703,14 +1738,14 @@ _Thank you for choosing Solo Electronics!_
                         <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{order.id}</span>
                         <span className="text-muted-foreground text-xs font-bold">{format(new Date(order.created_at), 'MMM dd, HH:mm')}</span>
                       </div>
-                      <h4 className="text-lg font-bold text-foreground uppercase">{order.delivery_address}</h4>
+                      <h4 className="text-lg font-bold text-foreground uppercase">{order.customer_name}</h4>
                       <p className="text-blue-500 font-mono text-sm">{order.customer_phone}</p>
                     </div>
                     <div className="w-full lg:w-96 bg-foreground/10 rounded-2xl p-4 border border-foreground/5">
                       <StatusProgress currentStatus={order.status} />
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {(['pending', 'confirmed', 'delivering', 'delivered'] as OrderStatus[]).map((status) => (
+                      {(['pending', 'confirmed'] as OrderStatus[]).map((status) => (
                         <button key={status} onClick={() => updateOrderStatus(order.id, status)} className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", order.status === status ? "bg-foreground text-background" : "bg-foreground/5 text-muted-foreground hover:bg-foreground/10")}>{status}</button>
                       ))}
                     </div>

@@ -160,7 +160,7 @@ export function ProductCard({
                 <OptimizedImage
                   src={images[currentImageIndex]}
                   alt={product.name}
-                  className="w-full h-full object-contain p-6 transform group-hover:scale-[1.03] transition-transform duration-700 select-none"
+                  className="w-full h-full object-contain p-1.5 transform group-hover:scale-[1.08] transition-transform duration-700 select-none"
                 />
               </motion.div>
             </AnimatePresence>

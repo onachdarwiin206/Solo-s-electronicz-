@@ -237,10 +237,6 @@ export default function UserProfile() {
                               {format(new Date(order.created_at), 'PPP')}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin size={14} className="text-gray-600" />
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{order.district}</span>
-                          </div>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-black text-white italic tracking-tighter mb-1">

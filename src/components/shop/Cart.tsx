@@ -30,7 +30,7 @@ interface CartProps {
   t: any;
 }
 
-type CheckoutStep = 'basket' | 'delivery';
+type CheckoutStep = 'basket' | 'details';
 
 const WhatsAppIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
   <svg 
@@ -48,11 +48,9 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
   const { user } = useAuth();
   const [step, setStep] = useState<CheckoutStep>('basket');
   
-  // Delivery State
+  // Customer Details State
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('Lira City');
-  const [streetAddress, setStreetAddress] = useState('');
   
   // Processing States
   const [isProcessing, setIsProcessing] = useState(false);
@@ -61,19 +59,8 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  
-  // Districts & respective logistics rates
-  const districts = [
-    { name: 'Lira City', fee: 10000, est: '24 Hours' },
-    { name: 'Kampala Core', fee: 5000, est: 'SAME DAY' },
-    { name: 'Gulu Core', fee: 12000, est: '24-48 Hours' },
-    { name: 'Soroti Core', fee: 12000, est: '24-48 Hours' },
-    { name: 'Mbale Core', fee: 12000, est: '24-48 Hours' }
-  ];
-
-  const activeDistrictRow = districts.find(d => d.name === selectedDistrict) || districts[0];
-  const deliveryFee = subtotal > 0 ? activeDistrictRow.fee : 0;
-  const grandTotal = subtotal + deliveryFee;
+  const deliveryFee = 0;
+  const grandTotal = subtotal;
 
   useEffect(() => {
     if (user && user.id !== 'legacy-admin') {
@@ -90,7 +77,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
     }
   }, [isOpen]);
 
-  const validateDelivery = () => {
+  const validateDetails = () => {
     setValidationError(null);
     if (!customerName.trim()) {
       setValidationError("Full Name is a required placeholder for quote generation.");
@@ -100,26 +87,22 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
       setValidationError("A contact telephone number is required to route your WhatsApp inquiry.");
       return false;
     }
-    if (!streetAddress.trim()) {
-      setValidationError("Delivery coordinates or general landmarks block must copy into your docket.");
-      return false;
-    }
     return true;
   };
 
   const handleExecuteCheckout = async () => {
     setValidationError(null);
-    if (!validateDelivery()) return;
+    if (!validateDetails()) return;
 
     setIsProcessing(true);
 
     try {
       const orderId = await onCheckout(
         'cod', 
-        selectedDistrict, 
-        deliveryFee, 
+        'Corporate Showroom', 
+        0, 
         customerPhone, 
-        streetAddress, 
+        'Direct Collection', 
         customerName
       );
 
@@ -203,7 +186,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     Inquiry List
                   </h2>
                 </div>
-                <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-widest font-medium">Verify hardware collection & delivery parameters</p>
+                <p className="text-[10px] font-sans text-zinc-500 uppercase tracking-widest font-medium">Verify hardware collection & sourcing details</p>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-zinc-900 border border-transparent rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer"><X size={18} /></button>
             </div>
@@ -218,10 +201,10 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
               </button>
               <ChevronRight size={10} className="text-zinc-800" />
               <button 
-                onClick={() => { if (items.length > 0) setStep('delivery'); }} 
-                className={cn("flex items-center gap-1.5 transition-colors", step === 'delivery' ? "text-white font-extrabold" : "text-zinc-600 hover:text-zinc-400")}
+                onClick={() => { if (items.length > 0) setStep('details'); }} 
+                className={cn("flex items-center gap-1.5 transition-colors", step === 'details' ? "text-white font-extrabold" : "text-zinc-600 hover:text-zinc-400")}
               >
-                2. Contact & Routing
+                2. Contact Info
               </button>
             </div>
 
@@ -289,18 +272,18 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     </motion.div>
                   )}
 
-                  {/* Step 2: Delivery Details */}
-                  {step === 'delivery' && (
+                  {/* Step 2: Contact Details */}
+                  {step === 'details' && (
                     <motion.div 
-                      key="delivery"
+                      key="details"
                       initial={{ opacity: 0, x: -10 }} 
                       animate={{ opacity: 1, x: 0 }} 
                       exit={{ opacity: 0, x: 10 }} 
                       className="space-y-6 text-left"
                     >
                       <div className="space-y-1.5">
-                        <span className="text-[10px] font-mono tracking-widest text-[#2563eb] font-black uppercase">LOGISTICS COORDINATES</span>
-                        <h3 className="text-sm font-display font-medium text-white">Delivery Parameters</h3>
+                        <span className="text-[10px] font-mono tracking-widest text-[#2563eb] font-black uppercase">CONTACT INFORMATION</span>
+                        <h3 className="text-sm font-display font-medium text-white">Sourcing Details</h3>
                       </div>
 
                       <div className="space-y-4">
@@ -308,7 +291,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                           <label className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
                           <input 
                             type="text" 
-                            placeholder="Recipient full name..." 
+                            placeholder="Your full name..." 
                             value={customerName} 
                             onChange={(e) => { setCustomerName(e.target.value); setValidationError(null); }} 
                             className="w-full bg-white/[0.01] border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans" 
@@ -324,38 +307,6 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                             onChange={(e) => { setCustomerPhone(e.target.value); setValidationError(null); }} 
                             className="w-full bg-white/[0.01] border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans" 
                           />
-                        </div>
-
-                        <div className="space-y-1.5 font-mono">
-                          <label className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest pl-1">Target District</label>
-                          <select
-                            value={selectedDistrict}
-                            onChange={(e) => setSelectedDistrict(e.target.value)}
-                            className="w-full bg-[#030307] border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans"
-                          >
-                            {districts.map(d => (
-                              <option key={d.name} value={d.name}>{d.name} (UGX {d.fee.toLocaleString()})</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="space-y-1.5 font-mono">
-                          <label className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest pl-1">Drop-off / Home address</label>
-                          <textarea 
-                            rows={3}
-                            placeholder="Specify work details, home street, blocks, or landmarks..." 
-                            value={streetAddress} 
-                            onChange={(e) => { setStreetAddress(e.target.value); setValidationError(null); }} 
-                            className="w-full bg-white/[0.01] border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans resize-none" 
-                          />
-                        </div>
-                      </div>
-
-                      {/* Small Logistics Prompt Info */}
-                      <div className="p-4 bg-white/[0.01] border border-white/[0.03] rounded-2xl flex items-center gap-3">
-                        <Truck size={14} className="text-blue-400 shrink-0" />
-                        <div className="font-mono text-[9px] text-gray-500 uppercase tracking-wide leading-relaxed">
-                          Priority dispatch: Sourced items bound for <span className="text-white font-bold">{selectedDistrict}</span> usually complete within <span className="text-blue-400 font-bold">{activeDistrictRow.est}</span>.
                         </div>
                       </div>
 
@@ -393,12 +344,6 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     <span>Subtotal Matrix</span>
                     <span className="text-white">UGX {subtotal.toLocaleString()}</span>
                   </div>
-                  {step !== 'basket' && (
-                    <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.15em] text-gray-500">
-                      <span>Logistics Fee ({selectedDistrict})</span>
-                      <span className="text-white">UGX {deliveryFee.toLocaleString()}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between pt-3 mt-3 border-t border-white/[0.04] items-baseline">
                     <span className="text-xs font-black text-white italic uppercase tracking-tighter">Est. Valuation Total</span>
                     <span className="text-xl font-bold text-white tracking-tight">UGX {grandTotal.toLocaleString()}</span>
@@ -409,7 +354,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                   
                   {step === 'basket' && (
                     <button 
-                      onClick={() => setStep('delivery')}
+                      onClick={() => setStep('details')}
                       className="w-full py-4.5 bg-white hover:bg-white/95 text-black font-semibold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 text-xs tracking-widest duration-100 uppercase cursor-pointer"
                     >
                       Bespoke Inquiry Details
@@ -417,7 +362,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     </button>
                   )}
 
-                  {step === 'delivery' && (
+                  {step === 'details' && (
                     <div className="flex flex-col gap-2.5 w-full">
                       <button 
                         onClick={handleExecuteCheckout}

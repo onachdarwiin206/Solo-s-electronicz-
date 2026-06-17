@@ -133,6 +133,90 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
       inquiries: 0
     }
   ]);
+  
+  const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [resetCompleted, setResetCompleted] = useState<boolean>(false);
+
+  const handleResetAllAnalytics = () => {
+    setIsResetting(true);
+    setTimeout(() => {
+      setCampaigns([
+        {
+          id: "camp-1",
+          name: "Kampala Plaza Grand Launch",
+          platform: "Meta (Instagram/FB)",
+          budget: 1800000,
+          spent: 1200000,
+          category: "Phones & Tablets",
+          status: "Active",
+          ctr: 5.6,
+          inquiries: 194
+        },
+        {
+          id: "camp-2",
+          name: "Uni Semester Developers Special",
+          platform: "Google Ads & LI",
+          budget: 3500000,
+          spent: 3500000,
+          category: "Computers & Laptops",
+          status: "Completed",
+          ctr: 4.8,
+          inquiries: 240
+        },
+        {
+          id: "camp-3",
+          name: "Hype Beast Audio Push",
+          platform: "TikTok Campaign",
+          budget: 2000000,
+          spent: 450000,
+          category: "TVs & Audio",
+          status: "Active",
+          ctr: 6.9,
+          inquiries: 110
+        },
+        {
+          id: "camp-4",
+          name: "Gaming Grid Kampala Blitz",
+          platform: "Meta Ads Network",
+          budget: 1500000,
+          spent: 0,
+          category: "Gaming & Consoles",
+          status: "Scheduled",
+          ctr: 0.0,
+          inquiries: 0
+        }
+      ]);
+
+      setSocialPosts([
+        {
+          id: "sp-1",
+          productId: products[0]?.id || "p1",
+          productName: products[0]?.name || "Samsung Galaxy S24 Ultra",
+          caption: "🔥 UGANDA REVELATION! Boss, avoid shipping stress and custom delays. The brand new Samsung Galaxy S24 Ultra is officially locked in stock in Kampala. Safe exchange, direct showroom handshakes, and 1-year product support. 🇺🇬 Inbox us now to claim yours!",
+          platforms: ["instagram", "facebook"],
+          scheduledDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+          scheduledTime: "11:30",
+          status: "scheduled",
+          image: products[0]?.image || "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?q=75&w=800&auto=format&fit=crop"
+        },
+        {
+          id: "sp-2",
+          productId: products[1]?.id || "p2",
+          productName: products[1]?.name || "Apple MacBook Pro M3",
+          caption: "💻 Serious power for developers and creators. The Apple MacBook Pro M3 is the ultimate silent workhorse. Handpicked, tested, and ready to go with genuine local delivery. Let's get to work.",
+          platforms: ["linkedin", "twitter"],
+          scheduledDate: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0],
+          scheduledTime: "15:15",
+          status: "scheduled",
+          image: products[1]?.image || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=75&w=800&auto=format&fit=crop"
+        }
+      ]);
+
+      setIsResetting(false);
+      setResetCompleted(true);
+      setTimeout(() => setResetCompleted(false), 3000);
+    }, 1000);
+  };
 
   // States for adding a new Campaign
   const [showAddCampaignModal, setShowAddCampaignModal] = useState<boolean>(false);
@@ -331,6 +415,16 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
             <p className="text-zinc-400 text-sm max-w-2xl">
               Launch localized campaigns, coordinate verified multi-platform updates, design live pre-flight feed previews, and harness Gemini generation for Uganda direct handshakes.
             </p>
+            <div className="pt-2">
+              <button
+                onClick={handleResetAllAnalytics}
+                disabled={isResetting}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 active:scale-95 disabled:opacity-50 transition-all"
+              >
+                <RefreshCw size={11} className={isResetting ? "animate-spin" : ""} />
+                {isResetting ? "Resetting Stats..." : resetCompleted ? "Analytics Reset Successfully!" : "Reset Marketing Analytics"}
+              </button>
+            </div>
           </div>
 
           {/* Quick Stats Summary Widget */}
@@ -410,6 +504,22 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
               animate={{ opacity: 1, y: 0 }}
               className="space-y-8"
             >
+              {/* Reset Diagnostic Node */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-950/20 border border-white/[0.03] p-5 rounded-2xl gap-4">
+                <div>
+                  <h3 className="text-xs font-bold text-white tracking-tight uppercase font-mono">Operations Diagnostic Node</h3>
+                  <p className="text-[10px] text-zinc-500 font-mono mt-0.5">Flush custom campaign metrics and restore standard target performance values.</p>
+                </div>
+                <button
+                  onClick={handleResetAllAnalytics}
+                  disabled={isResetting}
+                  className="flex items-center gap-2 px-3.5 py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-500/20 hover:border-red-500/35 text-red-400 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all shrink-0"
+                >
+                  <RefreshCw size={11} className={isResetting ? "animate-spin" : ""} />
+                  {isResetting ? "Resetting Tracker..." : resetCompleted ? "Analytics Restored!" : "Reset Metrics"}
+                </button>
+              </div>
+
               {/* Financial & Inquiries High Level KPI Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-zinc-950/40 border border-white/[0.04] p-6 rounded-3xl relative overflow-hidden group">
@@ -461,7 +571,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                   <div className="absolute top-0 right-0 p-4 opacity-[0.03] text-white group-hover:opacity-[0.05] transition-opacity">
                     <Globe size={120} />
                   </div>
-                  <span className="text-[9px] font-mono tracking-widest text-zinc-500 uppercase block mb-1">SIMULATED NET PROMOTIONS</span>
+                  <span className="text-[9px] font-mono tracking-widest text-zinc-500 uppercase block mb-1">ACTIVE SOCIAL DISPATCH</span>
                   <div className="flex items-baseline gap-1.5 mb-2">
                     <span className="text-2xl font-semibold font-mono text-white">{socialPosts.length}</span>
                     <span className="text-xs text-zinc-500">Active Social Envelopes</span>

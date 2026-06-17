@@ -464,7 +464,7 @@ export default function App() {
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
       const receiptTemplate = `
-🧾 *SOLO ELECTRONICS - DIGITAL RECEIPT (SANDBOX)*
+🧾 *SOLO ELECTRONICS - DIGITAL RECEIPT*
 ---------------------------------------
 *Order ID:* ${orderId}
 *Date:* ${new Date().toLocaleDateString()}
@@ -528,13 +528,9 @@ _Your order is now being processed._
 ${cartSummary}
 
 ---------------------------------------
-*Subtotal:* UGX ${subtotal.toLocaleString()}
-*Delivery:* UGX ${deliveryFee.toLocaleString()}
 *TOTAL:* UGX ${total.toLocaleString()}
 
-*DELIVERY TO:*
-${district}, ${address}
-*PHONE:* ${phone}
+*CONTACT PHONE:* ${phone}
 
 _Thank you for choosing Solo Electronics!_
 _Your order is now being processed._

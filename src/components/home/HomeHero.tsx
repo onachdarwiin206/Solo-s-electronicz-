@@ -235,12 +235,12 @@ export function HomeHero({
                   <motion.div 
                     animate={{ y: [0, -8, 0] }}
                     transition={{ repeat: Infinity, duration: 5.5, ease: "easeInOut" }}
-                    className="relative w-[75%] h-[55%] flex items-center justify-center my-2"
+                    className="relative w-[88%] h-[62%] flex items-center justify-center my-2"
                   >
                     <OptimizedImage 
                       src={activeShowcaseProduct.image} 
                       alt={activeShowcaseProduct.name} 
-                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_25px_40px_rgba(59,130,246,0.18)] transform group-hover:scale-[1.03] transition-transform duration-700"
+                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_25px_40px_rgba(59,130,246,0.18)] transform group-hover:scale-[1.06] transition-transform duration-700"
                     />
                   </motion.div>
 
@@ -273,20 +273,7 @@ export function HomeHero({
               </div>
             </motion.div>
 
-            {/* 2. Fast Delivery */}
-            <motion.div 
-              animate={{ y: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 4.4, ease: "easeInOut", delay: 0.8 }}
-              className="absolute top-1/2 -left-6 sm:-left-10 p-3 bg-zinc-950/90 backdrop-blur-xl border border-white/[0.04] rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none select-none max-w-[170px]"
-            >
-              <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
-                <Truck size={14} />
-              </div>
-              <div className="text-left">
-                <h4 className="text-[10px] font-bold text-white leading-none">Fast Delivery</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-1 whitespace-nowrap">Reliable Transit</p>
-              </div>
-            </motion.div>
+
 
             {/* 3. WhatsApp Support */}
             <motion.div 
