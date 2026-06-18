@@ -112,11 +112,11 @@ export function Navbar({
                   pressTimerActive && "scale-90 opacity-70"
                 )}
               >
-                [BUSINESS NAME]'S PHONES & ELECTRONICS
+                LIRA PHONES & ELECTRONICS
               </button>
             </div>
             
-            <div className="hidden xl:block">
+            <div className="hidden xl:block xl:ml-auto">
               <div className="flex items-baseline space-x-2">
                 {navItems.map((item) => (
                   <button
@@ -158,7 +158,7 @@ export function Navbar({
             <Tooltip content="Contact Support">
               <button 
                 onClick={() => {
-                  window.open("https://wa.me/256793405517?text=Hello%20[Business%20Name]%27s%20Electronics!%20I%27d%20like%2520to%2520get%2520in%2520touch%2520with%2520customer%2520support.", "_blank");
+                  window.open("https://wa.me/256793405517?text=Hello%20Lira%20Phones%20%26%20Electronics!%20I%27d%20like%2520to%2520get%2520in%2520touch%2520with%2520customer%2520support.", "_blank");
                 }}
                 className="relative p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
