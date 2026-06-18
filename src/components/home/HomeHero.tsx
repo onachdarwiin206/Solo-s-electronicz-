@@ -279,19 +279,19 @@ export function HomeHero({
 
       {/* 4. SEARCH & DISCOVERY UPGRADE */}
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
-        <div className="bg-card border border-border rounded-[3rem] p-6 sm:p-10 shadow-lg relative text-left">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/[0.01] to-purple-600/[0.01] pointer-events-none rounded-[3rem]" />
+        <div className="bg-white/80 dark:bg-zinc-950/75 backdrop-blur-2xl border border-zinc-200/60 dark:border-zinc-800/80 rounded-[3rem] p-6 sm:p-10 shadow-2xl relative text-left">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/[0.02] to-purple-600/[0.02] pointer-events-none rounded-[3rem]" />
           
           <div className="max-w-3xl mx-auto space-y-6">
             <div className="space-y-1 text-center">
               <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-blue-500 uppercase">SECURE SEARCH PLATFORM</span>
-              <h2 className="text-xl sm:text-2xl font-display font-medium text-foreground tracking-tight">Looking for something specific?</h2>
-              <p className="text-muted-foreground text-[11px]">Instant live matching across our verified Lira warehouses & direct brand imports</p>
+              <h2 className="text-xl sm:text-2xl font-display font-semibold text-foreground tracking-tight">Looking for something specific?</h2>
+              <p className="text-muted-foreground text-xs font-medium">Instant live matching across our verified Lira warehouses & direct brand imports</p>
             </div>
 
             {/* Immersive high contrast search input bar */}
             <div className="relative group/search">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/search:text-blue-500 transition-colors" size={18} />
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 group-focus-within/search:text-blue-500 transition-colors" size={18} />
               <input
                 type="text"
                 value={localSearch}
@@ -301,7 +301,7 @@ export function HomeHero({
                   onSearch?.(val);
                 }}
                 placeholder="Search smart devices, laptops, sound systems, accessories..."
-                className="w-full bg-background border border-border rounded-2.5xl py-4.5 pl-14 pr-12 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500/30 transition-all font-mono placeholder:text-muted-foreground"
+                className="w-full bg-white dark:bg-zinc-900/90 border-2 border-zinc-300 dark:border-zinc-700/80 rounded-2.5xl py-4.5 pl-14 pr-12 text-sm font-semibold text-zinc-900 dark:text-zinc-100 outline-none shadow-md focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-zinc-500/80 dark:placeholder:text-zinc-400/80"
               />
               {localSearch && (
                 <button 
@@ -315,7 +315,7 @@ export function HomeHero({
 
             {/* Premium Suggestion & Popular searches Row */}
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-              <span className="text-[10px] font-mono text-muted-foreground mr-2 uppercase tracking-wide">Popular searches:</span>
+              <span className="text-[10px] font-sans font-bold text-zinc-500 dark:text-zinc-400 mr-2 uppercase tracking-wider">Popular searches:</span>
               {[
                 "iPhone",
                 "Samsung",
@@ -328,10 +328,10 @@ export function HomeHero({
                   key={`trend-${term}`}
                   onClick={() => handlePopularSearch(term)}
                   className={cn(
-                    "px-3.5 py-1.5 bg-background active:scale-95 border rounded-full text-[10px] font-mono transition-all font-bold cursor-pointer",
+                    "px-4 py-2 border rounded-full text-xs transition-all font-bold cursor-pointer shadow-sm active:scale-95",
                     localSearch.toLowerCase() === term.toLowerCase()
-                      ? "border-blue-500 text-blue-500 bg-blue-500/[0.02]"
-                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
+                      ? "border-blue-500 text-white bg-blue-600 shadow-[0_3px_12px_rgba(37,99,235,0.35)] hover:bg-blue-700"
+                      : "bg-white/90 dark:bg-zinc-900/90 border-zinc-300 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-650 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                   )}
                 >
                   {term}

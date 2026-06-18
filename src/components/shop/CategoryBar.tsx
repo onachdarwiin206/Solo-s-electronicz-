@@ -38,7 +38,7 @@ const getCategoryIcon = (category: string) => {
 
 export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarProps) {
   return (
-    <div className="bg-background/80 backdrop-blur-2xl border-b border-border/40 py-5 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40">
+    <div className="bg-white/90 dark:bg-zinc-950/85 backdrop-blur-2xl border-b border-zinc-200/50 dark:border-zinc-850/60 py-5 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-start md:justify-center gap-2.5 min-w-max">
         
         {/* All Sectors Tab */}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../ThemeContext';
-import luxuryBg from '../../assets/images/lira_luxury_background_1781811057487.jpg';
+import luxuryBg from '../../assets/images/abstract_neon_bg_1781818038084.jpg';
 
 interface Particle {
   id: number;
@@ -207,10 +207,10 @@ export function BackgroundSlideshow() {
       <div 
         className={`absolute inset-0 transition-colors duration-500 pointer-events-none ${
           theme === 'light' 
-            ? 'bg-white/8 backdrop-blur-[1px]' 
+            ? 'bg-white/4' 
             : theme === 'glass'
-            ? 'bg-zinc-950/15 backdrop-blur-[2.5px]'
-            : 'bg-[#03030c]/25 backdrop-blur-[2px]'
+            ? 'bg-zinc-950/10 backdrop-blur-[0.5px]'
+            : 'bg-[#03030c]/10 backdrop-blur-[0.5px]'
         }`}
       />
 
@@ -351,7 +351,7 @@ export function BackgroundSlideshow() {
 
       {/* RADIAL SCREEN VIGNETTE GLASS CONTRAST */}
       {theme !== 'light' && (
-        <div className="absolute inset-0 z-0 glass-contrast-overlay pointer-events-none opacity-[0.95]" />
+        <div className="absolute inset-0 z-0 glass-contrast-overlay pointer-events-none opacity-[0.35]" />
       )}
     </div>
   );

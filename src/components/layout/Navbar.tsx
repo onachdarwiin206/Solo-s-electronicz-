@@ -120,14 +120,14 @@ export function Navbar({
 
             {/* Search Bar - Desktop */}
             <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md ml-auto min-w-0">
-              <div className="relative w-full group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-blue-500 transition-colors" size={16} />
+              <div className="relative w-full group/search">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 group-focus-within/search:text-blue-500 transition-colors" size={16} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search products..."
-                  className="w-full bg-foreground/5 border border-border rounded-2xl py-2.5 pl-12 pr-4 text-xs text-foreground outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all font-mono placeholder:text-muted-foreground"
+                  className="w-full bg-white/95 dark:bg-zinc-950/95 border border-zinc-300/80 dark:border-zinc-700/80 rounded-2xl py-2.5 pl-12 pr-4 text-xs font-semibold text-foreground outline-none shadow-sm focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all font-sans placeholder:text-zinc-500/90 dark:placeholder:text-zinc-400/90"
                 />
               </div>
             </div>
@@ -231,15 +231,15 @@ export function Navbar({
             className="md:hidden bg-background/80 border-b border-border overflow-hidden"
           >
             <div className="p-4">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+              <div className="relative group/mobilesearch">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 group-focus-within/mobilesearch:text-blue-500 transition-colors" size={16} />
                 <input
                   autoFocus
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search for hardware..."
-                  className="w-full bg-foreground/5 border border-border rounded-2xl py-3 pl-12 pr-4 text-sm text-foreground outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700/80 rounded-2xl py-3 pl-12 pr-4 text-sm font-semibold text-foreground outline-none shadow-md focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all placeholder:text-zinc-500 dark:placeholder:text-zinc-400"
                 />
               </div>
             </div>
