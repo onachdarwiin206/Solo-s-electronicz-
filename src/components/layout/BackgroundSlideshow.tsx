@@ -139,7 +139,7 @@ export function BackgroundSlideshow() {
       ref={bgRef}
       className="fixed inset-0 z-[-1] overflow-hidden select-none pointer-events-none"
       style={{
-        backgroundColor: theme === 'light' ? '#ffffff' : '#03030c',
+        backgroundColor: '#ffffff',
         '--mouse-x': '0',
         '--mouse-y': '0',
         '--scroll-y': '0px',
@@ -200,70 +200,70 @@ export function BackgroundSlideshow() {
         }
       `}</style>
 
-      {/* LAYER 1: DEEP GRADIENT COLD SOLID BASE */}
+      {/* LAYER 1: DEEP SOLID BASE */}
       <div 
         className={`absolute inset-0 bg-gradient-to-tr bg-[length:200%_200%] transition-all duration-1000 ${
           theme === 'light' 
-            ? "from-[#f1f5f9] via-[#f8fafc] to-[#ffffff]" 
+            ? "from-[#ffffff] to-[#ffffff]" 
             : "from-[#020208] via-[#050616] to-[#0a0515]"
         }`}
         style={{
-          animation: 'bgBaseBreath 40s infinite ease-in-out',
+          animation: theme === 'light' ? 'none' : 'bgBaseBreath 40s infinite ease-in-out',
         }}
       />
 
       {/* LAYER 2: CINEMATIC TECHNICAL VIDEO & IMAGE SLIDESHOW */}
-      <div 
-        className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none"
-        style={{
-          transform: 'translate(calc(var(--mouse-x) * 6px), calc(var(--mouse-y) * 6px))',
-          willChange: 'transform',
-        }}
-      >
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={currentSlideIndex}
-            initial={{ opacity: 0, scale: 1.03 }}
-            animate={{ 
-              opacity: theme === 'light' ? 0.08 : 0.22, 
-              scale: 1 
-            }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 1.8, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full"
-          >
-            {SLIDES[currentSlideIndex].type === 'video' ? (
-              <div 
-                className="w-full h-full bg-cover bg-center relative" 
-                style={{ backgroundImage: `url(${SLIDES[currentSlideIndex].fallbackUrl})` }}
-              >
-                <video
+      {theme !== 'light' && (
+        <div 
+          className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none"
+          style={{
+            transform: 'translate(calc(var(--mouse-x) * 6px), calc(var(--mouse-y) * 6px))',
+            willChange: 'transform',
+          }}
+        >
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key={currentSlideIndex}
+              initial={{ opacity: 0, scale: 1.03 }}
+              animate={{ 
+                opacity: 0.22, 
+                scale: 1 
+              }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 1.8, ease: "easeInOut" }}
+              className="absolute inset-0 w-full h-full"
+            >
+              {SLIDES[currentSlideIndex].type === 'video' ? (
+                <div 
+                  className="w-full h-full bg-cover bg-center relative" 
+                  style={{ backgroundImage: `url(${SLIDES[currentSlideIndex].fallbackUrl})` }}
+                >
+                  <video
+                    src={SLIDES[currentSlideIndex].url}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover"
+                    onError={() => {
+                      console.info("[BackgroundSlideshow] Transitioning video to standard active wallpaper.");
+                    }}
+                  />
+                </div>
+              ) : (
+                <img
                   src={SLIDES[currentSlideIndex].url}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
+                  alt="Electronic Slides"
                   className="w-full h-full object-cover"
-                  onError={() => {
-                    console.info("[BackgroundSlideshow] Transitioning video to standard active wallpaper.");
-                  }}
                 />
-              </div>
-            ) : (
-              <img
-                src={SLIDES[currentSlideIndex].url}
-                alt="Electronic Slides"
-                className="w-full h-full object-cover"
-              />
-            )}
-            
-            {/* Gradient matrix shading to anchor active content cards */}
-            <div className={`absolute inset-0 pointer-events-none ${
-              theme === 'light' ? 'bg-white/10' : 'bg-gradient-to-b from-[#03030c]/20 via-[#03030c]/60 to-[#03030c]'
-            }`} />
-          </motion.div>
-        </AnimatePresence>
-      </div>
+              )}
+              
+              {/* Gradient matrix shading to anchor active content cards */}
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#03030c]/20 via-[#03030c]/60 to-[#03030c]" />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* DISMISSED COGNITIVE MESH ELEMENT CODES */}
       <div className="hidden text-transparent opacity-0 pointer-events-none w-0 h-0">
@@ -313,52 +313,52 @@ export function BackgroundSlideshow() {
       </div>
 
       {/* LAYER 3: INTERACTIVE PARTICLE FIELD */}
-      <div className="absolute inset-0 z-10 overflow-hidden">
-        {particles.map((p) => {
-          const depthMultiplier = p.depth;
-          return (
-            <div
-              key={p.id}
-              className={`absolute rounded-full transition-all duration-1000 ${
-                theme === 'light' ? 'bg-slate-400' : 'bg-white'
-              }`}
-              style={{
-                left: `${p.x}%`,
-                top: `${p.y}%`,
-                width: `${p.size}px`,
-                height: `${p.size}px`,
-                opacity: theme === 'light' ? p.opacity * 1.5 : p.opacity,
-                boxShadow: p.glow && theme !== 'light' ? '0 0 6px rgba(147, 51, 234, 0.3)' : undefined,
-                transform: `translate(
-                  calc(var(--mouse-x) * ${depthMultiplier * 15}px),
-                  calc(var(--mouse-y) * ${depthMultiplier * 15}px + var(--scroll-y) * ${depthMultiplier * -0.08})
-                )`,
-                animation: `particlePulse ${p.pulseSpeed}s ease-in-out ${p.id * 0.3}s infinite`,
-                willChange: 'transform',
-              }}
-            />
-          );
-        })}
-      </div>
+      {theme !== 'light' && (
+        <div className="absolute inset-0 z-10 overflow-hidden">
+          {particles.map((p) => {
+            const depthMultiplier = p.depth;
+            return (
+              <div
+                key={p.id}
+                className="absolute rounded-full transition-all duration-1000 bg-white"
+                style={{
+                  left: `${p.x}%`,
+                  top: `${p.y}%`,
+                  width: `${p.size}px`,
+                  height: `${p.size}px`,
+                  opacity: p.opacity,
+                  boxShadow: p.glow ? '0 0 6px rgba(147, 51, 234, 0.3)' : undefined,
+                  transform: `translate(
+                    calc(var(--mouse-x) * ${depthMultiplier * 15}px),
+                    calc(var(--mouse-y) * ${depthMultiplier * 15}px + var(--scroll-y) * ${depthMultiplier * -0.08})
+                  )`,
+                  animation: `particlePulse ${p.pulseSpeed}s ease-in-out ${p.id * 0.3}s infinite`,
+                  willChange: 'transform',
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* LAYER 4: LOGISTICS TECHNICAL GRID OVERLAY */}
-      <div 
-        className="absolute inset-0 z-0 tech-fineline-grid opacity-[0.12] md:opacity-[0.16]"
-        style={{
-          transform: 'translateY(calc(var(--scroll-y) * -0.02))',
-          willChange: 'transform',
-        }}
-      />
+      {theme !== 'light' && (
+        <div 
+          className="absolute inset-0 z-0 tech-fineline-grid opacity-[0.12] md:opacity-[0.16]"
+          style={{
+            transform: 'translateY(calc(var(--scroll-y) * -0.02))',
+            willChange: 'transform',
+          }}
+        />
+      )}
 
       {/* SUBTLE LOGISTICS MATRIX CORNER ALIGNMENTS OR INDICATORS (Layer 4 Continued) */}
-      {!isMobile && (
+      {!isMobile && theme !== 'light' && (
         <div className="absolute inset-0 z-0 pointer-events-none opacity-10">
           {techIndicators.map((ti, index) => (
             <div 
               key={index} 
-              className={`absolute text-[8px] font-mono tracking-widest select-none flex items-center gap-2 transition-colors duration-1000 ${
-                theme === 'light' ? 'text-slate-800/60' : 'text-blue-500/50'
-              }`}
+              className="absolute text-[8px] font-mono tracking-widest select-none flex items-center gap-2 transition-colors duration-1000 text-blue-500/50"
               style={{
                 top: ti.top,
                 left: ti.left,
@@ -368,7 +368,7 @@ export function BackgroundSlideshow() {
               }}
             >
               {/* Corner crosshairs */}
-              <span className={`font-extrabold text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-blue-500/70'}`}>+</span>
+              <span className="font-extrabold text-[10px] text-blue-500/70">+</span>
               <span>{ti.label}</span>
             </div>
           ))}
@@ -376,30 +376,34 @@ export function BackgroundSlideshow() {
       )}
 
       {/* LAYER 5: AMBIENT AURORA ENERGY STREAKS */}
-      <div className="absolute inset-x-0 bottom-[10%] top-[40%] z-0 pointer-events-none overflow-hidden mix-blend-screen opacity-[0.015] filter blur-[70px]"
-           style={{
-             animation: 'auroraWavelength 32s infinite ease-in-out',
-             willChange: 'transform',
-           }}>
-        <svg viewBox="0 0 1440 400" className="w-full h-full text-blue-500 fill-none opacity-40">
-          <path 
-            d="M-100,200 C150,320 350,120 700,280 C1050,440 1200,100 1540,240 L1540,400 L-100,400 Z" 
-            stroke="rgba(37, 99, 235, 0.2)" 
-            strokeWidth="2"
-            fill="url(#aurora-gradient)"
-          />
-          <defs>
-            <linearGradient id="aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(29, 78, 216, 0.1)" />
-              <stop offset="50%" stopColor="rgba(147, 51, 234, 0.08)" />
-              <stop offset="100%" stopColor="rgba(59, 130, 246, 0.1)" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
+      {theme !== 'light' && (
+        <div className="absolute inset-x-0 bottom-[10%] top-[40%] z-0 pointer-events-none overflow-hidden mix-blend-screen opacity-[0.015] filter blur-[70px]"
+             style={{
+               animation: 'auroraWavelength 32s infinite ease-in-out',
+               willChange: 'transform',
+             }}>
+          <svg viewBox="0 0 1440 400" className="w-full h-full text-blue-500 fill-none opacity-40">
+            <path 
+              d="M-100,200 C150,320 350,120 700,280 C1050,440 1200,100 1540,240 L1540,400 L-100,400 Z" 
+              stroke="rgba(37, 99, 235, 0.2)" 
+              strokeWidth="2"
+              fill="url(#aurora-gradient)"
+            />
+            <defs>
+              <linearGradient id="aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="rgba(29, 78, 216, 0.1)" />
+                <stop offset="50%" stopColor="rgba(147, 51, 234, 0.08)" />
+                <stop offset="100%" stopColor="rgba(59, 130, 246, 0.1)" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      )}
 
       {/* RADIAL SCREEN VIGNETTE GLASS CONTRAST */}
-      <div className="absolute inset-0 z-0 glass-contrast-overlay pointer-events-none opacity-[0.95]" />
+      {theme !== 'light' && (
+        <div className="absolute inset-0 z-0 glass-contrast-overlay pointer-events-none opacity-[0.95]" />
+      )}
     </div>
   );
 }

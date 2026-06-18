@@ -165,44 +165,8 @@ export function HomeHero({
       <section className="relative pt-24 md:pt-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
-          {/* LEFT COLUMN: Clean typography hierarchy (35% focus) */}
-          <div className="lg:col-span-5 text-left space-y-7 xl:pr-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-              </span>
-              <span className="text-[9px] font-mono font-bold tracking-widest text-blue-400 uppercase">
-                Uganda's Premier Tech Vault
-              </span>
-            </div>
-
-            {/* Title is strictly 6 words maximum */}
-            <h1 className="text-4xl sm:text-5xl lg:text-4xl xl:text-5.5xl font-display font-medium tracking-tight text-foreground leading-[1.05]">
-              Genuine Sealed Electronics.<br />
-              Delivered Direct.
-            </h1>
-
-            {/* Value Proposition is exactly 1 clean line in standard body */}
-            <p className="text-zinc-400 text-sm md:text-base leading-relaxed font-sans font-medium max-w-md">
-              Enjoy brand-new authentic products backed by physical warranties and local support desks.
-            </p>
-
-            <div className="flex pt-2 gap-4">
-              <button
-                onClick={() => {
-                  document.getElementById('tech-portfolio')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="group px-7 py-3.5 bg-white hover:bg-neutral-100 text-black font-semibold text-xs font-mono tracking-widest rounded-full active:scale-95 transition-all text-center flex items-center justify-center gap-2.5 shadow-xl cursor-pointer"
-              >
-                EXPLORE CATALOG
-                <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform text-black" />
-              </button>
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN: Large Interactive Slider (65% focus, occupies 70-80% visual focal weight) */}
-          <div className="lg:col-span-7 relative h-[440px] sm:h-[500px] flex items-center justify-center">
+          {/* CENTERED COLUMN: Large Interactive Slider */}
+          <div className="lg:col-span-12 relative h-[440px] sm:h-[500px] flex items-center justify-center">
             
             {/* Visual background platform */}
             <div className="absolute inset-0 bg-radial-gradient from-blue-600/[0.04] to-transparent blur-3xl pointer-events-none" />
@@ -216,10 +180,10 @@ export function HomeHero({
                   exit={{ opacity: 0, scale: 1.04, y: -12 }}
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   onClick={() => onQuickView(activeShowcaseProduct)}
-                  className="relative w-full max-w-md aspect-square bg-[#08090d]/85 border border-white/[0.04] hover:border-blue-500/30 rounded-[2.75rem] p-8 flex flex-col items-center justify-between shadow-[0_30px_70px_rgba(0,0,0,0.7)] cursor-pointer group select-none"
+                  className="relative w-full max-w-md aspect-square bg-card border border-border/80 hover:border-blue-500/30 rounded-[2.75rem] p-8 flex flex-col items-center justify-between shadow-xl cursor-pointer group select-none"
                 >
                   {/* Glowing halo glass shadow */}
-                  <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.015] to-transparent pointer-events-none rounded-t-[2.75rem]" />
+                  <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-foreground/[0.015] to-transparent pointer-events-none rounded-t-[2.75rem]" />
 
                   {/* Top Flagship row */}
                   <div className="w-full flex justify-between items-center z-10">
@@ -262,14 +226,14 @@ export function HomeHero({
             <motion.div 
               animate={{ y: [0, -5, 0] }}
               transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 0.1 }}
-              className="absolute -top-3 left-0 sm:-left-4 p-3 bg-zinc-950/90 backdrop-blur-xl border border-white/[0.04] rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none select-none max-w-[170px]"
+              className="absolute -top-3 left-0 sm:-left-4 p-3 bg-card/90 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.06)] pointer-events-none select-none max-w-[170px]"
             >
-              <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
                 <ShieldCheck size={14} />
               </div>
               <div className="text-left">
-                <h4 className="text-[10px] font-bold text-white leading-none">Genuine Electronics</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-1 whitespace-nowrap">Official Guarantee</p>
+                <h4 className="text-[10px] font-bold text-foreground leading-none">Genuine Electronics</h4>
+                <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Official Guarantee</p>
               </div>
             </motion.div>
 
@@ -279,14 +243,14 @@ export function HomeHero({
             <motion.div 
               animate={{ y: [0, -6, 0] }}
               transition={{ repeat: Infinity, duration: 5.2, ease: "easeInOut", delay: 1.5 }}
-              className="absolute top-[35%] -right-4 sm:-right-8 p-3 bg-zinc-950/90 backdrop-blur-xl border border-white/[0.04] rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none select-none max-w-[170px]"
+              className="absolute top-[35%] -right-4 sm:-right-8 p-3 bg-card/90 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.06)] pointer-events-none select-none max-w-[170px]"
             >
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
                 <WhatsAppIcon size={14} />
               </div>
               <div className="text-left">
-                <h4 className="text-[10px] font-bold text-white leading-none">WhatsApp Support</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-1 whitespace-nowrap">Instant Catalog Advice</p>
+                <h4 className="text-[10px] font-bold text-foreground leading-none">WhatsApp Support</h4>
+                <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Instant Catalog Advice</p>
               </div>
             </motion.div>
 
@@ -294,14 +258,14 @@ export function HomeHero({
             <motion.div 
               animate={{ y: [0, 6, 0] }}
               transition={{ repeat: Infinity, duration: 4.6, ease: "easeInOut", delay: 0.5 }}
-              className="absolute -bottom-4 right-1/4 p-3 bg-zinc-950/90 backdrop-blur-xl border border-white/[0.04] rounded-2xl flex items-center gap-3 shadow-2xl pointer-events-none select-none max-w-[170px]"
+              className="absolute -bottom-4 right-1/4 p-3 bg-card/90 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.06)] pointer-events-none select-none max-w-[170px]"
             >
-              <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 shrink-0">
                 <ShieldCheck size={14} />
               </div>
               <div className="text-left">
-                <h4 className="text-[10px] font-bold text-white leading-none">Secure Shopping</h4>
-                <p className="text-[8px] font-mono text-zinc-500 mt-1 whitespace-nowrap">Receipt Proof Verified</p>
+                <h4 className="text-[10px] font-bold text-foreground leading-none">Secure Shopping</h4>
+                <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Receipt Proof Verified</p>
               </div>
             </motion.div>
 
@@ -315,19 +279,19 @@ export function HomeHero({
 
       {/* 4. SEARCH & DISCOVERY UPGRADE */}
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
-        <div className="bg-[#08090e]/95 border border-white/[0.05] rounded-[3rem] p-6 sm:p-10 shadow-2xl relative text-left">
+        <div className="bg-card border border-border rounded-[3rem] p-6 sm:p-10 shadow-lg relative text-left">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/[0.01] to-purple-600/[0.01] pointer-events-none rounded-[3rem]" />
           
           <div className="max-w-3xl mx-auto space-y-6">
             <div className="space-y-1 text-center">
-              <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-blue-400 uppercase">SECURE SEARCH PLATFORM</span>
-              <h2 className="text-xl sm:text-2xl font-display font-medium text-white tracking-tight">Looking for something specific?</h2>
-              <p className="text-zinc-500 text-[11px]">Instant live matching across our verified Lira warehouses & direct brand imports</p>
+              <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-blue-500 uppercase">SECURE SEARCH PLATFORM</span>
+              <h2 className="text-xl sm:text-2xl font-display font-medium text-foreground tracking-tight">Looking for something specific?</h2>
+              <p className="text-muted-foreground text-[11px]">Instant live matching across our verified Lira warehouses & direct brand imports</p>
             </div>
 
             {/* Immersive high contrast search input bar */}
             <div className="relative group/search">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within/search:text-blue-400 transition-colors" size={18} />
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/search:text-blue-500 transition-colors" size={18} />
               <input
                 type="text"
                 value={localSearch}
@@ -337,12 +301,12 @@ export function HomeHero({
                   onSearch?.(val);
                 }}
                 placeholder="Search smart devices, laptops, sound systems, accessories..."
-                className="w-full bg-black/60 border border-white/[0.06] rounded-2.5xl py-4.5 pl-14 pr-12 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/40 transition-all font-mono placeholder:text-zinc-500"
+                className="w-full bg-background border border-border rounded-2.5xl py-4.5 pl-14 pr-12 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500/30 transition-all font-mono placeholder:text-muted-foreground"
               />
               {localSearch && (
                 <button 
                   onClick={clearSearch}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] uppercase font-mono font-bold text-zinc-500 hover:text-white transition-colors bg-white/5 border border-white/5 px-2 py-1 rounded"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] uppercase font-mono font-bold text-muted-foreground hover:text-foreground transition-colors bg-foreground/5 border border-border px-2 py-1 rounded"
                 >
                   CLEAR
                 </button>
@@ -351,7 +315,7 @@ export function HomeHero({
 
             {/* Premium Suggestion & Popular searches Row */}
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-              <span className="text-[10px] font-mono text-zinc-500 mr-2 uppercase tracking-wide">Popular searches:</span>
+              <span className="text-[10px] font-mono text-muted-foreground mr-2 uppercase tracking-wide">Popular searches:</span>
               {[
                 "iPhone",
                 "Samsung",
@@ -364,10 +328,10 @@ export function HomeHero({
                   key={`trend-${term}`}
                   onClick={() => handlePopularSearch(term)}
                   className={cn(
-                    "px-3.5 py-1.5 bg-[#12131a] active:scale-95 border rounded-full text-[10px] font-mono transition-all font-bold cursor-pointer",
+                    "px-3.5 py-1.5 bg-background active:scale-95 border rounded-full text-[10px] font-mono transition-all font-bold cursor-pointer",
                     localSearch.toLowerCase() === term.toLowerCase()
-                      ? "border-blue-400 text-blue-400 bg-blue-500/[0.02]"
-                      : "border-white/[0.04] text-zinc-400 hover:text-white hover:border-zinc-700"
+                      ? "border-blue-500 text-blue-500 bg-blue-500/[0.02]"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
                   )}
                 >
                   {term}
@@ -382,29 +346,29 @@ export function HomeHero({
       <section id="tech-portfolio" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24">
         
         {/* Dynamic header display */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/[0.06] pb-4 mb-8 gap-4 text-left">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-border pb-4 mb-8 gap-4 text-left">
           <div className="space-y-1.5">
-            <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-500 uppercase">DIRECT TECH CATALOG</span>
-            <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight">
+            <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-muted-foreground uppercase">DIRECT TECH CATALOG</span>
+            <h2 className="text-2xl sm:text-3xl font-display font-medium text-foreground tracking-tight">
               {category ? `${category}` : "Browse the Showroom"}
             </h2>
           </div>
 
-          <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950/80 border border-white/[0.04] px-3 py-1 rounded-full flex items-center gap-1.5 shrink-0 self-start sm:self-auto select-none">
+          <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest bg-card border border-border px-3 py-1 rounded-full flex items-center gap-1.5 shrink-0 self-start sm:self-auto select-none">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             {category ? `${filteredProducts.length} Items Locked` : `${products.length} Units Online`}
           </span>
         </div>
 
         {/* Dynamic Category selectors */}
-        <div className="mb-10 flex overflow-x-auto no-scrollbar gap-2.5 pb-2.5 border-b border-white/[0.03] text-left">
+        <div className="mb-10 flex overflow-x-auto no-scrollbar gap-2.5 pb-2.5 border-b border-border/60 text-left">
           <button
             onClick={() => onCategorySelect(null)}
             className={cn(
               "relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all text-xs font-mono font-bold uppercase tracking-wider shrink-0 border cursor-pointer",
               category === null
-                ? "bg-white text-black border-transparent shadow-lg shadow-white/5 font-semibold"
-                : "bg-transparent border-white/[0.04] text-zinc-400 hover:text-white hover:border-zinc-700"
+                ? "bg-foreground text-background border-transparent shadow"
+                : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
             )}
           >
             <Compass size={13} />
@@ -420,8 +384,8 @@ export function HomeHero({
                 className={cn(
                   "relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all text-xs font-mono font-bold uppercase tracking-wider shrink-0 border cursor-pointer",
                   isActive
-                    ? "bg-white text-black border-transparent shadow-lg shadow-white/5 font-italic"
-                    : "bg-transparent border-white/[0.04] text-zinc-400 hover:text-white hover:border-zinc-700"
+                    ? "bg-foreground text-background border-transparent shadow opacity-90"
+                    : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
                 )}
               >
                 {getCategoryIcon(cat)}
@@ -436,16 +400,16 @@ export function HomeHero({
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-14 p-6 bg-zinc-950/40 border border-white/[0.03] rounded-3xl space-y-4 text-left shadow-lg"
+            className="mb-14 p-6 bg-card border border-border rounded-3xl space-y-4 text-left shadow-md"
           >
-            <div className="flex items-center justify-between border-b border-white/[0.02] pb-2">
+            <div className="flex items-center justify-between border-b border-border/80 pb-2">
               <div className="flex items-center gap-2">
-                <Clock size={13} className="text-zinc-500" />
-                <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+                <Clock size={13} className="text-muted-foreground" />
+                <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
                   Recently Viewed Units
                 </h3>
               </div>
-              <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950/80 border border-white/[0.02] px-2 py-0.5 rounded-md">
+              <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest bg-background border border-border px-2 py-0.5 rounded-md">
                 {recentlyViewedProducts.length} Cache Logged
               </span>
             </div>
@@ -455,20 +419,20 @@ export function HomeHero({
                 <div
                   key={`rec-${item.id}`}
                   onClick={() => onProductClick(item)}
-                  className="group relative rounded-2xl bg-[#08080c] hover:bg-[#0c0c12] border border-white/[0.04] p-3 flex flex-col justify-between h-48 transition-all duration-300 cursor-pointer"
+                  className="group relative rounded-2xl bg-background hover:bg-card border border-border p-3 flex flex-col justify-between h-48 transition-all duration-300 cursor-pointer"
                 >
                   <div className="h-20 w-full flex items-center justify-center relative overflow-hidden my-1">
                     <OptimizedImage 
                       src={item.image} 
                       alt={item.name} 
-                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_6px_12px_rgba(255,255,255,0.05)] transform transition-transform duration-500 group-hover:scale-105 select-none"
+                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_6px_12px_rgba(0,0,0,0.03)] transform transition-transform duration-500 group-hover:scale-105 select-none"
                     />
                   </div>
                   <div className="space-y-1 text-left mt-auto">
-                    <h4 className="text-[10.5px] font-medium text-white group-hover:text-blue-400 transition-colors truncate">
+                    <h4 className="text-[10.5px] font-medium text-foreground group-hover:text-blue-500 transition-colors truncate">
                       {item.name}
                     </h4>
-                    <span className="text-[9.5px] font-mono text-zinc-500 font-bold block">
+                    <span className="text-[9.5px] font-mono text-muted-foreground font-bold block">
                       UGX {item.price.toLocaleString()}
                     </span>
                   </div>
@@ -488,21 +452,21 @@ export function HomeHero({
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="py-20 text-center bg-zinc-950/40 border border-white/[0.03] rounded-[2.5rem] relative overflow-hidden"
+            className="py-20 text-center bg-card border border-border rounded-[2.5rem] relative overflow-hidden shadow-sm"
           >
              <div className="relative z-10 max-w-sm mx-auto space-y-6 px-4">
-              <div className="w-12 h-12 bg-zinc-900 border border-white/[0.03] rounded-2xl flex items-center justify-center mx-auto text-zinc-400">
+              <div className="w-12 h-12 bg-background border border-border rounded-2xl flex items-center justify-center mx-auto text-muted-foreground">
                 <AlertCircle size={20} />
               </div>
               <div className="space-y-2">
-                <h3 className="text-base font-display font-medium text-white">No products found</h3>
-                <p className="text-zinc-500 text-xs leading-relaxed max-w-xs mx-auto">
+                <h3 className="text-base font-display font-medium text-foreground">No products found</h3>
+                <p className="text-muted-foreground text-xs leading-relaxed max-w-xs mx-auto">
                   We currently do not have matching units in stock. Refine your query or check back later!
                 </p>
               </div>
               <button 
                 onClick={() => onCategorySelect(null)}
-                className="py-3 px-6 bg-white hover:bg-neutral-100 text-black font-semibold text-xs rounded-full transition-all active:scale-95 cursor-pointer font-mono tracking-wider"
+                className="py-3 px-6 bg-foreground hover:opacity-90 text-background font-semibold text-xs rounded-full transition-all active:scale-95 cursor-pointer font-mono tracking-wider"
               >
                 RESET FILTERS
               </button>
@@ -539,16 +503,16 @@ export function HomeHero({
                 })
                 .map(([cat, catProducts]) => (
                   <div key={cat} className="space-y-8 text-left">
-                    <div className="flex items-center justify-between border-b border-white/[0.04] pb-3">
+                    <div className="flex items-center justify-between border-b border-border pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-[#09090d] border border-white/[0.04] flex items-center justify-center text-zinc-400">
+                        <div className="w-8 h-8 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground">
                           {getCategoryIcon(cat)}
                         </div>
-                        <h3 className="text-base sm:text-lg font-display font-medium text-white">
+                        <h3 className="text-base sm:text-lg font-display font-medium text-foreground">
                           {cat}
                         </h3>
                       </div>
-                      <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-950 border border-white/[0.02] px-3 py-1 rounded-full font-bold">
+                      <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest bg-background border border-border px-3 py-1 rounded-full font-bold">
                         {catProducts.length} UNITS
                       </span>
                     </div>
