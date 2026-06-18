@@ -97,9 +97,10 @@ export function Navbar({
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-4 lg:gap-8 flex-1">
-            <div className="flex items-center gap-2">
+        {/* Ribbon 1: Identity, Operational Search & Utilities */}
+        <div className="flex items-center justify-between h-16 gap-2">
+          <div className="flex items-center gap-2 lg:gap-8 flex-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <button 
                 onClick={() => onCategorySelect(null)}
                 onMouseDown={startPressTimer}
@@ -108,30 +109,17 @@ export function Navbar({
                 onTouchStart={startPressTimer}
                 onTouchEnd={cancelPressTimer}
                 className={cn(
-                  "text-lg sm:text-xl lg:text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all shrink-0 italic select-none outline-none",
+                  "text-sm sm:text-xl lg:text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all italic select-none outline-none truncate py-1",
                   pressTimerActive && "scale-90 opacity-70"
                 )}
               >
-                LIRA PHONES & ELECTRONICS
+                <span className="inline sm:hidden">LIRA PHONES</span>
+                <span className="hidden sm:inline">LIRA PHONES & ELECTRONICS</span>
               </button>
-            </div>
-            
-            <div className="hidden xl:block xl:ml-auto">
-              <div className="flex items-baseline space-x-2">
-                {navItems.map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={() => onCategorySelect(item.category)}
-                    className="px-3 py-2 rounded-md text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all font-mono uppercase tracking-tighter"
-                  >
-                    {item.name}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md">
+            <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md ml-auto min-w-0">
               <div className="relative w-full group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-blue-500 transition-colors" size={16} />
                 <input
@@ -145,24 +133,13 @@ export function Navbar({
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-3">
+          <div className="flex items-center gap-0.5 sm:gap-3 shrink-0">
             <Tooltip content="Search Products">
               <button 
                 onClick={() => setShowSearch(!showSearch)}
                 className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Search size={20} />
-              </button>
-            </Tooltip>
-
-            <Tooltip content="Contact Support">
-              <button 
-                onClick={() => {
-                  window.open("https://wa.me/256793405517?text=Hello%20Lira%20Phones%20%26%20Electronics!%20I%27d%20like%2520to%2520get%2520in%2520touch%2520with%2520customer%2520support.", "_blank");
-                }}
-                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                <HelpCircle size={20} />
               </button>
             </Tooltip>
 
@@ -228,6 +205,19 @@ export function Navbar({
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
+        </div>
+
+        {/* Ribbon 2: Secondary Category Browser Navigation */}
+        <div className="hidden xl:flex items-center justify-center h-11 border-t border-border/80 gap-1.5">
+          {navItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => onCategorySelect(item.category)}
+              className="px-4 py-1.5 rounded-full text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all font-mono uppercase tracking-tighter cursor-pointer"
+            >
+              {item.name}
+            </button>
+          ))}
         </div>
       </div>
 

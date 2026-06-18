@@ -63,7 +63,7 @@
 
   body {
     @apply font-sans antialiased transition-colors duration-300;
-    background-color: var(--background);
+    background-color: transparent !important;
     color: var(--foreground);
   }
 

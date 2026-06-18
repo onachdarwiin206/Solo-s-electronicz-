@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../ThemeContext';
+import luxuryBg from '../../assets/images/lira_luxury_background_1781811057487.jpg';
 
 interface Particle {
   id: number;
@@ -22,6 +23,11 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     type: 'image',
+    url: luxuryBg,
+    fallbackUrl: luxuryBg
+  },
+  {
+    type: 'image',
     url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1600',
     fallbackUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1600'
   },
@@ -29,26 +35,6 @@ const SLIDES: Slide[] = [
     type: 'image',
     url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1600',
     fallbackUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1600'
-  },
-  {
-    type: 'image',
-    url: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=1600',
-    fallbackUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=1600'
-  },
-  {
-    type: 'image',
-    url: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=1600',
-    fallbackUrl: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=1600'
-  },
-  {
-    type: 'image',
-    url: 'https://images.unsplash.com/photo-1591453089816-0fbb971b454c?q=80&w=1600',
-    fallbackUrl: 'https://images.unsplash.com/photo-1591453089816-0fbb971b454c?q=80&w=1600'
-  },
-  {
-    type: 'image',
-    url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1600',
-    fallbackUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1600'
   }
 ];
 
@@ -139,7 +125,7 @@ export function BackgroundSlideshow() {
       ref={bgRef}
       className="fixed inset-0 z-[-1] overflow-hidden select-none pointer-events-none"
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: theme === 'light' ? '#f8fafc' : '#03030c',
         '--mouse-x': '0',
         '--mouse-y': '0',
         '--scroll-y': '0px',
@@ -200,70 +186,33 @@ export function BackgroundSlideshow() {
         }
       `}</style>
 
-      {/* LAYER 1: DEEP SOLID BASE */}
+      {/* LAYER 1: MAIN PICTURE UNDERLAY */}
       <div 
-        className={`absolute inset-0 bg-gradient-to-tr bg-[length:200%_200%] transition-all duration-1000 ${
-          theme === 'light' 
-            ? "from-[#ffffff] to-[#ffffff]" 
-            : "from-[#020208] via-[#050616] to-[#0a0515]"
-        }`}
+        className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none"
         style={{
-          animation: theme === 'light' ? 'none' : 'bgBaseBreath 40s infinite ease-in-out',
+          transform: 'scale(1.08) translate(calc(var(--mouse-x) * 15px), calc(var(--mouse-y) * 15px))',
+          willChange: 'transform',
+          transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)',
         }}
-      />
+      >
+        <img
+          src={luxuryBg}
+          alt="Lira Luxury Glass Background"
+          className="w-full h-full object-cover select-none"
+          referrerPolicy="no-referrer"
+        />
+      </div>
 
-      {/* LAYER 2: CINEMATIC TECHNICAL VIDEO & IMAGE SLIDESHOW */}
-      {theme !== 'light' && (
-        <div 
-          className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none"
-          style={{
-            transform: 'translate(calc(var(--mouse-x) * 6px), calc(var(--mouse-y) * 6px))',
-            willChange: 'transform',
-          }}
-        >
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={currentSlideIndex}
-              initial={{ opacity: 0, scale: 1.03 }}
-              animate={{ 
-                opacity: 0.22, 
-                scale: 1 
-              }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 1.8, ease: "easeInOut" }}
-              className="absolute inset-0 w-full h-full"
-            >
-              {SLIDES[currentSlideIndex].type === 'video' ? (
-                <div 
-                  className="w-full h-full bg-cover bg-center relative" 
-                  style={{ backgroundImage: `url(${SLIDES[currentSlideIndex].fallbackUrl})` }}
-                >
-                  <video
-                    src={SLIDES[currentSlideIndex].url}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover"
-                    onError={() => {
-                      console.info("[BackgroundSlideshow] Transitioning video to standard active wallpaper.");
-                    }}
-                  />
-                </div>
-              ) : (
-                <img
-                  src={SLIDES[currentSlideIndex].url}
-                  alt="Electronic Slides"
-                  className="w-full h-full object-cover"
-                />
-              )}
-              
-              {/* Gradient matrix shading to anchor active content cards */}
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#03030c]/20 via-[#03030c]/60 to-[#03030c]" />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      )}
+      {/* LAYER 2: THEME COMPOSITE OVERLAYS */}
+      <div 
+        className={`absolute inset-0 transition-colors duration-500 pointer-events-none ${
+          theme === 'light' 
+            ? 'bg-white/8 backdrop-blur-[1px]' 
+            : theme === 'glass'
+            ? 'bg-zinc-950/15 backdrop-blur-[2.5px]'
+            : 'bg-[#03030c]/25 backdrop-blur-[2px]'
+        }`}
+      />
 
       {/* DISMISSED COGNITIVE MESH ELEMENT CODES */}
       <div className="hidden text-transparent opacity-0 pointer-events-none w-0 h-0">
