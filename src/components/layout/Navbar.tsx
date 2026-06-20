@@ -286,7 +286,7 @@ export function Navbar({
                     "flex flex-col p-3 rounded-2xl border transition-all text-left", 
                     currentLanguage === lang.code 
                       ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/20" 
-                      : "bg-foreground/5 border-border text-muted-foreground hover:text-foreground"
+                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
                   )}
                 >
                   <span className="text-[10px] font-black uppercase tracking-tighter">{lang.label}</span>
@@ -316,7 +316,7 @@ export function Navbar({
                       "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center gap-1.5 cursor-pointer", 
                       isSelected 
                         ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/20" 
-                        : "bg-foreground/5 border-border text-muted-foreground hover:text-foreground"
+                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
                     )}
                   >
                     <IconComponent size={14} className={isSelected ? 'text-white' : item.color} />
