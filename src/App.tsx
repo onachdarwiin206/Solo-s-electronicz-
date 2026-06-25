@@ -464,7 +464,7 @@ export default function App() {
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
       const receiptTemplate = `
-🧾 *[BUSINESS NAME] ELECTRONICS - DIGITAL RECEIPT*
+🧾 *EMMA ELECTRONICS - DIGITAL RECEIPT*
 ---------------------------------------
 *Order ID:* ${orderId}
 *Date:* ${new Date().toLocaleDateString()}
@@ -518,7 +518,7 @@ _Your order is now being processed._
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
       const receiptTemplate = `
-🧾 *[BUSINESS NAME] ELECTRONICS - DIGITAL RECEIPT*
+🧾 *EMMA ELECTRONICS - DIGITAL RECEIPT*
 ---------------------------------------
 *Order ID:* ${orderId}
 *Date:* ${new Date().toLocaleDateString()}
