@@ -287,7 +287,7 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
                 <div className="bg-zinc-950 border-b border-white/[0.05] p-4 text-white flex justify-between items-center shrink-0">
                   <div className="flex items-center gap-2.5 text-left">
                     <div className="relative">
-                      <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold text-sm shrink-0 font-mono">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 text-white flex items-center justify-center font-extrabold text-sm shrink-0 font-mono border border-blue-400/30 shadow-md shadow-blue-500/10">
                         E
                       </div>
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-zinc-950" />

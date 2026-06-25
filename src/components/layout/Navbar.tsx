@@ -109,10 +109,13 @@ export function Navbar({
                 onTouchStart={startPressTimer}
                 onTouchEnd={cancelPressTimer}
                 className={cn(
-                  "text-sm sm:text-xl lg:text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all italic select-none outline-none truncate py-1",
+                  "flex items-center gap-2 sm:gap-3 text-sm sm:text-xl lg:text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all italic select-none outline-none truncate py-1",
                   pressTimerActive && "scale-90 opacity-70"
                 )}
               >
+                <span className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 text-white font-mono font-extrabold not-italic text-xs sm:text-base tracking-normal shadow-lg shadow-blue-500/20 border border-blue-400/30 shrink-0 select-none">
+                  E
+                </span>
                 <span className="inline sm:hidden">EMMA PHONES</span>
                 <span className="hidden sm:inline">EMMA PHONES & ELECTRONICS</span>
               </button>

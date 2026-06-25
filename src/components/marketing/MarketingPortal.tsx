@@ -1060,7 +1060,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                           className="space-y-3"
                         >
                           <div className="flex items-start gap-2.5">
-                            <span className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-[11px] font-black text-white shrink-0 border border-white/5 font-display">E</span>
+                            <span className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-[11px] font-black text-white shrink-0 border border-blue-400/30 font-mono">E</span>
                             <div className="flex-1 min-w-0 text-left leading-tight">
                               <div className="flex items-center gap-1">
                                 <span className="text-[10px] font-extrabold text-zinc-200">Emma Tech</span>
