@@ -210,13 +210,13 @@ export function Navbar({
           </div>
         </div>
 
-        {/* Ribbon 2: Secondary Category Browser Navigation */}
-        <div className="hidden xl:flex items-center justify-center h-11 border-t border-border/80 gap-1.5">
+        {/* Ribbon 2: Secondary Category Browser Navigation - Scrollable on mobile/tablet */}
+        <div className="flex xl:justify-center items-center h-11 border-t border-border/80 gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap px-4 py-1 select-none">
           {navItems.map((item) => (
             <button
               key={item.name}
               onClick={() => onCategorySelect(item.category)}
-              className="px-4 py-1.5 rounded-full text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all font-mono uppercase tracking-tighter cursor-pointer"
+              className="px-4 py-1.5 rounded-full text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all font-mono uppercase tracking-tighter cursor-pointer shrink-0"
             >
               {item.name}
             </button>
@@ -275,29 +275,7 @@ export function Navbar({
             </button>
           ))}
 
-          <div className="px-3 py-4 border-t border-border mt-4">
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">Select Region / Language</p>
-            <div className="grid grid-cols-2 gap-2">
-              {languages.map((lang) => (
-                <button 
-                  key={lang.code}
-                  onClick={() => {
-                    onLanguageChange(lang.code);
-                    setIsOpen(false);
-                  }}
-                  className={cn(
-                    "flex flex-col p-3 rounded-2xl border transition-all text-left", 
-                    currentLanguage === lang.code 
-                      ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/20" 
-                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
-                  )}
-                >
-                  <span className="text-[10px] font-black uppercase tracking-tighter">{lang.label}</span>
-                  <span className="text-[8px] font-mono opacity-60 mt-1">{lang.sub}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           <div className="px-3 py-4 border-t border-border">
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">Appearance / Theme</p>
