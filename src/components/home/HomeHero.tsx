@@ -132,6 +132,16 @@ export function HomeHero({
     return items.length >= 2 ? items : products.slice(0, 4);
   }, [products]);
 
+  const marqueeProducts = useMemo(() => {
+    if (!products.length) return [];
+    return products.filter(p => p.featured || (p.rating && p.rating >= 4.7)).slice(0, 10);
+  }, [products]);
+
+  const repeatedProducts = useMemo(() => {
+    if (!marqueeProducts.length) return [];
+    return [...marqueeProducts, ...marqueeProducts];
+  }, [marqueeProducts]);
+
   // Auto-rotate the featured right showcase product slowly
   useEffect(() => {
     if (premiumShowcase.length < 2) return;
@@ -165,109 +175,92 @@ export function HomeHero({
       <section className="relative pt-24 md:pt-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
-          {/* CENTERED COLUMN: Large Interactive Slider */}
-          <div className="lg:col-span-12 relative h-[440px] sm:h-[500px] flex items-center justify-center">
+          {/* CENTERED COLUMN: Continuous Infinite Horizontal Product Marquee */}
+          <div className="lg:col-span-12 relative py-4 flex flex-col items-center justify-center w-full overflow-hidden">
             
             {/* Visual background platform */}
             <div className="absolute inset-0 bg-radial-gradient from-blue-600/[0.04] to-transparent blur-3xl pointer-events-none" />
 
-            <AnimatePresence mode="wait">
-              {activeShowcaseProduct && (
+            {repeatedProducts.length > 0 && (
+              <div className="w-full overflow-hidden relative py-8 select-none">
+                {/* Visual fade masks left and right for extreme elegance */}
+                <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-[#09090b]/80 to-transparent z-10 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#09090b]/80 to-transparent z-10 pointer-events-none" />
+
                 <motion.div
-                  key={activeShowcaseProduct.id}
-                  initial={{ opacity: 0, scale: 0.96, y: 12 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 1.04, y: -12 }}
-                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  onClick={() => onQuickView(activeShowcaseProduct)}
-                  className="relative w-full max-w-md aspect-square bg-card border border-border/80 hover:border-blue-500/30 rounded-[2.75rem] p-8 flex flex-col items-center justify-between shadow-xl cursor-pointer group select-none"
+                  animate={{ x: ["-50%", "0%"] }}
+                  transition={{
+                    ease: "linear",
+                    duration: 35, // Premium slow continuous scroll
+                    repeat: Infinity,
+                  }}
+                  className="flex gap-16 w-max"
                 >
-                  {/* Glowing halo glass shadow */}
-                  <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-foreground/[0.015] to-transparent pointer-events-none rounded-t-[2.75rem]" />
-
-                  {/* Top Flagship row */}
-                  <div className="w-full flex justify-between items-center z-10">
-                    <span className="px-2.5 py-1 bg-white/[0.03] border border-white/[0.06] rounded-full text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
-                      {activeShowcaseProduct.category}
-                    </span>
-                    <span className="flex items-center gap-1 text-amber-400 text-[10px] font-mono font-bold">
-                      <Star size={11} className="fill-amber-400 text-amber-400" /> RECOMMENDED
-                    </span>
-                  </div>
-
-                  {/* Large floating display representing devices */}
-                  <motion.div 
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ repeat: Infinity, duration: 5.5, ease: "easeInOut" }}
-                    className="relative w-[88%] h-[62%] flex items-center justify-center my-2"
-                  >
-                    <OptimizedImage 
-                      src={activeShowcaseProduct.image} 
-                      alt={activeShowcaseProduct.name} 
-                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_25px_40px_rgba(59,130,246,0.18)] transform group-hover:scale-[1.06] transition-transform duration-700"
-                    />
-                  </motion.div>
-
-                  {/* Showcase Product details */}
-                  <div className="w-full text-center space-y-1 z-10 bg-black/20 p-3 rounded-2xl border border-white/[0.02]">
-                    <h3 className="text-sm sm:text-base font-display font-medium text-white group-hover:text-blue-400 transition-colors tracking-tight line-clamp-1">
-                      {activeShowcaseProduct.name}
-                    </h3>
-                    <p className="text-xs font-mono font-bold text-blue-400">
-                      UGX {activeShowcaseProduct.price.toLocaleString()}
-                    </p>
-                  </div>
+                  {repeatedProducts.map((item, idx) => (
+                    <div
+                      key={`${item.id}-${idx}`}
+                      onClick={() => onQuickView(item)}
+                      className="flex flex-col items-center text-center cursor-pointer group shrink-0 w-52 sm:w-60 px-4 transition-transform duration-300 hover:-translate-y-1.5"
+                    >
+                      {/* Floating Product Image - Absolutely NO card background, border or box-frame! */}
+                      <div className="h-44 sm:h-52 w-44 sm:w-52 flex items-center justify-center relative mb-5">
+                        <OptimizedImage
+                          src={item.image}
+                          alt={item.name}
+                          className="max-h-full max-w-full object-contain filter drop-shadow-[0_20px_35px_rgba(59,130,246,0.18)] transform group-hover:scale-110 transition-transform duration-500 ease-out select-none pointer-events-none"
+                        />
+                      </div>
+                      
+                      {/* Floating product details underneath */}
+                      <div className="space-y-1">
+                        <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-mono rounded-full uppercase tracking-widest block max-w-max mx-auto mb-1">
+                          {item.category}
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-display font-medium text-foreground group-hover:text-blue-400 transition-colors tracking-tight line-clamp-1 max-w-[180px] sm:max-w-[220px]">
+                          {item.name}
+                        </h3>
+                        <p className="text-[11px] sm:text-xs font-mono font-bold text-blue-500">
+                          UGX {item.price.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </motion.div>
-              )}
-            </AnimatePresence>
+              </div>
+            )}
 
-            {/* FLOATING TRUST BADGES: Strictly formatted with custom gravity effects for spatial depth */}
-            {/* 1. Genuine Electronics */}
-            <motion.div 
-              animate={{ y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 0.1 }}
-              className="absolute -top-3 left-0 sm:-left-4 p-3 bg-card/90 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.06)] pointer-events-none select-none max-w-[170px]"
-            >
-              <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
-                <ShieldCheck size={14} />
+            {/* FLOATING TRUST BADGES Row: Statically aligned underneath marquee */}
+            <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 mt-10 z-10 w-full px-4">
+              <div className="p-3 bg-card/40 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.03)] select-none">
+                <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+                  <ShieldCheck size={14} />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-[10px] font-bold text-foreground leading-none">Genuine Electronics</h4>
+                  <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Official Guarantee</p>
+                </div>
               </div>
-              <div className="text-left">
-                <h4 className="text-[10px] font-bold text-foreground leading-none">Genuine Electronics</h4>
-                <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Official Guarantee</p>
-              </div>
-            </motion.div>
 
+              <div className="p-3 bg-card/40 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.03)] select-none">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+                  <WhatsAppIcon size={14} />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-[10px] font-bold text-foreground leading-none">WhatsApp Support</h4>
+                  <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Instant Catalog Advice</p>
+                </div>
+              </div>
 
-
-            {/* 3. WhatsApp Support */}
-            <motion.div 
-              animate={{ y: [0, -6, 0] }}
-              transition={{ repeat: Infinity, duration: 5.2, ease: "easeInOut", delay: 1.5 }}
-              className="absolute top-[35%] -right-4 sm:-right-8 p-3 bg-card/90 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.06)] pointer-events-none select-none max-w-[170px]"
-            >
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
-                <WhatsAppIcon size={14} />
+              <div className="p-3 bg-card/40 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.03)] select-none">
+                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 shrink-0">
+                  <ShieldCheck size={14} />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-[10px] font-bold text-foreground leading-none">Secure Shopping</h4>
+                  <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Receipt Proof Verified</p>
+                </div>
               </div>
-              <div className="text-left">
-                <h4 className="text-[10px] font-bold text-foreground leading-none">WhatsApp Support</h4>
-                <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Instant Catalog Advice</p>
-              </div>
-            </motion.div>
-
-            {/* 4. Secure Shopping */}
-            <motion.div 
-              animate={{ y: [0, 6, 0] }}
-              transition={{ repeat: Infinity, duration: 4.6, ease: "easeInOut", delay: 0.5 }}
-              className="absolute -bottom-4 right-1/4 p-3 bg-card/90 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.06)] pointer-events-none select-none max-w-[170px]"
-            >
-              <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 shrink-0">
-                <ShieldCheck size={14} />
-              </div>
-              <div className="text-left">
-                <h4 className="text-[10px] font-bold text-foreground leading-none">Secure Shopping</h4>
-                <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Receipt Proof Verified</p>
-              </div>
-            </motion.div>
+            </div>
 
           </div>
         </div>
