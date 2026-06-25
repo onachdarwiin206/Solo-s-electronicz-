@@ -158,7 +158,7 @@ CREATE POLICY "Allow admin operations coupons" ON public.coupons FOR ALL USING (
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={15} />
               <input
                 type="email"
-                placeholder="Ex. secure-admin@soloelectronics.com"
+                placeholder="Ex. secure-admin@emmaelectronics.com"
                 value={newEmail}
                 onChange={e => setNewEmail(e.target.value)}
                 className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl py-2.5 pl-9 pr-4 text-xs font-bold"

@@ -116,7 +116,7 @@ export function AdminOverview({
             Dashboard Overview
           </h2>
           <p className="text-sm text-zinc-500 font-sans mt-1">
-            Solo Electronics central command center — logistics audits, demand vectors, and supply velocity metrics.
+            Emma Electronics central command center — logistics audits, demand vectors, and supply velocity metrics.
           </p>
         </div>
         <div className="flex gap-2">

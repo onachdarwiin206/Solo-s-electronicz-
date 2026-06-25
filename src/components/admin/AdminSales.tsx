@@ -81,7 +81,7 @@ export function AdminSales({ orders, onUpdateOrderStatus }: AdminSalesProps) {
     const trackingUrl = `${window.location.origin}/?tracking=${order.id}`;
     const itemsSummary = order.items.map(itm => `• ${itm.name} (x${itm.quantity}) - UGX ${(itm.price * itm.quantity).toLocaleString()}`).join('\n');
     const template = `
-*🧾 SOLO ELECTRONICS - DIGITAL RECEIPT*
+*🧾 EMMA ELECTRONICS - DIGITAL RECEIPT*
 ----------------------------------------
 *Order ID:* ${order.id?.substring(0, 10).toUpperCase()}
 *Fulfillment Status:* ${order.status?.toUpperCase()}
@@ -97,7 +97,7 @@ ${itemsSummary}
 _Track your logistic shipment real-time on our hardware feed link:_
 _➜ ${trackingUrl}_
 
-_Thank you for trading with Solo Electronics!_
+_Thank you for trading with Emma Electronics!_
     `.trim();
 
     const url = `https://wa.me/${order.customer_phone?.replace(/[+]/g, '')}?text=${encodeURIComponent(template)}`;

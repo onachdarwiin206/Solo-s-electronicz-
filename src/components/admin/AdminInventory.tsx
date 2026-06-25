@@ -193,7 +193,7 @@ export function AdminInventory({
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
-                <h3 className="text-xs font-mono font-black uppercase tracking-wider text-emerald-300">SOLO-SYSTEMS-SHELL: LOGS FEED</h3>
+                <h3 className="text-xs font-mono font-black uppercase tracking-wider text-emerald-300">EMMA-SYSTEMS-SHELL: LOGS FEED</h3>
               </div>
               <span className="text-[9px] bg-zinc-800 text-zinc-400 px-2.5 py-0.5 rounded font-mono">PORT 3000 // SHELL API-V2</span>
             </div>
@@ -201,7 +201,7 @@ export function AdminInventory({
           </div>
 
           <div className="flex-1 font-mono text-[10px] space-y-2.5 overflow-y-auto pr-1 select-none leading-relaxed">
-            <div>&gt; _solo.system.daemon: connecting database pipelines... SUCCESS</div>
+            <div>&gt; _emma.system.daemon: connecting database pipelines... SUCCESS</div>
             <div>&gt; _listening movements payload in cache stream... OK</div>
             
             {movements.map((item, i) => {

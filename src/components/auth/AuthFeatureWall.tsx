@@ -24,7 +24,7 @@ export function AuthFeatureWall() {
       <div className="relative z-10 space-y-12">
         <div className="space-y-2">
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500">System Capability</span>
-          <h3 className="text-4xl font-black tracking-tighter text-white uppercase italic">[Business Name] Elite</h3>
+          <h3 className="text-4xl font-black tracking-tighter text-white uppercase italic">Emma Elite</h3>
         </div>
 
         <div className="h-[300px] relative overflow-hidden mask-fade">

@@ -35,9 +35,9 @@ export default function AdminDashboard({ products, onRefresh }: AdminDashboardPr
   const [allowedEmails, setAllowedEmails] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('solo_allowed_emails');
-      return saved ? JSON.parse(saved) : ['legacy-admin', 'secure-admin@soloelectronics.com', 'admin@soloelectronics.com'];
+      return saved ? JSON.parse(saved) : ['legacy-admin', 'secure-admin@emmaelectronics.com', 'admin@emmaelectronics.com'];
     } catch {
-      return ['legacy-admin', 'secure-admin@soloelectronics.com'];
+      return ['legacy-admin', 'secure-admin@emmaelectronics.com'];
     }
   });
 
@@ -136,7 +136,7 @@ export default function AdminDashboard({ products, onRefresh }: AdminDashboardPr
       return saved ? JSON.parse(saved) : [
         {
           id: '1',
-          code: 'SOLO2026',
+          code: 'EMMA2026',
           type: 'percentage',
           value: 10,
           status: 'active',
@@ -343,10 +343,10 @@ export default function AdminDashboard({ products, onRefresh }: AdminDashboardPr
           {/* Brand header */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center font-display text-white font-black italic shadow-lg shadow-blue-500/20">
-              S
+              E
             </div>
             <div>
-              <h1 className="text-sm font-display font-black tracking-wider uppercase text-zinc-900 dark:text-white">SOLO ADMIN</h1>
+              <h1 className="text-sm font-display font-black tracking-wider uppercase text-zinc-900 dark:text-white">EMMA ADMIN</h1>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
                 <span className="text-[9px] font-mono text-zinc-400 font-bold uppercase tracking-widest">CONSOLE OK</span>
@@ -450,7 +450,7 @@ export default function AdminDashboard({ products, onRefresh }: AdminDashboardPr
         {/* Top Active Toolbar layout */}
         <header className="p-6 md:p-8 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-850 flex justify-between items-center select-none shrink-0 h-24">
           <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-400 uppercase tracking-widest">
-            <span>Solo Electronics Admin</span>
+            <span>Emma Electronics Admin</span>
             <span>/</span>
             <span className="font-bold text-blue-600 dark:text-blue-400">{activeTab}</span>
           </div>

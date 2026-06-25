@@ -64,7 +64,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
   if (!product) return null;
 
   const handleWhatsAppBuy = () => {
-    const message = `*Quick Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello [Business Name]'s Electronics, I saw this in the quick view. Is it in stock?`;
+    const message = `*Quick Inquiry: ${product.name}*\nPrice: UGX ${product.price.toLocaleString()}\n\nHello Emma Electronics, I saw this in the quick view. Is it in stock?`;
     triggerWhatsAppFlow(message);
   };
 
@@ -178,7 +178,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }: QuickV
                 
                 {product.is_verified && (
                   <div className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 bg-green-500/90 backdrop-blur-xl rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-white border border-green-400/30 z-20 shadow-2xl">
-                    <BadgeCheck size={14} className="text-white" /> [Business Name] Verified
+                    <BadgeCheck size={14} className="text-white" /> Emma Verified
                   </div>
                 )}
               </div>

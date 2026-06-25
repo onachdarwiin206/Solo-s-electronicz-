@@ -43,7 +43,7 @@ export function AndroidInstallPrompt() {
 
     // Track real installation finish
     const handleAppInstalled = () => {
-      console.log('[PWA] [Business Name] App successfully installed!');
+      console.log('[PWA] Emma Electronics App successfully installed!');
       localStorage.setItem('solo_pwa_installed', 'true');
       setIsInstalled(true);
       setIsVisible(false);

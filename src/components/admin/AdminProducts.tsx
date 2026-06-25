@@ -401,7 +401,7 @@ export function AdminProducts({ products, onRefresh, lowStockThreshold }: AdminP
           if (error) throw error;
         }
       } else {
-        savedData.id = `SOLO-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+        savedData.id = `EMMA-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
         savedData.created_at = new Date().toISOString();
         savedData.rating = 5;
         if (isSupabaseConfigured) {
@@ -476,7 +476,7 @@ export function AdminProducts({ products, onRefresh, lowStockThreshold }: AdminP
       const isDuplicate = products.some(p => p.name?.toLowerCase() === name.toLowerCase());
 
       results.push({
-        id: `SOLO-CSV-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+        id: `EMMA-CSV-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
         name,
         category,
         brand,
@@ -555,7 +555,7 @@ export function AdminProducts({ products, onRefresh, lowStockThreshold }: AdminP
         </head>
         <body>
           <div class="label">
-            <div class="brand">⚡ SOLO ELECTRONICS ⚡</div>
+            <div class="brand">⚡ EMMA ELECTRONICS ⚡</div>
             <div class="name">${product.name}</div>
             <div class="price">UGX ${product.price.toLocaleString()}</div>
             <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(productUrl)}" />

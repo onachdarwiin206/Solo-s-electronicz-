@@ -103,7 +103,7 @@ export function AdminMarketing({
                 <span className="text-[9px] font-black uppercase text-zinc-400">Coupon Tag code</span>
                 <input
                   type="text"
-                  placeholder="EX. SOLO2026, LIRAFEST"
+                  placeholder="EX. EMMA2026, LIRAFEST"
                   value={newCode}
                   onChange={e => setNewCode(e.target.value)}
                   className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl p-3.5 text-xs font-mono font-bold uppercase focus:outline-none"

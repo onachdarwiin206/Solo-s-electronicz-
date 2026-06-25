@@ -113,8 +113,8 @@ export function Navbar({
                   pressTimerActive && "scale-90 opacity-70"
                 )}
               >
-                <span className="inline sm:hidden">LIRA PHONES</span>
-                <span className="hidden sm:inline">LIRA PHONES & ELECTRONICS</span>
+                <span className="inline sm:hidden">EMMA PHONES</span>
+                <span className="hidden sm:inline">EMMA PHONES & ELECTRONICS</span>
               </button>
             </div>
 
