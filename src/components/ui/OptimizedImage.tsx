@@ -113,7 +113,7 @@ export function OptimizedImage({ src, alt, className, fallback, bucket = 'produc
   const currentUrl = resolvedUrl || src || getFallbackProductImage(alt);
 
   return (
-    <div className={cn("relative overflow-hidden group/optimg bg-neutral-900", className)}>
+    <div className={cn("relative overflow-hidden group/optimg bg-transparent", className)}>
       <img 
         src={currentUrl} 
         alt={alt} 

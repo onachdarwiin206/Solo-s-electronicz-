@@ -1,5 +1,5 @@
 import { useState, ChangeEvent, useRef, useEffect } from 'react';
-import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList, Sun, Moon, Smartphone, Download } from 'lucide-react';
+import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList, Sun, Moon, Smartphone, Download, Laptop, Gamepad2, Tv, Layers, Grid } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
@@ -75,12 +75,12 @@ export function Navbar({
   };
 
   const navItems = [
-    { name: 'All Devices', category: null },
-    { name: 'Phones', category: 'Phones & Tablets' },
-    { name: 'Computers', category: 'Computers & Laptops' },
-    { name: 'Gaming', category: 'Gaming & Consoles' },
-    { name: 'Audio', category: 'TVs & Audio' },
-    { name: 'Accessories', category: 'Accessories' },
+    { name: 'All Devices', category: null, icon: Grid },
+    { name: 'Phones', category: 'Phones & Tablets', icon: Smartphone },
+    { name: 'Computers', category: 'Computers & Laptops', icon: Laptop },
+    { name: 'Gaming', category: 'Gaming & Consoles', icon: Gamepad2 },
+    { name: 'Audio', category: 'TVs & Audio', icon: Tv },
+    { name: 'Accessories', category: 'Accessories', icon: Layers },
   ];
 
   const languages: { code: Language; label: string; sub: string }[] = [
@@ -212,15 +212,19 @@ export function Navbar({
 
         {/* Ribbon 2: Secondary Category Browser Navigation - Scrollable on mobile/tablet */}
         <div className="flex xl:justify-center items-center h-11 border-t border-border/80 gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap px-4 py-1 select-none">
-          {navItems.map((item) => (
-            <button
-              key={item.name}
-              onClick={() => onCategorySelect(item.category)}
-              className="px-4 py-1.5 rounded-full text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all font-mono uppercase tracking-tighter cursor-pointer shrink-0"
-            >
-              {item.name}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.name}
+                onClick={() => onCategorySelect(item.category)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-105 active:scale-95 transition-all duration-200 font-mono uppercase tracking-tighter cursor-pointer shrink-0"
+              >
+                <Icon size={13} className="shrink-0" />
+                <span>{item.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -262,18 +266,22 @@ export function Navbar({
           >
             Home / Landing
           </button>
-          {navItems.map((item) => (
-            <button
-              key={item.name}
-              onClick={() => {
-                onCategorySelect(item.category);
-                setIsOpen(false);
-              }}
-              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10"
-            >
-              {item.name}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.name}
+                onClick={() => {
+                  onCategorySelect(item.category);
+                  setIsOpen(false);
+                }}
+                className="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10"
+              >
+                <Icon size={16} className="shrink-0 text-muted-foreground/70" />
+                <span>{item.name}</span>
+              </button>
+            );
+          })}
 
 
 

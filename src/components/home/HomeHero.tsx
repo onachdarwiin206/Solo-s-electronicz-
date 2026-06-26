@@ -179,13 +179,22 @@ export function HomeHero({
           <div className="lg:col-span-12 relative py-4 flex flex-col items-center justify-center w-full overflow-hidden">
             
             {/* Visual background platform */}
-            <div className="absolute inset-0 bg-radial-gradient from-blue-600/[0.04] to-transparent blur-3xl pointer-events-none" />
+            <div className="absolute inset-0 bg-radial-gradient from-red-600/[0.08] via-transparent to-transparent blur-3xl pointer-events-none" />
 
             {repeatedProducts.length > 0 && (
-              <div className="w-full overflow-hidden relative py-8 select-none">
-                {/* Visual fade masks left and right for extreme elegance */}
-                <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-[#09090b]/80 to-transparent z-10 pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#09090b]/80 to-transparent z-10 pointer-events-none" />
+              <div className="w-full overflow-hidden relative py-12 select-none rounded-[3rem] border border-red-500/20 bg-gradient-to-r from-red-950/15 via-red-900/5 to-red-950/15 shadow-[0_0_60px_rgba(239,68,68,0.06)]">
+                {/* Visual hot red neon accent bar at the top */}
+                <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-90" />
+                
+                {/* Active Dynamic Sales Burner pulsing badge */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-full shadow-[0_0_20px_rgba(220,38,38,0.5)] border border-red-400/30 animate-pulse">
+                  <span className="inline-block w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
+                  <span>🔥 HOT SALES BURNER 🔥</span>
+                </div>
+
+                {/* Visual fade masks left and right with very subtle red-tinted ambient gradient */}
+                <div className="absolute left-0 top-0 bottom-0 w-28 bg-gradient-to-r from-[#09090b] via-[#09090b]/85 to-transparent z-10 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-l from-[#09090b] via-[#09090b]/85 to-transparent z-10 pointer-events-none" />
 
                 <motion.div
                   animate={{ x: ["-50%", "0%"] }}
@@ -194,37 +203,46 @@ export function HomeHero({
                     duration: 35, // Premium slow continuous scroll
                     repeat: Infinity,
                   }}
-                  className="flex gap-16 w-max"
+                  className="flex gap-16 w-max pt-6"
                 >
-                  {repeatedProducts.map((item, idx) => (
-                    <div
-                      key={`${item.id}-${idx}`}
-                      onClick={() => onQuickView(item)}
-                      className="flex flex-col items-center text-center cursor-pointer group shrink-0 w-52 sm:w-60 px-4 transition-transform duration-300 hover:-translate-y-1.5"
-                    >
-                      {/* Floating Product Image - Absolutely NO card background, border or box-frame! */}
-                      <div className="h-44 sm:h-52 w-44 sm:w-52 flex items-center justify-center relative mb-5">
-                        <OptimizedImage
-                          src={item.image}
-                          alt={item.name}
-                          className="max-h-full max-w-full object-contain filter drop-shadow-[0_20px_35px_rgba(59,130,246,0.18)] transform group-hover:scale-110 transition-transform duration-500 ease-out select-none pointer-events-none"
-                        />
+                  {repeatedProducts.map((item, idx) => {
+                    // Create a realistic high value discount for the red hot burner sales tag
+                    const mockDiscount = 10 + (parseInt(item.id) || idx) % 25;
+                    return (
+                      <div
+                        key={`${item.id}-${idx}`}
+                        onClick={() => onQuickView(item)}
+                        className="flex flex-col items-center text-center cursor-pointer group shrink-0 w-64 sm:w-72 px-4 transition-transform duration-300 hover:-translate-y-1.5"
+                      >
+                        {/* Floating Product Image with red-themed high power glowing shadow drop shadow */}
+                        <div className="h-56 sm:h-64 w-56 sm:w-64 flex items-center justify-center relative mb-5">
+                          <OptimizedImage
+                            src={item.image}
+                            alt={item.name}
+                            className="max-h-full max-w-full object-contain filter drop-shadow-[0_20px_45px_rgba(239,68,68,0.22)] transform group-hover:scale-110 transition-transform duration-500 ease-out select-none pointer-events-none"
+                          />
+                        </div>
+                        
+                        {/* Floating product details underneath with high energy Red styling */}
+                        <div className="space-y-1">
+                          <span className="px-2.5 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] font-mono rounded-full uppercase tracking-widest block max-w-max mx-auto mb-1 font-bold">
+                            {item.category}
+                          </span>
+                          <h3 className="text-xs sm:text-sm font-display font-medium text-foreground group-hover:text-red-400 transition-colors tracking-tight line-clamp-1 max-w-[180px] sm:max-w-[220px]">
+                            {item.name}
+                          </h3>
+                          <div className="flex items-center justify-center gap-2 mt-1">
+                            <span className="text-[11px] sm:text-xs font-mono font-black text-red-500">
+                              UGX {item.price.toLocaleString()}
+                            </span>
+                            <span className="text-[9px] px-1.5 py-0.5 bg-red-600/90 text-white font-black rounded tracking-tighter">
+                              -{mockDiscount}%
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      
-                      {/* Floating product details underneath */}
-                      <div className="space-y-1">
-                        <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-mono rounded-full uppercase tracking-widest block max-w-max mx-auto mb-1">
-                          {item.category}
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-display font-medium text-foreground group-hover:text-blue-400 transition-colors tracking-tight line-clamp-1 max-w-[180px] sm:max-w-[220px]">
-                          {item.name}
-                        </h3>
-                        <p className="text-[11px] sm:text-xs font-mono font-bold text-blue-500">
-                          UGX {item.price.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </motion.div>
               </div>
             )}
@@ -270,70 +288,6 @@ export function HomeHero({
 
 
 
-      {/* 4. SEARCH & DISCOVERY UPGRADE */}
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
-        <div className="bg-white/80 dark:bg-zinc-950/75 backdrop-blur-2xl border border-zinc-200/60 dark:border-zinc-800/80 rounded-[3rem] p-6 sm:p-10 shadow-2xl relative text-left">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/[0.02] to-purple-600/[0.02] pointer-events-none rounded-[3rem]" />
-          
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="space-y-1 text-center">
-              <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-blue-500 uppercase">SECURE SEARCH PLATFORM</span>
-              <h2 className="text-xl sm:text-2xl font-display font-semibold text-foreground tracking-tight">Looking for something specific?</h2>
-              <p className="text-muted-foreground text-xs font-medium">Instant live matching across our verified Lira warehouses & direct brand imports</p>
-            </div>
-
-            {/* Immersive high contrast search input bar */}
-            <div className="relative group/search">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 group-focus-within/search:text-blue-500 transition-colors" size={18} />
-              <input
-                type="text"
-                value={localSearch}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setLocalSearch(val);
-                  onSearch?.(val);
-                }}
-                placeholder="Search smart devices, laptops, sound systems, accessories..."
-                className="w-full bg-white dark:bg-zinc-900/90 border-2 border-zinc-300 dark:border-zinc-700/80 rounded-2.5xl py-4.5 pl-14 pr-12 text-sm font-semibold text-zinc-900 dark:text-zinc-100 outline-none shadow-md focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-zinc-500/80 dark:placeholder:text-zinc-400/80"
-              />
-              {localSearch && (
-                <button 
-                  onClick={clearSearch}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] uppercase font-mono font-bold text-muted-foreground hover:text-foreground transition-colors bg-foreground/5 border border-border px-2 py-1 rounded"
-                >
-                  CLEAR
-                </button>
-              )}
-            </div>
-
-            {/* Premium Suggestion & Popular searches Row */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-              <span className="text-[10px] font-sans font-bold text-zinc-500 dark:text-zinc-400 mr-2 uppercase tracking-wider">Popular searches:</span>
-              {[
-                "iPhone",
-                "Samsung",
-                "Infinix",
-                "Tecno",
-                "Laptops",
-                "Smart Watches"
-              ].map((term) => (
-                <button
-                  key={`trend-${term}`}
-                  onClick={() => handlePopularSearch(term)}
-                  className={cn(
-                    "px-4 py-2 border rounded-full text-xs transition-all font-bold cursor-pointer shadow-sm active:scale-95",
-                    localSearch.toLowerCase() === term.toLowerCase()
-                      ? "border-blue-500 text-white bg-blue-600 shadow-[0_3px_12px_rgba(37,99,235,0.35)] hover:bg-blue-700"
-                      : "bg-white/90 dark:bg-zinc-900/90 border-zinc-300 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-650 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                  )}
-                >
-                  {term}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* 5. PORTFOLIO & CATEGORIES FEED */}
       <section id="tech-portfolio" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24">

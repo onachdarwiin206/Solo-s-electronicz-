@@ -105,8 +105,8 @@ export default function UserProfile() {
             className="group cursor-pointer"
             onClick={() => window.dispatchEvent(new CustomEvent('openProduct', { detail: p }))}
           >
-            <div className="aspect-[4/5] rounded-[2rem] overflow-hidden bg-black/20 border border-white/5 mb-4 relative">
-              <OptimizedImage src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+            <div className="aspect-[4/5] rounded-[2rem] overflow-hidden bg-black/20 border border-white/5 mb-4 relative flex items-center justify-center">
+              <OptimizedImage src={p.image} alt={p.name} className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-700" />
             </div>
             <h4 className="text-xs font-black uppercase tracking-widest text-white mb-1">{p.name}</h4>
             <p className="text-[10px] font-bold text-blue-500 font-mono">UGX {p.price.toLocaleString()}</p>
