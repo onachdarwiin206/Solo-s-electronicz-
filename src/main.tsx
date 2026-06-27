@@ -40,16 +40,49 @@ if (typeof window !== 'undefined') {
 // Boot the self-healing layout storage schema
 initializeSandboxSchema();
 
-// Register Service Worker for mobile and Android PWA installation
+// Register Service Worker for mobile and Android PWA installation with update tracking & seamless reload
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((reg) => {
-        console.log('[PWA] Service Worker registered successfully:', reg.scope);
+        console.log('[PWA] Service Worker registered successfully with scope:', reg.scope);
+
+        // Detect updates to the service worker
+        reg.addEventListener('updatefound', () => {
+          const installingWorker = reg.installing;
+          if (installingWorker) {
+            installingWorker.addEventListener('statechange', () => {
+              if (installingWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  console.log('[PWA] New version discovered! Preparing seamless update...');
+                  // Dispatch update available event for active UI notification
+                  window.dispatchEvent(new CustomEvent('pwaUpdateAvailable'));
+                } else {
+                  console.log('[PWA] App shell pre-cached successfully. Ready for offline use!');
+                  window.dispatchEvent(new CustomEvent('pwaCached'));
+                }
+              }
+            });
+          }
+        });
       })
       .catch((err) => {
         console.warn('[PWA] Service Worker registration failed:', err);
       });
+
+    // Handle seamless reload when the active service worker controller changes
+    let isRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        console.log('[PWA] Controller changed. Triggering hot refresh for seamless reload.');
+        // Show seamless reload transition and refresh
+        window.dispatchEvent(new CustomEvent('pwaRefreshing'));
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000); // Small visual grace period for seamless UX
+      }
+    });
   });
 }
 

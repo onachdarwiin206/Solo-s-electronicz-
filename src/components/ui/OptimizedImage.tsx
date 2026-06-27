@@ -9,6 +9,7 @@ interface OptimizedImageProps {
   className?: string;
   fallback?: string;
   bucket?: string;
+  onLoad?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
 }
 
 const getFallbackProductImage = (name: string): string => {
@@ -37,7 +38,7 @@ const isFakeOrPlaceholder = (url: string | null | undefined): boolean => {
   return url.trim() === '';
 };
 
-export function OptimizedImage({ src, alt, className, fallback, bucket = 'product-images' }: OptimizedImageProps) {
+export function OptimizedImage({ src, alt, className, fallback, bucket = 'product-images', onLoad }: OptimizedImageProps) {
   // Initialize with the URL immediately if it's already a full web URL to avoid mount flickering
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(() => {
     if (src && typeof src === 'string' && !isFakeOrPlaceholder(src)) {
@@ -123,6 +124,7 @@ export function OptimizedImage({ src, alt, className, fallback, bucket = 'produc
         )}
         referrerPolicy="no-referrer"
         loading="lazy"
+        onLoad={onLoad}
         onError={handleError}
       />
     </div>

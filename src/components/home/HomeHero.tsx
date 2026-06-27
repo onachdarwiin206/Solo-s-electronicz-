@@ -110,8 +110,17 @@ export function HomeHero({
     return recentlyViewedIds
       .map(id => products.find(p => p.id === id))
       .filter((p): p is Product => !!p)
-      .slice(0, 4);
+      .slice(0, 12);
   }, [recentlyViewedIds, products]);
+
+  const repeatedViewed = useMemo(() => {
+    if (!recentlyViewedProducts.length) return [];
+    let list = [...recentlyViewedProducts];
+    while (list.length < 10) {
+      list = [...list, ...recentlyViewedProducts];
+    }
+    return [...list, ...list];
+  }, [recentlyViewedProducts]);
 
   // Premium flagship items representing different sectors for the rotating display slider
   const premiumShowcase = useMemo(() => {
@@ -182,19 +191,19 @@ export function HomeHero({
             <div className="absolute inset-0 bg-radial-gradient from-red-600/[0.08] via-transparent to-transparent blur-3xl pointer-events-none" />
 
             {repeatedProducts.length > 0 && (
-              <div className="w-full overflow-hidden relative py-12 select-none rounded-[3rem] border border-red-500/20 bg-gradient-to-r from-red-950/15 via-red-900/5 to-red-950/15 shadow-[0_0_60px_rgba(239,68,68,0.06)]">
+              <div className="w-full overflow-hidden relative py-12 select-none rounded-[3rem] border-2 border-red-500/40 bg-gradient-to-r from-red-950/90 via-red-900/85 to-red-950/90 shadow-[0_0_60px_rgba(239,68,68,0.25)]">
                 {/* Visual hot red neon accent bar at the top */}
-                <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-90" />
+                <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-transparent via-red-400 to-transparent opacity-95" />
                 
                 {/* Active Dynamic Sales Burner pulsing badge */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-full shadow-[0_0_20px_rgba(220,38,38,0.5)] border border-red-400/30 animate-pulse">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-full shadow-[0_0_25px_rgba(239,68,68,0.7)] border border-red-300/40 animate-pulse">
                   <span className="inline-block w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
                   <span>🔥 HOT SALES BURNER 🔥</span>
                 </div>
 
-                {/* Visual fade masks left and right with very subtle red-tinted ambient gradient */}
-                <div className="absolute left-0 top-0 bottom-0 w-28 bg-gradient-to-r from-[#09090b] via-[#09090b]/85 to-transparent z-10 pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-l from-[#09090b] via-[#09090b]/85 to-transparent z-10 pointer-events-none" />
+                {/* Visual fade masks left and right with red-tinted ambient gradient */}
+                <div className="absolute left-0 top-0 bottom-0 w-28 bg-gradient-to-r from-[#180202] via-[#180202]/80 to-transparent z-10 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-l from-[#180202] via-[#180202]/80 to-transparent z-10 pointer-events-none" />
 
                 <motion.div
                   animate={{ x: ["-50%", "0%"] }}
@@ -342,52 +351,7 @@ export function HomeHero({
           })}
         </div>
 
-        {/* RECENTLY VIEWED CONTAINER */}
-        {category === null && searchQuery === '' && recentlyViewedProducts.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-14 p-6 bg-card border border-border rounded-3xl space-y-4 text-left shadow-md"
-          >
-            <div className="flex items-center justify-between border-b border-border/80 pb-2">
-              <div className="flex items-center gap-2">
-                <Clock size={13} className="text-muted-foreground" />
-                <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
-                  Recently Viewed Units
-                </h3>
-              </div>
-              <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest bg-background border border-border px-2 py-0.5 rounded-md">
-                {recentlyViewedProducts.length} Cache Logged
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {recentlyViewedProducts.map((item) => (
-                <div
-                  key={`rec-${item.id}`}
-                  onClick={() => onProductClick(item)}
-                  className="group relative rounded-2xl bg-background hover:bg-card border border-border p-3 flex flex-col justify-between h-48 transition-all duration-300 cursor-pointer"
-                >
-                  <div className="h-20 w-full flex items-center justify-center relative overflow-hidden my-1">
-                    <OptimizedImage 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_6px_12px_rgba(0,0,0,0.03)] transform transition-transform duration-500 group-hover:scale-105 select-none"
-                    />
-                  </div>
-                  <div className="space-y-1 text-left mt-auto">
-                    <h4 className="text-[10.5px] font-medium text-foreground group-hover:text-blue-500 transition-colors truncate">
-                      {item.name}
-                    </h4>
-                    <span className="text-[9.5px] font-mono text-muted-foreground font-bold block">
-                      UGX {item.price.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        {/* RECENTLY VIEWED CONTAINER REMOVED FROM HERE TO BE SHIFTED AS A MARQUEE JUST ABOVE THE FOOTER */}
 
         {/* FEED GRID USING REDESIGNED PRODUCT CARD */}
         {loadingProducts ? (
@@ -486,6 +450,74 @@ export function HomeHero({
           )
         )}
       </section>
+
+      {/* 6. RECENTLY VIEWED INFINITE MARQUEE */}
+      {category === null && searchQuery === '' && recentlyViewedProducts.length > 0 && (
+        <div id="recently-viewed-marquee-container" className="w-full border-t border-border/40 pt-24 pb-14 text-left space-y-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock size={18} className="text-blue-500 animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-muted-foreground uppercase">PERSISTENT SYSTEM RETRIEVAL</span>
+                <h3 className="text-xl md:text-2xl font-display font-medium text-foreground tracking-tight">
+                  Recently Viewed Units
+                </h3>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest bg-card border border-border px-3.5 py-1.5 rounded-full flex items-center gap-1.5 select-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              {recentlyViewedProducts.length} Items Cached
+            </span>
+          </div>
+
+          <div id="recently-viewed-marquee-track" className="relative w-full overflow-hidden py-4 select-none">
+            {/* Ambient visual fade masks */}
+            <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background via-background/70 to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background via-background/70 to-transparent z-10 pointer-events-none" />
+
+            <motion.div
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{
+                ease: "linear",
+                duration: 25,
+                repeat: Infinity,
+              }}
+              className="flex gap-6 w-max animate-none"
+            >
+              {repeatedViewed.map((item, idx) => (
+                <div
+                  key={`rec-marquee-${item.id}-${idx}`}
+                  id={`rec-marquee-card-${item.id}-${idx}`}
+                  onClick={() => onProductClick(item)}
+                  className="group relative rounded-[2.25rem] bg-[#090a0f]/85 dark:bg-card/70 hover:bg-card border border-white/[0.04] hover:border-blue-500/40 p-5 flex items-center gap-5 w-80 h-32 transition-all duration-300 cursor-pointer shrink-0 shadow-xl hover:shadow-[0_15px_45px_rgba(59,130,246,0.12)]"
+                >
+                  {/* Subtle backdrop element */}
+                  <span className="absolute inset-0 bg-gradient-to-b from-white/[0.01] to-transparent pointer-events-none rounded-[2.25rem]" />
+                  
+                  <div className="h-24 w-24 flex items-center justify-center relative overflow-hidden bg-background/40 rounded-2xl shrink-0 p-2 border border-white/[0.02]">
+                    <OptimizedImage 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.04)] transform transition-transform duration-500 group-hover:scale-110 select-none"
+                    />
+                  </div>
+                  <div className="space-y-1.5 text-left min-w-0">
+                    <span className="text-[9.5px] font-mono font-bold tracking-wider text-blue-500 uppercase block">
+                      {item.category}
+                    </span>
+                    <h4 className="text-sm font-medium text-foreground group-hover:text-blue-400 transition-colors truncate max-w-[170px]">
+                      {item.name}
+                    </h4>
+                    <span className="text-xs font-mono text-muted-foreground font-black block">
+                      UGX {item.price.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
