@@ -14,6 +14,7 @@ interface NavbarProps {
   cartCount: number;
   wishlistCount: number;
   onCartClick: () => void;
+  onWishlistClick: () => void;
   onMarketingClick: () => void;
   isAdmin: boolean;
   currentLanguage: Language;
@@ -28,6 +29,7 @@ export function Navbar({
   cartCount, 
   wishlistCount,
   onCartClick, 
+  onWishlistClick,
   onMarketingClick,
   isAdmin,
   currentLanguage,
@@ -148,10 +150,8 @@ export function Navbar({
 
             <Tooltip content="Wishlist">
               <button 
-                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => {
-                   // Optional: feature to show wishlist modal if requested, for now just show count
-                }}
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={onWishlistClick}
               >
                 <Bookmark size={20} />
                 {wishlistCount > 0 && (

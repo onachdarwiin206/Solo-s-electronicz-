@@ -29,6 +29,8 @@ import AdminLoginModal from './components/auth/LoginModal';
 const UserProfile = lazy(() => import('./components/profile/UserProfile'));
 const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
 const AuthPage = lazy(() => import('./components/auth/AuthPage'));
+import { ToastContainer, ToastData } from './components/ui/Toast';
+import { WishlistDrawer } from './components/shop/WishlistDrawer';
 
 type View = 'shop' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth';
 
@@ -118,6 +120,23 @@ export default function App() {
       return [];
     }
   });
+
+  const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
+
+  const addToast = (toast: Omit<ToastData, 'id'>) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { ...toast, id }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const wishlistProducts = useMemo(() => {
+    const ids = user && user.id !== 'legacy-admin' ? (user.wishlist || []) : wishlist;
+    return products.filter(p => ids.includes(p.id));
+  }, [user, wishlist, products]);
 
   const getMergedProducts = (remoteData: Product[]): Product[] => {
     if (isSupabaseConfigured) {
@@ -608,10 +627,24 @@ _Your order is now being processed._
   };
 
   const handleToggleWishlist = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    const isAdding = !isItemWishlisted(productId);
+
     if (user && user.id !== 'legacy-admin') {
       await authToggleWishlist(productId);
     } else {
       setWishlist(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
+    }
+
+    if (isAdding && product) {
+      addToast({
+        productId: product.id,
+        productName: product.name,
+        productImage: (product.images && product.images.length > 0) ? product.images[0] : product.image,
+        message: "Added to your saved hardware items.",
+        actionText: "Open Wishlist",
+        onAction: () => setWishlistOpen(true)
+      });
     }
   };
 
@@ -651,8 +684,9 @@ _Your order is now being processed._
             onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }}
             onSearch={setSearchQuery}
             cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-            wishlistCount={wishlist.length}
+            wishlistCount={wishlistProducts.length}
             onCartClick={() => setCartOpen(true)}
+            onWishlistClick={() => setWishlistOpen(true)}
             onMarketingClick={() => setView('marketing')}
             isAdmin={isAdmin}
             currentLanguage={language}
@@ -770,6 +804,17 @@ _Your order is now being processed._
 
           <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
           <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
+          
+          <WishlistDrawer 
+            isOpen={wishlistOpen} 
+            onClose={() => setWishlistOpen(false)} 
+            items={wishlistProducts} 
+            onRemove={handleToggleWishlist} 
+            onAddToCart={addToCart} 
+            onProductClick={(p) => { setSelectedProduct(p); setView('product-detail'); }} 
+          />
+
+          <ToastContainer toasts={toasts} onDismiss={removeToast} />
           
           <AdminLoginModal 
             isOpen={isAdminModalOpen} 
