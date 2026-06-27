@@ -49,8 +49,58 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [showTerms, setShowTerms] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
+      const cachedRemote = cachedRemoteRaw ? JSON.parse(cachedRemoteRaw) : [];
+      
+      const localCustomRaw = localStorage.getItem('custom_products');
+      const localCustom = localCustomRaw ? JSON.parse(localCustomRaw) : [];
+      
+      const deletedRaw = localStorage.getItem('deleted_product_ids');
+      const deletedIds = new Set<string>(deletedRaw ? JSON.parse(deletedRaw) : []);
+      
+      const combined: Product[] = [];
+      const seenIds = new Set<string>();
+      
+      if (isSupabaseConfigured && cachedRemote.length > 0) {
+        cachedRemote.forEach((p: Product) => {
+          if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
+            seenIds.add(p.id);
+            combined.push(p);
+          }
+        });
+      }
+      
+      localCustom.forEach((p: Product) => {
+        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          combined.push(p);
+        }
+      });
+      
+      INITIAL_PRODUCTS.forEach((p: Product) => {
+        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
+          seenIds.add(p.id);
+          combined.push(p);
+        }
+      });
+      
+      return combined;
+    } catch {
+      return INITIAL_PRODUCTS;
+    }
+  });
+  const [loadingProducts, setLoadingProducts] = useState(() => {
+    try {
+      const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
+      if (cachedRemoteRaw) {
+        const cachedRemote = JSON.parse(cachedRemoteRaw);
+        if (cachedRemote.length > 0) return false;
+      }
+    } catch {}
+    return true;
+  });
   const [language, setLanguage] = useState<Language>('en');
   const [wishlist, setWishlist] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -189,8 +239,11 @@ export default function App() {
       return;
     }
     
-    if (!silent) {
-      await syncLocalProductsToSupabase();
+    // Non-blocking background sync of local offline actions
+    syncLocalProductsToSupabase();
+    
+    // Only trigger full-screen loading skeleton if we don't have cached products rendered
+    if (!silent && products.length === 0) {
       setLoadingProducts(true);
     }
     
@@ -199,7 +252,7 @@ export default function App() {
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
-
+ 
       if (error) {
         if (error.code === 'PGRST116' || error.code === '42P01' || error.hint?.includes('not found')) {
           console.warn("[Supabase] 'products' table missing. Using hardware feed fallback.");
@@ -238,6 +291,9 @@ export default function App() {
                 // Re-fetch to sync completely down
                 supabase.from('products').select('*').order('created_at', { ascending: false }).then(({ data: freshData }) => {
                   if (freshData && freshData.length > 0) {
+                    try {
+                      localStorage.setItem('cached_remote_products', JSON.stringify(freshData));
+                    } catch (e) {}
                     setProducts(getMergedProducts(freshData as Product[]));
                   }
                 });
@@ -247,6 +303,11 @@ export default function App() {
             console.warn("[Supabase] Background seeding fail:", seedErr);
           }
         } else {
+          try {
+            localStorage.setItem('cached_remote_products', JSON.stringify(data));
+          } catch (e) {
+            console.warn("Failed to update remote cache:", e);
+          }
           setProducts(getMergedProducts(data as Product[]));
         }
       }
@@ -258,9 +319,7 @@ export default function App() {
       }
       setProducts(getMergedProducts([]));
     } finally {
-      if (!silent) {
-        setLoadingProducts(false);
-      }
+      setLoadingProducts(false);
     }
   };
 

@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+import compression from "compression";
 
 // Lazy-initialized Gemini Client helper
 let aiClient: GoogleGenAI | null = null;
@@ -38,6 +39,9 @@ async function startServer() {
 
   // Middleware for parsing JSON
   app.use(express.json());
+
+  // Enable fast compression for faster network transfer
+  app.use(compression());
 
   // API endpoint for generating social media captions
   app.post("/api/marketing/generate-caption", async (req, res) => {
