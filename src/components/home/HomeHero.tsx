@@ -256,38 +256,7 @@ export function HomeHero({
               </div>
             )}
 
-            {/* FLOATING TRUST BADGES Row: Statically aligned underneath marquee */}
-            <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 mt-10 z-10 w-full px-4">
-              <div className="p-3 bg-card/40 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.03)] select-none">
-                <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
-                  <ShieldCheck size={14} />
-                </div>
-                <div className="text-left">
-                  <h4 className="text-[10px] font-bold text-foreground leading-none">Genuine Electronics</h4>
-                  <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Official Guarantee</p>
-                </div>
-              </div>
 
-              <div className="p-3 bg-card/40 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.03)] select-none">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
-                  <WhatsAppIcon size={14} />
-                </div>
-                <div className="text-left">
-                  <h4 className="text-[10px] font-bold text-foreground leading-none">WhatsApp Support</h4>
-                  <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Instant Catalog Advice</p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-card/40 backdrop-blur-xl border border-border rounded-2xl flex items-center gap-3 shadow-[0_8px_25px_rgba(0,0,0,0.03)] select-none">
-                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 shrink-0">
-                  <ShieldCheck size={14} />
-                </div>
-                <div className="text-left">
-                  <h4 className="text-[10px] font-bold text-foreground leading-none">Secure Shopping</h4>
-                  <p className="text-[8px] font-mono text-muted-foreground mt-1 whitespace-nowrap">Receipt Proof Verified</p>
-                </div>
-              </div>
-            </div>
 
           </div>
         </div>
