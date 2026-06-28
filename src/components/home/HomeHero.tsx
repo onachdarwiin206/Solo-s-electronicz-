@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Smartphone, Laptop, Headphones, Watch, ShieldCheck, 
   Truck, Star, Sparkles, ShoppingBag, ArrowRight, 
-  ChevronRight, CheckCircle2, MapPin, Compass, Gamepad2, Loader2,
+  ChevronRight, ChevronLeft, CheckCircle2, MapPin, Compass, Gamepad2, Loader2,
   Tv, Wifi, Camera, Cpu, Tag, Usb, Heart, Clock, AlertCircle, Sparkle,
-  Search, Shield, PhoneCall, BadgePercent, CheckCircle, Zap, HelpCircle
+  Search, Shield, PhoneCall, BadgePercent, CheckCircle, Zap, HelpCircle,
+  Play, Pause, RefreshCw, Eye, Film
 } from 'lucide-react';
 import { Product } from '../../types';
 import { PRODUCT_CATEGORIES } from '../../constants';
@@ -66,6 +67,22 @@ export function HomeHero({
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
   const [activeShowcaseIdx, setActiveShowcaseIdx] = useState(0);
   const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [isOrbiting, setIsOrbiting] = useState(true);
+  const [cinemaDimmed, setCinemaDimmed] = useState(false);
+  const [isPlayingAutoplay, setIsPlayingAutoplay] = useState(true);
+  const [scanCoord, setScanCoord] = useState({ x: 124.8, y: 394.2, z: 88.5 });
+
+  useEffect(() => {
+    if (!isOrbiting) return;
+    const interval = setInterval(() => {
+      setScanCoord({
+        x: Number((100 + Math.random() * 800).toFixed(1)),
+        y: Number((100 + Math.random() * 800).toFixed(1)),
+        z: Number((10 + Math.random() * 150).toFixed(1))
+      });
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [isOrbiting]);
   
   // Clean continuous ticking countdown timer state
   const [timeLeft, setTimeLeft] = useState({ hrs: '03', mins: '44', secs: '19' });
@@ -153,14 +170,47 @@ export function HomeHero({
 
   // Auto-rotate the featured right showcase product slowly
   useEffect(() => {
-    if (premiumShowcase.length < 2) return;
+    if (premiumShowcase.length < 2 || !isPlayingAutoplay) return;
     const interval = setInterval(() => {
       setActiveShowcaseIdx(prev => (prev + 1) % premiumShowcase.length);
-    }, 5000);
+    }, 6000);
     return () => clearInterval(interval);
-  }, [premiumShowcase]);
+  }, [premiumShowcase, isPlayingAutoplay]);
 
   const activeShowcaseProduct = premiumShowcase[activeShowcaseIdx];
+
+  const recentlyUploadedProducts = useMemo(() => {
+    if (!products.length) return [];
+    return [...products]
+      .sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : (a.client_created_at || 0);
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : (b.client_created_at || 0);
+        if (timeA === 0 && timeB === 0) {
+          return b.id.localeCompare(a.id);
+        }
+        return timeB - timeA;
+      })
+      .slice(0, 6);
+  }, [products]);
+
+  const getUploadTimeLabel = (product: Product) => {
+    const time = product.created_at ? new Date(product.created_at).getTime() : (product.client_created_at || 0);
+    if (!time) {
+      const hash = product.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const hours = (hash % 18) + 1;
+      return `${hours}h ago`;
+    }
+    const diffMs = Date.now() - time;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
+
+    if (diffSec < 60) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHr < 24) return `${diffHr}h ago`;
+    return `${diffDay}d ago`;
+  };
 
   const handlePopularSearch = (term: string) => {
     setLocalSearch(term);
@@ -184,88 +234,455 @@ export function HomeHero({
       <section className="relative pt-24 md:pt-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
-          {/* CENTERED COLUMN: Continuous Infinite Horizontal Product Marquee */}
+          {/* CENTERED COLUMN: Premium Cinematic Spotlight Theater */}
           <div className="lg:col-span-12 relative py-4 flex flex-col items-center justify-center w-full overflow-hidden">
             
-            {/* Visual background platform */}
-            <div className="absolute inset-0 bg-radial-gradient from-red-600/[0.08] via-transparent to-transparent blur-3xl pointer-events-none" />
+            {/* Ambient backlight glow */}
+            <div className="absolute inset-0 bg-radial-gradient from-blue-600/[0.04] via-transparent to-transparent blur-3xl pointer-events-none" />
 
-            {repeatedProducts.length > 0 && (
-              <div className="w-full overflow-hidden relative py-12 select-none rounded-[3rem] border-2 border-red-500/40 bg-gradient-to-r from-red-950/90 via-red-900/85 to-red-950/90 shadow-[0_0_60px_rgba(239,68,68,0.25)]">
-                {/* Visual hot red neon accent bar at the top */}
-                <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-transparent via-red-400 to-transparent opacity-95" />
+            {/* Cinema mode dimming fixed overlay */}
+            {cinemaDimmed && (
+              <div 
+                className="fixed inset-0 bg-black/95 z-[90] transition-opacity duration-700 pointer-events-auto"
+                onClick={() => setCinemaDimmed(false)}
+              />
+            )}
+
+            {premiumShowcase.length > 0 && activeShowcaseProduct && (
+              <div className={`w-full relative rounded-[2.5rem] md:rounded-[3.5rem] border border-white/[0.08] bg-[#05050b]/90 shadow-[0_30px_80px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col md:flex-row items-stretch select-none min-h-[520px] transition-all duration-700 ${cinemaDimmed ? 'z-[100]' : 'z-10'}`}>
                 
-                {/* Active Dynamic Sales Burner pulsing badge */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.25em] rounded-full shadow-[0_0_25px_rgba(239,68,68,0.7)] border border-red-300/40 animate-pulse">
-                  <span className="inline-block w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
-                  <span>🔥 HOT SALES BURNER 🔥</span>
+                {/* Immersive Ambilight Backlight */}
+                <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+                  <AnimatePresence mode="wait">
+                    <motion.img
+                      key={activeShowcaseProduct.id}
+                      src={activeShowcaseProduct.image}
+                      alt=""
+                      initial={{ opacity: 0, scale: 1.3 }}
+                      animate={{ opacity: 0.16, scale: 1.4 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.8 }}
+                      className="w-full h-full object-cover blur-[100px] transform origin-center"
+                    />
+                  </AnimatePresence>
                 </div>
 
-                {/* Visual fade masks left and right with red-tinted ambient gradient */}
-                <div className="absolute left-0 top-0 bottom-0 w-28 bg-gradient-to-r from-[#180202] via-[#180202]/80 to-transparent z-10 pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-l from-[#180202] via-[#180202]/80 to-transparent z-10 pointer-events-none" />
+                {/* Cinematic Top Letterbox */}
+                <div className="absolute top-0 inset-x-0 h-7 bg-black/50 border-b border-white/[0.04] backdrop-blur-md z-20 flex items-center justify-between px-6 text-[9px] font-mono tracking-widest text-zinc-500 uppercase font-black select-none pointer-events-none">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                    <span>ACTIVE PROJECTION CHANNEL: CH-0{activeShowcaseIdx + 1}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span>SYS RES: UHD HIGH-FI</span>
+                    <span>UTC LOCK: {timeLeft.hrs}:{timeLeft.mins}:{timeLeft.secs}</span>
+                  </div>
+                </div>
 
-                <motion.div
-                  animate={{ x: ["-50%", "0%"] }}
-                  transition={{
-                    ease: "linear",
-                    duration: 35, // Premium slow continuous scroll
-                    repeat: Infinity,
-                  }}
-                  className="flex gap-16 w-max pt-6"
-                >
-                  {repeatedProducts.map((item, idx) => {
-                    // Create a realistic high value discount for the red hot burner sales tag
-                    const mockDiscount = 10 + (parseInt(item.id) || idx) % 25;
-                    return (
-                      <div
-                        key={`${item.id}-${idx}`}
-                        onClick={() => onQuickView(item)}
-                        className="flex flex-col items-center text-center cursor-pointer group shrink-0 w-64 sm:w-72 px-4 transition-transform duration-300 hover:-translate-y-1.5"
+                {/* Left Column: Product Info & Actions */}
+                <div className="flex-1 p-8 md:p-12 lg:p-14 flex flex-col justify-between relative z-10 text-left border-r border-white/[0.03]">
+                  <div className="space-y-6 pt-6">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-mono rounded-full uppercase tracking-[0.2em] font-extrabold">
+                        CINEMATIC SPOTLIGHT
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
+                        RECOMMENDATION INDEX // ACTIVE
+                      </span>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeShowcaseProduct.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.4 }}
+                        className="space-y-4"
                       >
-                        {/* Floating Product Image with red-themed high power glowing shadow drop shadow */}
-                        <div className="h-56 sm:h-64 w-56 sm:w-64 flex items-center justify-center relative mb-5">
-                          <OptimizedImage
-                            src={item.image}
-                            alt={item.name}
-                            className="max-h-full max-w-full object-contain filter drop-shadow-[0_20px_45px_rgba(239,68,68,0.22)] transform group-hover:scale-110 transition-transform duration-500 ease-out select-none pointer-events-none"
-                          />
-                        </div>
-                        
-                        {/* Floating product details underneath with high energy Red styling */}
-                        <div className="space-y-1">
-                          <span className="px-2.5 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] font-mono rounded-full uppercase tracking-widest block max-w-max mx-auto mb-1 font-bold">
-                            {item.category}
-                          </span>
-                          <h3 className="text-xs sm:text-sm font-display font-medium text-foreground group-hover:text-red-400 transition-colors tracking-tight line-clamp-1 max-w-[180px] sm:max-w-[220px]">
-                            {item.name}
-                          </h3>
-                          <div className="flex items-center justify-center gap-2 mt-1">
-                            <span className="text-[11px] sm:text-xs font-mono font-black text-red-500">
-                              UGX {item.price.toLocaleString()}
-                            </span>
-                            <span className="text-[9px] px-1.5 py-0.5 bg-red-600/90 text-white font-black rounded tracking-tighter">
-                              -{mockDiscount}%
+                        <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-blue-500 uppercase block">
+                          {activeShowcaseProduct.category}
+                        </span>
+                        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight text-white leading-tight uppercase">
+                          {activeShowcaseProduct.name}
+                        </h2>
+                        <p className="text-xs sm:text-sm text-zinc-400 font-normal leading-relaxed max-w-lg line-clamp-3">
+                          {activeShowcaseProduct.description}
+                        </p>
+
+                        {/* High-Tech Specs Dashboard */}
+                        <div className="grid grid-cols-2 gap-3 pt-3 max-w-md">
+                          <div className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-2xl flex flex-col gap-0.5">
+                            <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest font-black">PROJECTION RATING</span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-xs font-mono text-white font-bold">{activeShowcaseProduct.rating || 4.9}</span>
+                              <div className="flex text-yellow-500 text-[10px]">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star key={i} size={8} className="fill-current" />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-2xl flex flex-col gap-0.5">
+                            <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest font-black">STOCKS POOL</span>
+                            <span className="text-xs font-mono font-bold text-blue-400 mt-0.5">
+                              {activeShowcaseProduct.stock > 0 ? `${activeShowcaseProduct.stock} UNITS SECURED` : 'OUT OF STOCK'}
                             </span>
                           </div>
                         </div>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Price and CTA Row */}
+                  <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-t border-white/[0.04] pt-8">
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">ACQUISITION VALUE</span>
+                      <div className="flex items-baseline gap-2">
+                        <h3 className="text-2xl sm:text-3xl font-mono font-black text-white tracking-tight">
+                          UGX {activeShowcaseProduct.price.toLocaleString()}
+                        </h3>
+                        <span className="text-[10px] font-mono text-green-400 font-bold uppercase tracking-wider">
+                          TAX INC.
+                        </span>
                       </div>
-                    );
-                  })}
-                </motion.div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {/* Add to Cart */}
+                      <button
+                        onClick={() => onAddToCart(activeShowcaseProduct)}
+                        className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-mono text-[10.5px] font-extrabold uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 group/btn cursor-pointer shrink-0"
+                      >
+                        <ShoppingBag size={13} />
+                        Acquire Unit
+                        <ArrowRight size={12} className="transform transition-transform group-hover/btn:translate-x-1" />
+                      </button>
+
+                      {/* Wishlist Link Button */}
+                      <button
+                        onClick={() => onToggleWishlist(activeShowcaseProduct.id)}
+                        className={`p-3.5 rounded-2xl border transition-all duration-300 flex items-center justify-center cursor-pointer shrink-0 ${
+                          isItemWishlisted(activeShowcaseProduct.id)
+                            ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                            : 'bg-white/[0.02] text-zinc-400 hover:text-white border-white/[0.06] hover:bg-white/[0.05]'
+                        }`}
+                        title={isItemWishlisted(activeShowcaseProduct.id) ? 'Saved in wishlist' : 'Save to wishlist'}
+                      >
+                        <Heart size={15} className={isItemWishlisted(activeShowcaseProduct.id) ? 'fill-blue-500 text-blue-500' : ''} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: High Tech Holographic Image Viewport */}
+                <div className="w-full md:w-[45%] bg-black/30 flex flex-col justify-between p-8 md:p-12 relative overflow-hidden shrink-0 border-t md:border-t-0 md:border-l border-white/[0.03]">
+                  
+                  {/* Grid overlay background */}
+                  <div 
+                    className="absolute inset-0 pointer-events-none opacity-[0.14] mix-blend-overlay"
+                    style={{
+                      backgroundImage: `radial-gradient(circle, #3b82f6 1.5px, transparent 1.5px)`,
+                      backgroundSize: '16px 16px',
+                    }}
+                  />
+
+                  {/* Corner targets */}
+                  <div className="absolute top-10 left-10 w-4 h-4 border-t border-l border-blue-500/30" />
+                  <div className="absolute top-10 right-10 w-4 h-4 border-t border-r border-blue-500/30" />
+                  <div className="absolute bottom-10 left-10 w-4 h-4 border-b border-l border-blue-500/30" />
+                  <div className="absolute bottom-10 right-10 w-4 h-4 border-b border-r border-blue-500/30" />
+
+                  {/* Live Telemetry Coordinates */}
+                  <div className="flex justify-between text-[8px] font-mono text-zinc-500 uppercase tracking-widest select-none pt-4">
+                    <div className="flex gap-2">
+                      <span>LATENCY: 0.12ms</span>
+                      <span className={isOrbiting ? "text-green-500 font-bold" : "text-zinc-500"}>
+                        {isOrbiting ? "● ORBIT_ACTIVE" : "○ STATIC_LOCK"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span>COORD_X: {scanCoord.x}</span>
+                      <span>COORD_Y: {scanCoord.y}</span>
+                      <span>HOLO_Z: {scanCoord.z}</span>
+                    </div>
+                  </div>
+
+                  {/* Floating Image Pedestal */}
+                  <div className="flex-1 flex flex-col items-center justify-center relative my-4">
+                    <div className="absolute w-64 h-64 border border-blue-500/5 rounded-full animate-[spin_40s_linear_infinite]" />
+                    <div className="absolute w-52 h-52 border border-dashed border-blue-500/10 rounded-full animate-[spin_25s_linear_infinite_reverse]" />
+                    <div className="absolute w-40 h-40 bg-gradient-to-t from-blue-500/[0.03] to-transparent rounded-full blur-xl animate-pulse" />
+
+                    {/* Scanning lasers */}
+                    {isOrbiting && (
+                      <motion.div
+                        animate={{ y: [-100, 100, -100] }}
+                        transition={{
+                          duration: 4.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                        className="absolute inset-x-8 h-[2px] bg-gradient-to-r from-transparent via-blue-500/60 to-transparent shadow-[0_0_8px_rgba(59,130,246,0.8)] z-20 pointer-events-none"
+                      />
+                    )}
+
+                    {/* Animated Hologram image container */}
+                    <div className="relative z-10 w-56 h-56 sm:w-64 sm:h-64 flex items-center justify-center">
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={activeShowcaseProduct.id}
+                          initial={{ opacity: 0, scale: 0.85 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.85 }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
+                          className="w-full h-full flex items-center justify-center"
+                        >
+                          <motion.div
+                            animate={isOrbiting ? {
+                              y: [0, -8, 0],
+                              rotate: [0, 1.5, -1.5, 0],
+                            } : {}}
+                            transition={{
+                              duration: 4,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                            className="w-full h-full flex items-center justify-center cursor-pointer"
+                            onClick={() => onQuickView(activeShowcaseProduct)}
+                          >
+                            <OptimizedImage
+                              src={activeShowcaseProduct.image}
+                              alt={activeShowcaseProduct.name}
+                              className="max-h-full max-w-full object-contain filter drop-shadow-[0_25px_45px_rgba(59,130,246,0.35)]"
+                            />
+                          </motion.div>
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Pedestal Shadow base */}
+                    <div className="w-52 h-3.5 bg-blue-500/5 border border-blue-500/10 rounded-full blur-xs shadow-[0_12px_24px_rgba(59,130,246,0.15)] mt-4 relative">
+                      <div className="absolute inset-0 bg-blue-500/10 rounded-full filter blur-md animate-pulse" />
+                    </div>
+                  </div>
+
+                  {/* Control Deck */}
+                  <div className="border-t border-white/[0.04] pt-5 flex items-center justify-between z-10">
+                    
+                    {/* Left / Right manual selectors */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setActiveShowcaseIdx(prev => (prev - 1 + premiumShowcase.length) % premiumShowcase.length);
+                        }}
+                        className="p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] text-zinc-400 hover:text-white transition-all cursor-pointer"
+                        title="Previous Projection"
+                      >
+                        <ChevronLeft size={13} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveShowcaseIdx(prev => (prev + 1) % premiumShowcase.length);
+                        }}
+                        className="p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] text-zinc-400 hover:text-white transition-all cursor-pointer"
+                        title="Next Projection"
+                      >
+                        <ChevronRight size={13} />
+                      </button>
+                    </div>
+
+                    {/* High tech toggles */}
+                    <div className="flex items-center gap-2">
+                      
+                      {/* Play/Pause Autoplay */}
+                      <button
+                        onClick={() => setIsPlayingAutoplay(prev => !prev)}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          isPlayingAutoplay 
+                            ? 'bg-blue-600/15 text-blue-400 border-blue-500/20' 
+                            : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:text-white'
+                        }`}
+                        title={isPlayingAutoplay ? "Pause Autoplay" : "Start Autoplay"}
+                      >
+                        {isPlayingAutoplay ? <Pause size={13} /> : <Play size={13} />}
+                      </button>
+
+                      {/* Orbit on/off */}
+                      <button
+                        onClick={() => setIsOrbiting(prev => !prev)}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          isOrbiting 
+                            ? 'bg-blue-600/15 text-blue-400 border-blue-500/20' 
+                            : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:text-white'
+                        }`}
+                        title={isOrbiting ? "Disable 3D Hologram Orbit" : "Enable 3D Hologram Orbit"}
+                      >
+                        <RefreshCw size={13} className={isOrbiting ? "animate-spin" : ""} style={{ animationDuration: '6s' }} />
+                      </button>
+
+                      {/* Theater Light Dimmer */}
+                      <button
+                        onClick={() => setCinemaDimmed(prev => !prev)}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
+                          cinemaDimmed 
+                            ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 font-bold shadow-[0_0_15px_rgba(234,179,8,0.2)]' 
+                            : 'bg-white/[0.02] text-zinc-400 border-white/[0.04] hover:text-white'
+                        }`}
+                        title={cinemaDimmed ? "Exit Cinema Mode" : "Enter Cinema Mode"}
+                      >
+                        <Film size={13} />
+                        <span className="text-[9px] font-mono uppercase tracking-wider hidden sm:inline">Cinema</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cinematic Bottom Timeline */}
+                  <div className="absolute bottom-0 inset-x-0 h-6 bg-black/50 border-t border-white/[0.04] backdrop-blur-md z-20 flex items-center justify-between px-6 text-[8px] font-mono tracking-widest text-zinc-500 uppercase select-none pointer-events-none">
+                    <span>HOLO PROJECTION INTF. RX-2</span>
+                    <div className="flex gap-1.5">
+                      {premiumShowcase.map((_, idx) => (
+                        <span 
+                          key={idx}
+                          className={`h-1 rounded-full transition-all duration-300 ${
+                            idx === activeShowcaseIdx ? 'w-4 bg-blue-500' : 'w-1 bg-white/20'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
-
-
 
           </div>
         </div>
       </section>
 
+      {/* RECENTLY UPLOADED SECTION */}
+      {category === null && searchQuery === '' && recentlyUploadedProducts.length > 0 && (
+        <section id="recently-uploaded-section" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24 pb-16">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/[0.06] pb-4 mb-8 gap-4 text-left">
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-blue-400 uppercase flex items-center gap-1.5">
+                <Zap size={11} className="fill-blue-400/20" />
+                FRESH SHOWROOM SYNC
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight uppercase">
+                Recently Uploaded Gear
+              </h2>
+            </div>
+            
+            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest bg-white/[0.02] border border-white/[0.04] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 select-none self-start sm:self-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
+              Live Provision Stream
+            </span>
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {recentlyUploadedProducts.map((item) => {
+              const timeLabel = getUploadTimeLabel(item);
+              const isWishlisted = isItemWishlisted(item.id);
+              const itemImage = (item.images && item.images.length > 0) ? item.images[0] : item.image;
+              
+              return (
+                <div 
+                  key={`uploaded-${item.id}`}
+                  className="group relative rounded-[2rem] bg-white/[0.01] hover:bg-white/[0.03] border border-white/[0.04] hover:border-blue-500/30 p-6 flex flex-col justify-between transition-all duration-300 shadow-xl"
+                >
+                  {/* Glowing background bubble */}
+                  <span className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/[0.02] group-hover:bg-blue-500/[0.05] rounded-full blur-2xl transition-all duration-500 pointer-events-none" />
+                  
+                  <div>
+                    {/* Header: Relative upload time and Quick buttons */}
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="px-2.5 py-1 bg-blue-500/10 border border-blue-500/15 text-blue-400 text-[8.5px] font-mono rounded-lg uppercase tracking-wider font-extrabold flex items-center gap-1">
+                        <Clock size={10} />
+                        {timeLabel}
+                      </span>
+                      
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => onToggleWishlist(item.id)}
+                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                            isWishlisted 
+                              ? 'bg-blue-500/15 text-blue-400 border-blue-500/25'
+                              : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:text-white hover:bg-white/[0.05]'
+                          }`}
+                          title="Bookmark hardware"
+                        >
+                          <Heart size={12} className={isWishlisted ? 'fill-blue-500 text-blue-500' : ''} />
+                        </button>
+                      </div>
+                    </div>
 
+                    {/* Image Area */}
+                    <div 
+                      onClick={() => onProductClick(item)}
+                      className="h-44 w-full flex items-center justify-center bg-black/20 rounded-2xl p-4 border border-white/[0.02] relative overflow-hidden cursor-pointer"
+                    >
+                      <OptimizedImage
+                        src={itemImage}
+                        alt={item.name}
+                        className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] transform transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
 
+                    {/* Meta info */}
+                    <div className="mt-5 text-left space-y-1.5">
+                      <div className="flex justify-between items-center text-[9px] font-mono tracking-wider text-zinc-500 font-extrabold uppercase">
+                        <span>{item.category}</span>
+                        {item.rating && (
+                          <span className="flex items-center gap-0.5 text-amber-500">
+                            <Star size={9} className="fill-current" />
+                            {item.rating}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <h4 
+                        onClick={() => onProductClick(item)}
+                        className="font-bold text-white text-sm uppercase truncate cursor-pointer hover:text-blue-400 transition-colors"
+                      >
+                        {item.name}
+                      </h4>
+                      
+                      <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed font-normal">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
 
+                  {/* Pricing and Quick Add */}
+                  <div className="mt-6 pt-5 border-t border-white/[0.04] flex items-center justify-between">
+                    <div className="text-left font-mono">
+                      <span className="text-[8px] text-zinc-500 block uppercase tracking-widest font-black">PROVISION RATE</span>
+                      <span className="text-white text-xs font-black">UGX {item.price.toLocaleString()}</span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onQuickView(item)}
+                        className="p-2.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.04] text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer"
+                        title="Quick Inspect"
+                      >
+                        <Eye size={12} />
+                      </button>
+                      <button
+                        onClick={() => onAddToCart(item)}
+                        className="px-4 py-2 bg-blue-600/10 hover:bg-blue-600 border border-blue-500/10 hover:border-blue-500 text-blue-400 hover:text-white text-[9px] font-mono tracking-widest uppercase font-extrabold rounded-xl transition-all duration-300 cursor-pointer"
+                      >
+                        Acquire
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* 5. PORTFOLIO & CATEGORIES FEED */}
       <section id="tech-portfolio" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24">
