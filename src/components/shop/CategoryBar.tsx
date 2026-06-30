@@ -38,7 +38,7 @@ const getCategoryIcon = (category: string) => {
 
 export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarProps) {
   return (
-    <div className="bg-background/80 backdrop-blur-2xl border-b border-border/40 py-5 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40">
+    <div className="bg-white/90 dark:bg-zinc-950/85 backdrop-blur-2xl border-b border-zinc-200/50 dark:border-zinc-850/60 py-5 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-start md:justify-center gap-2.5 min-w-max">
         
         {/* All Sectors Tab */}
@@ -48,7 +48,7 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
             "relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide border",
             selectedCategory === null 
               ? "text-white border-transparent font-extrabold shadow-[0_4px_15px_rgba(37,99,235,0.25)]" 
-              : "bg-gray-50 dark:bg-zinc-950 border-gray-100 dark:border-zinc-900 text-gray-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-900 hover:border-gray-200 dark:hover:border-zinc-800 active:scale-95"
+              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-850 text-zinc-700 dark:text-zinc-300 hover:text-blue-600 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-750 active:scale-95"
           )}
         >
           {selectedCategory === null && (
@@ -81,7 +81,7 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
                 "relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide border",
                 isActive 
                   ? "text-white border-transparent font-extrabold shadow-[0_4px_15px_rgba(37,99,235,0.25)]" 
-                  : "bg-gray-50 dark:bg-zinc-950 border-gray-100 dark:border-zinc-900 text-gray-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-900 hover:border-gray-200 dark:hover:border-zinc-800 active:scale-95"
+                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-850 text-zinc-700 dark:text-zinc-300 hover:text-blue-600 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-750 active:scale-95"
               )}
             >
               {isActive && (

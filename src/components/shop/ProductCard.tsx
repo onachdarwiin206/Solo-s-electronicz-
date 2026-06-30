@@ -45,15 +45,43 @@ export function ProductCard({
   const [isAdding, setIsAdding] = useState(false);
   const [isFlying, setIsFlying] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const getFilteredImages = () => {
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      const ratio = img.naturalWidth / img.naturalHeight;
+      setImageAspectRatio(prev => prev === ratio ? prev : ratio);
+    }
+  };
+
+  const images = React.useMemo(() => {
     const rawImages = product.images && product.images.length > 0 ? product.images : [product.image];
     const filtered = rawImages.filter(img => typeof img === 'string' && img.trim() !== '');
     return filtered.length > 0 ? filtered : [''];
-  };
+  }, [product.images ? product.images.join(',') : '', product.image]);
 
-  const images = getFilteredImages();
+  useEffect(() => {
+    const imageUrl = images[currentImageIndex];
+    if (imageUrl) {
+      const img = new Image();
+      img.src = imageUrl;
+      if (img.complete) {
+        if (img.naturalWidth && img.naturalHeight) {
+          const ratio = img.naturalWidth / img.naturalHeight;
+          setImageAspectRatio(prev => prev === ratio ? prev : ratio);
+        }
+      } else {
+        img.onload = () => {
+          if (img.naturalWidth && img.naturalHeight) {
+            const ratio = img.naturalWidth / img.naturalHeight;
+            setImageAspectRatio(prev => prev === ratio ? prev : ratio);
+          }
+        };
+      }
+    }
+  }, [images, currentImageIndex]);
 
   useEffect(() => {
     if (images.length <= 1 || product.video_url) return;
@@ -90,7 +118,7 @@ export function ProductCard({
 
   const handleWhatsAppBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const message = `Hello [Business Name] Electronics, I want to buy the *${product.name}* (UGX ${product.price.toLocaleString()}).\n\nLink: ${window.location.origin}/product/${product.id}`;
+    const message = `Hello Emma Electronics, I want to buy the *${product.name}* (UGX ${product.price.toLocaleString()}).\n\nLink: ${window.location.origin}/product/${product.id}`;
     triggerWhatsAppFlow(message);
   };
 
@@ -122,11 +150,14 @@ export function ProductCard({
         className="group relative bg-[#090a0f]/90 dark:bg-card border border-white/[0.04] hover:border-blue-500/45 rounded-[2.25rem] overflow-hidden transition-all duration-300 shadow-[0_15px_45px_0_rgba(0,0,0,0.18)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.12)] cursor-pointer flex flex-col justify-between h-full min-h-[490px]"
       >
         {/* Card backdrop element */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.015] to-transparent pointer-events-none" />
+        <span className="absolute inset-0 bg-gradient-to-b from-white/[0.015] to-transparent pointer-events-none" />
 
-        <div className="aspect-square relative w-full overflow-hidden bg-foreground/[0.02]">
+        <div 
+          style={{ aspectRatio: imageAspectRatio ? `${imageAspectRatio}` : '3/4' }}
+          className="relative w-full overflow-hidden bg-foreground/[0.02] flex items-center justify-center transition-all duration-300"
+        >
           {/* Discount Percentage Ribbon overlay */}
-          <div className="absolute top-4 left-4 z-20 flex flex-col gap-1 items-start">
+          <span className="absolute top-4 left-4 z-20 flex flex-col gap-1 items-start">
             <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-mono font-bold tracking-tight rounded-full shadow-lg shadow-blue-500/20 uppercase">
               {discountPercentage}% OFF
             </span>
@@ -136,7 +167,7 @@ export function ProductCard({
                 Genuine
               </span>
             )}
-          </div>
+          </span>
 
           {product.video_url ? (
             <video
@@ -155,12 +186,13 @@ export function ProductCard({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="w-full h-full"
+                className="w-full h-full flex items-center justify-center p-6"
               >
                 <OptimizedImage
                   src={images[currentImageIndex]}
                   alt={product.name}
-                  className="w-full h-full object-contain p-1.5 transform group-hover:scale-[1.08] transition-transform duration-700 select-none"
+                  onLoad={handleImageLoad}
+                  className="w-full h-full object-contain transform group-hover:scale-[1.08] transition-transform duration-700 select-none"
                 />
               </motion.div>
             </AnimatePresence>

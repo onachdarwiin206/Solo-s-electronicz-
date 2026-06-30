@@ -16,6 +16,31 @@ export default defineConfig(({mode}) => {
       },
       dedupe: ['react', 'react-dom'],
     },
+    build: {
+      cssMinify: true,
+      minify: 'esbuild',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'vendor-react';
+              }
+              if (id.includes('supabase') || id.includes('postgrest')) {
+                return 'vendor-supabase';
+              }
+              if (id.includes('motion') || id.includes('framer')) {
+                return 'vendor-motion';
+              }
+              if (id.includes('recharts') || id.includes('d3')) {
+                return 'vendor-charts';
+              }
+              return 'vendor-others';
+            }
+          }
+        }
+      }
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
