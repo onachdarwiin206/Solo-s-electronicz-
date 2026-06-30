@@ -109,8 +109,19 @@ Keep response formatting clean, fully styled with emojis, line spacing, and cont
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
+    
+    // Explicitly serve sw.js with absolute no-cache headers so browser always checks for the latest version
+    app.get("/sw.js", (req, res) => {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader("Content-Type", "application/javascript");
+      res.sendFile(path.join(distPath, "sw.js"));
+    });
+
     app.use(express.static(distPath));
+    
+    // Serve entry point HTML with cache validation requested
     app.get("*", (req, res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

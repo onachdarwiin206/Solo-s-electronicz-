@@ -98,21 +98,37 @@ export function BackgroundSlideshow() {
     return 'cobalt';
   });
 
-  // Save states to local storage
+  // Save states to local storage safely
   useEffect(() => {
-    localStorage.setItem('solo_bg_slide_id', SLIDES[currentSlideIndex].id);
+    try {
+      localStorage.setItem('solo_bg_slide_id', SLIDES[currentSlideIndex].id);
+    } catch (e) {
+      console.warn('[Slideshow] LocalStorage access blocked:', e);
+    }
   }, [currentSlideIndex]);
 
   useEffect(() => {
-    localStorage.setItem('solo_bg_paused', String(isSlideshowPaused));
+    try {
+      localStorage.setItem('solo_bg_paused', String(isSlideshowPaused));
+    } catch (e) {
+      console.warn('[Slideshow] LocalStorage access blocked:', e);
+    }
   }, [isSlideshowPaused]);
 
   useEffect(() => {
-    localStorage.setItem('solo_bg_particle_density', particleDensity);
+    try {
+      localStorage.setItem('solo_bg_particle_density', particleDensity);
+    } catch (e) {
+      console.warn('[Slideshow] LocalStorage access blocked:', e);
+    }
   }, [particleDensity]);
 
   useEffect(() => {
-    localStorage.setItem('solo_bg_spotlight_color', spotlightColor);
+    try {
+      localStorage.setItem('solo_bg_spotlight_color', spotlightColor);
+    } catch (e) {
+      console.warn('[Slideshow] LocalStorage access blocked:', e);
+    }
   }, [spotlightColor]);
 
   // Responsive device classification

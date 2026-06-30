@@ -22,39 +22,46 @@ const DEFAULT_TEMPLATES = {
 export function safeGetLocalStorage<T>(key: string, defaultValue: T): T {
   if (typeof window === 'undefined') return defaultValue;
   
-  const raw = localStorage.getItem(key);
-  if (raw === null) {
-    // Key doesn't exist, set the template if available
-    const initial = (DEFAULT_TEMPLATES as any)[key] !== undefined 
-      ? (DEFAULT_TEMPLATES as any)[key] 
-      : defaultValue;
-    try {
-      localStorage.setItem(key, JSON.stringify(initial));
-    } catch (e) {
-      console.error('[Sandbox Storage] Failed to write initial template:', e);
-    }
-    return initial as T;
-  }
-
   try {
-    return JSON.parse(raw) as T;
-  } catch (error) {
-    console.error(`[Sandbox Storage] Corrupted data detected in key "${key}". Initiating safe recovery.`, error);
-    
-    // Backup corrupted string in case user has important local state they want to salvage manually
-    try {
-      localStorage.setItem(`${key}_corrupted_backup_${Date.now()}`, raw);
-    } catch {
-      // Ignore if localstorage is full
+    const raw = localStorage.getItem(key);
+    if (raw === null) {
+      // Key doesn't exist, set the template if available
+      const initial = (DEFAULT_TEMPLATES as any)[key] !== undefined 
+        ? (DEFAULT_TEMPLATES as any)[key] 
+        : defaultValue;
+      try {
+        localStorage.setItem(key, JSON.stringify(initial));
+      } catch (e) {
+        console.error('[Sandbox Storage] Failed to write initial template:', e);
+      }
+      return initial as T;
     }
 
-    // Set defaults and heal
-    const fallback = (DEFAULT_TEMPLATES as any)[key] !== undefined 
-      ? (DEFAULT_TEMPLATES as any)[key] 
-      : defaultValue;
+    try {
+      return JSON.parse(raw) as T;
+    } catch (error) {
+      console.error(`[Sandbox Storage] Corrupted data detected in key "${key}". Initiating safe recovery.`, error);
       
-    localStorage.setItem(key, JSON.stringify(fallback));
-    return fallback as T;
+      // Backup corrupted string in case user has important local state they want to salvage manually
+      try {
+        localStorage.setItem(`${key}_corrupted_backup_${Date.now()}`, raw);
+      } catch {
+        // Ignore if localstorage is full
+      }
+
+      // Set defaults and heal
+      const fallback = (DEFAULT_TEMPLATES as any)[key] !== undefined 
+        ? (DEFAULT_TEMPLATES as any)[key] 
+        : defaultValue;
+        
+      try {
+        localStorage.setItem(key, JSON.stringify(fallback));
+      } catch {}
+      return fallback as T;
+    }
+  } catch (localStorageAccessError) {
+    console.warn('[Sandbox Storage] localStorage access is restricted or blocked by browser settings:', localStorageAccessError);
+    return defaultValue;
   }
 }
 

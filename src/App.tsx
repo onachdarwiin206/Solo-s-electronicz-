@@ -467,11 +467,19 @@ export default function App() {
   }, [view, category]);
 
   useEffect(() => {
-    localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    try {
+      localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    } catch (e) {
+      console.warn('[Storage] Wishlist write blocked:', e);
+    }
   }, [wishlist]);
 
   useEffect(() => {
-    localStorage.setItem('likes', JSON.stringify(likes));
+    try {
+      localStorage.setItem('likes', JSON.stringify(likes));
+    } catch (e) {
+      console.warn('[Storage] Likes write blocked:', e);
+    }
   }, [likes]);
 
   const t = translations[language];

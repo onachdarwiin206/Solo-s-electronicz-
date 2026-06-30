@@ -13,8 +13,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme') as Theme | null;
-      if (saved === 'light' || saved === 'dark' || saved === 'glass') return saved;
+      try {
+        const saved = localStorage.getItem('theme') as Theme | null;
+        if (saved === 'light' || saved === 'dark' || saved === 'glass') return saved;
+      } catch (e) {
+        console.warn('[Theme] Safe LocalStorage access warning:', e);
+      }
     }
     return 'light';
   });
@@ -23,7 +27,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark', 'glass');
     root.classList.add(theme);
-    localStorage.setItem('theme', theme);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch (e) {
+      console.warn('[Theme] Safe LocalStorage write warning:', e);
+    }
   }, [theme]);
 
   const toggleTheme = () => {

@@ -42,7 +42,7 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
-// Fetch Event - Stale-While-Revalidate caching strategy for ultra-fast load speed
+// Fetch Event - Network-First for navigation (HTML) to prevent blank pages on new deployments with new hashes, and Stale-While-Revalidate for other static assets
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
 
@@ -56,11 +56,37 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Optimize local origin assets and general static media for near-instant loads
+  const isHtml = e.request.mode === "navigate" || 
+                 e.request.headers.get("accept")?.includes("text/html") || 
+                 url.pathname === "/" || 
+                 url.pathname === "/index.html";
+
+  if (isHtml) {
+    // Network-First strategy for critical entry point to prevent serving broken/deleted JS bundle hashes
+    e.respondWith(
+      fetch(e.request)
+        .then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(e.request, networkResponse.clone());
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(e.request).then((cachedResponse) => {
+            if (cachedResponse) return cachedResponse;
+            return caches.match("/");
+          });
+        })
+    );
+    return;
+  }
+
+  // Optimize local origin static assets with Stale-While-Revalidate
   e.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(e.request).then((cachedResponse) => {
-        // Fetch from network in background to refresh cache (Stale-While-Revalidate)
         const fetchPromise = fetch(e.request)
           .then((networkResponse) => {
             if (networkResponse.status === 200) {
@@ -72,13 +98,8 @@ self.addEventListener("fetch", (e) => {
             console.debug("[Service Worker] Offline fallback or background fetch warning:", err);
           });
 
-        // Serve cached resource instantly, falling back to background fetch if not yet cached
-        return cachedResponse || fetchPromise.catch(() => {
-          // Serve absolute home page if HTML request fails offline
-          if (e.request.mode === 'navigate' || e.request.headers.get("accept")?.includes("text/html")) {
-            return caches.match("/");
-          }
-        });
+        // Serve cached resource instantly, falling back to network fetch if not cached yet
+        return cachedResponse || fetchPromise;
       });
     })
   );

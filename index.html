@@ -15,6 +15,33 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Emma's Tech" />
     <link rel="apple-touch-icon" href="/icon.png" />
+    <script>
+      // Self-healing block: Catch chunk-load/module script errors caused by stale/deleted hashes in Service Worker cache.
+      // Automatically purges active caches and does a hard-refresh to fetch the fresh bundle assets.
+      window.addEventListener('error', function(e) {
+        var msg = e.message || '';
+        var target = e.target || {};
+        var isScriptError = target.tagName === 'SCRIPT' || 
+                            msg.indexOf('Failed to fetch dynamically imported module') > -1 || 
+                            msg.indexOf('Importing a module script failed') > -1 ||
+                            msg.indexOf('chunk') > -1;
+        
+        if (isScriptError) {
+          console.warn('[PWA] Critical script/chunk failed to load. Initiating self-healing cache purge...');
+          if ('serviceWorker' in navigator && window.caches) {
+            caches.keys().then(function(keys) {
+              return Promise.all(keys.map(function(key) { return caches.delete(key); }));
+            }).then(function() {
+              window.location.reload(true);
+            }).catch(function() {
+              window.location.reload(true);
+            });
+          } else {
+            window.location.reload(true);
+          }
+        }
+      }, true);
+    </script>
     <title>Emma's Electronics</title>
   </head>
   <body>

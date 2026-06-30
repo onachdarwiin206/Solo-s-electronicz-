@@ -81,6 +81,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     let isInitialized = false;
+    let loadingResolved = false;
+
+    // Safety timeout to prevent getting stuck in loading state if Supabase connection hangs
+    const safetyTimeout = setTimeout(() => {
+      if (!loadingResolved) {
+        console.warn("[Auth] Initialization timed out. Resolving loading state to avoid blank screen.");
+        setLoading(false);
+        loadingResolved = true;
+      }
+    }, 3500);
 
     // First, check the current user immediately for maximum security
     const initAuth = async () => {
@@ -97,16 +107,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // Fallback if session is missing but user exists (edge case)
             setLoading(false);
           }
+          loadingResolved = true;
         } else {
           setLoading(false);
           setIsAdmin(false);
           setUser(null);
+          loadingResolved = true;
         }
       } catch (e) {
         console.error("[Auth] Init Error:", e);
         setLoading(false);
+        loadingResolved = true;
       } finally {
         isInitialized = true;
+        clearTimeout(safetyTimeout);
       }
     };
 
@@ -120,23 +134,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         setIsAdmin(false);
         setLoading(false);
+        loadingResolved = true;
         sessionStorage.removeItem('auth_redirect_pending');
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         if (session) {
           setLoading(true);
           await handleSessionChange(session);
+          loadingResolved = true;
         }
       } else if (event === 'PASSWORD_RECOVERY') {
         setIsRecovering(true);
       } else if (event === 'INITIAL_SESSION') {
-         if (!session && isInitialized) {
+         if (!session) {
             setLoading(false);
             setIsAdmin(false);
+            loadingResolved = true;
          }
       }
     });
 
     return () => {
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, []);
