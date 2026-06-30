@@ -227,11 +227,11 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
 
   // Connected accounts mock configuration state
   const [connectedProfiles, setConnectedProfiles] = useState({
-    instagram: { connected: true, handle: "@emma_tech_ug" },
-    facebook: { connected: true, handle: "Emma's Phones & Electronics" },
-    twitter: { connected: true, handle: "@emma_electronics" },
+    instagram: { connected: true, handle: "@[business_name]_tech_ug" },
+    facebook: { connected: true, handle: "[Business Name]'s Phones & Electronics" },
+    twitter: { connected: true, handle: "@[business_name]_electronics" },
     linkedin: { connected: false, handle: null },
-    tiktok: { connected: true, handle: "@emmaelectronics" }
+    tiktok: { connected: true, handle: "@[business_name]electronics" }
   });
 
   // Selected product object
@@ -242,7 +242,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
   // Auto set caption initial value when product highlights change or tab mounted
   useEffect(() => {
     if (selectedProduct && !caption) {
-      setCaption(`Boss, the original ${selectedProduct.name} is officially available here at Emma's Phones & Electronics. Direct procurement, full coverage, and safe showrooms in Kampala. Inquire directly!`);
+      setCaption(`Boss, the original ${selectedProduct.name} is officially available here at Solo's Phones & Electronics. Direct procurement, full coverage, and safe showrooms in Kampala. Inquire directly!`);
     }
   }, [selectedProduct]);
 
@@ -406,7 +406,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] font-mono tracking-widest text-blue-400 font-bold uppercase">
-                Emma's Internal Operations
+                Solo's Internal Operations
               </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-display font-medium text-white tracking-tight">
@@ -1060,12 +1060,12 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                           className="space-y-3"
                         >
                           <div className="flex items-start gap-2.5">
-                            <span className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-[11px] font-black text-white shrink-0 border border-blue-400/30 font-mono">E</span>
+                            <span className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-[11px] font-black text-white shrink-0 border border-white/5 font-display">B</span>
                             <div className="flex-1 min-w-0 text-left leading-tight">
                               <div className="flex items-center gap-1">
-                                <span className="text-[10px] font-extrabold text-zinc-200">Emma Tech</span>
+                                <span className="text-[10px] font-extrabold text-zinc-200">[Business Name] Tech</span>
                                 <span className="text-[9px] text-blue-400">☑️</span>
-                                <span className="text-[8px] text-zinc-500">@emma_electronics • 1m</span>
+                                <span className="text-[8px] text-zinc-500">@[business_name] • 1m</span>
                               </div>
                               <p className="text-[10px] text-zinc-300 leading-normal pt-1 break-words">
                                 {caption || "What are you launching today?"}
@@ -1104,7 +1104,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                           <div className="flex items-center gap-2">
                             <span className="w-7 h-7 rounded bg-blue-600 flex items-center justify-center text-[11px] font-black text-white shrink-0">f</span>
                             <div className="text-left leading-none">
-                              <span className="text-[10px] font-semibold text-zinc-200 block">Emma's Phones & Electronics</span>
+                              <span className="text-[10px] font-semibold text-zinc-200 block">Solo's Phones & Electronics</span>
                               <span className="text-[8px] text-zinc-500">Sponsored • 🌐</span>
                             </div>
                           </div>
@@ -1125,7 +1125,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                           {/* Fb CTA label */}
                           <div className="bg-zinc-900/40 p-2 border-x border-b border-white/[0.04] flex justify-between items-center text-left">
                             <div className="min-w-0 pr-2">
-                              <span className="text-[7px] text-zinc-500 block font-mono uppercase">EMMAELECTRONICS.TECH</span>
+                              <span className="text-[7px] text-zinc-500 block font-mono uppercase">SOLOSELECTRONICS.TECH</span>
                               <span className="text-[9px] font-semibold text-zinc-300 block truncate">{selectedProduct?.name || "Direct Inquiries"}</span>
                             </div>
                             <span className="px-2.5 py-1 text-[8px] font-bold uppercase bg-white/5 border border-white/10 rounded-md text-zinc-200 select-none">Contact</span>
@@ -1145,7 +1145,7 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
                           <div className="flex items-center gap-2">
                             <span className="w-7 h-7 rounded bg-zinc-800 border border-white/10 flex items-center justify-center text-[10px] font-bold text-zinc-400 shrink-0">IN</span>
                             <div className="text-left leading-none">
-                              <span className="text-[10px] font-bold text-zinc-200 block">Emma's Enterprise Operations</span>
+                              <span className="text-[10px] font-bold text-zinc-200 block">Solo's Enterprise Operations</span>
                               <span className="text-[7px] text-zinc-500 block">Empowering local tech supply chains • 2h</span>
                             </div>
                           </div>
@@ -1393,12 +1393,12 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
               {/* Visual catalog list layout */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.slice(0, 6).map(prod => {
-                  const copyTemplate = `🔥 ORIGINAL STOCK AT EMMA'S! 🔥
+                  const copyTemplate = `🔥 ORIGINAL STOCK AT SOLO'S! 🔥
 Product: ${prod.name}
 Details: ${prod.description}
 Sourced directly, verified warranty with absolute transacting confidence at Kampala Showrooms. Let's do business!
 Contact directly on WhatsApp: [Direct Handshake]
-#EmmasUganda #KampalaTech #ShopGenuine`;
+#SolosUganda #KampalaTech #ShopGenuine`;
 
                   return (
                     <div 
@@ -1416,7 +1416,7 @@ Contact directly on WhatsApp: [Direct Handshake]
                             </div>
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent p-4 flex flex-col justify-end">
-                            <span className="text-[8px] font-mono tracking-widest text-fuchsia-400 bg-fuchsia-500/10 px-2 py-0.5 rounded border border-fuchsia-500/20 self-start mb-1 uppercase">Emma's Official Premium Promo</span>
+                            <span className="text-[8px] font-mono tracking-widest text-fuchsia-400 bg-fuchsia-500/10 px-2 py-0.5 rounded border border-fuchsia-500/20 self-start mb-1 uppercase">Solo's Official Premium Promo</span>
                             <h4 className="text-xs font-semibold text-white drop-shadow">{prod.name}</h4>
                           </div>
                         </div>
@@ -1463,7 +1463,7 @@ Contact directly on WhatsApp: [Direct Handshake]
                   <div className="space-y-2">
                     <h3 className="text-md font-medium text-white flex items-center gap-2">
                       <Briefcase className="text-blue-500" size={18} />
-                      Emma's Marketing Compliance & Playbook
+                      Solo's Marketing Compliance & Playbook
                     </h3>
                     <p className="text-zinc-400 text-xs max-w-2xl leading-relaxed">
                       All employees are requested to check social posts against core rules before broadcasting. Safeguard the luxury look, direct transparent pricing model, and Uganda local physical safety message.

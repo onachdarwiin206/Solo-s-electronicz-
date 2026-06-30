@@ -7,7 +7,7 @@ interface WhatsAppFloatProps {
 }
 
 interface ChatMessage {
-  sender: 'user' | 'emma';
+  sender: 'user' | 'solo';
   text: string;
   time: string;
 }
@@ -49,8 +49,8 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
     if (saved) return JSON.parse(saved);
     return [
       {
-        sender: 'emma',
-        text: "Habari! Welcome to Emma Electronics' Support Desk. I can assist you with your orders, fast delivery in Lira/Uganda, or spec inquiries. How can I help you today?",
+        sender: 'solo',
+        text: "Habari! Welcome to [Business Name]'s Support Desk. I can assist you with your orders, fast delivery in Lira/Uganda, or spec inquiries. How can I help you today?",
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -119,7 +119,7 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
       } else if (text.includes('shipping') || text.includes('delivery') || text.includes('transit') || text.includes('fees') || text.includes('cost') || text.includes('deliver')) {
         response = "Yes! We provide same-day dispatch and ultrafast 24-hour delivery across Uganda, especially between Kampala and Lira. All shipping paths are synchronized with our active Logistics Grid. What product are you looking to receive?";
       } else if (text.includes('original') || text.includes('fake') || text.includes('authentic') || text.includes('spec') || text.includes('warranty') || text.includes('guarantee')) {
-        response = "Every catalog unit at Emma Electronics is 100% authentic, brand-new, and sealed. All items are backed by a comprehensive 1-year product warranty. Your technical confidence is our system's top priority!";
+        response = "Every catalog unit at [Business Name] is 100% authentic, brand-new, and sealed. All items are backed by a comprehensive 1-year product warranty. Your technical confidence is our system's top priority!";
       } else if (text.includes('price') || text.includes('cost') || text.includes('how much') || text.includes('discount') || text.includes('ugx')) {
         response = "All listed pricing represents our final synchronized supplier clearance rates in UGX. However, we can log automatic multi-item package discounts! Let us know if you or your firm is procurement-ready.";
       } else if (text.includes('phone') || text.includes('laptop') || text.includes('stock') || text.includes('available') || text.includes('unit')) {
@@ -129,7 +129,7 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
       }
 
       setChatHistory(prev => [...prev, {
-        sender: 'emma',
+        sender: 'solo',
         text: response,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
@@ -176,7 +176,7 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
 
     // Apply the pending action
     if (mode === 'redirect') {
-      const defaultText = pendingMessage.trim() || "Hello! I have a question about Emma Electronics' products.";
+      const defaultText = pendingMessage.trim() || "Hello! I have a question about [Business Name]'s Electronics products.";
       const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(defaultText)}`;
       window.open(url, '_blank');
       setPendingMessage('');
@@ -231,7 +231,7 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
                   </div>
                   <h3 className="text-white font-black italic uppercase text-lg tracking-tight">Select Chat Mode</h3>
                   <p className="text-[11px] text-gray-400 leading-relaxed">
-                    How would you like to connect with Emma Electronics support? Choose your preferred logistics interface.
+                    How would you like to connect with [Business Name] support? Choose your preferred logistics interface.
                   </p>
 
                   <div className="space-y-2 pt-2">
@@ -287,13 +287,13 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
                 <div className="bg-zinc-950 border-b border-white/[0.05] p-4 text-white flex justify-between items-center shrink-0">
                   <div className="flex items-center gap-2.5 text-left">
                     <div className="relative">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 text-white flex items-center justify-center font-extrabold text-sm shrink-0 font-mono border border-blue-400/30 shadow-md shadow-blue-500/10">
-                        E
+                      <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center font-bold text-sm shrink-0 font-mono">
+                        B
                       </div>
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-zinc-950" />
                     </div>
                     <div>
-                      <h4 className="text-[11px] font-black uppercase tracking-wider font-mono">Emma Desk</h4>
+                      <h4 className="text-[11px] font-black uppercase tracking-wider font-mono">[Business Name] Desk</h4>
                       <p className="text-[9px] text-emerald-400 font-bold tracking-wide flex items-center gap-1 mt-0.5">
                         <span className="animate-pulse">●</span> Active Support Portal
                       </p>
@@ -341,7 +341,7 @@ export function WhatsAppFloat({ user }: WhatsAppFloatProps) {
                     <div className="flex flex-col items-start max-w-[85%]">
                       <div className="p-3 bg-zinc-900 border border-white/[0.04] text-gray-400 rounded-2xl rounded-tl-none flex items-center gap-1.5">
                         <Loader2 size={12} className="animate-spin text-blue-500" />
-                        <span className="text-[10px] font-mono uppercase tracking-widest font-black">Emma is typing...</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest font-black">[Business Name] is typing...</span>
                       </div>
                     </div>
                   )}

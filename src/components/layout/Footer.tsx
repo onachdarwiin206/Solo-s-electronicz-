@@ -96,7 +96,7 @@ export function Footer({ t, onCategorySelect, onAdminPanelClick }: FooterProps) 
         {/* Copyright */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-center sm:text-left">
           <p className="text-[9px] text-gray-600 font-mono tracking-widest uppercase">
-            &copy; {new Date().getFullYear()} EMMA'S PHONES & ELECTRONICS. CODESYNCED TRANSIT NODES Uganda.
+            &copy; {new Date().getFullYear()} [BUSINESS NAME]'S PHONES & ELECTRONICS. CODESYNCED TRANSIT NODES Uganda.
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "solos-electronics-v2";
+const CACHE_NAME = "solos-electronics-v1";
 const ASSETS = [
   "/",
   "/index.html",
@@ -42,44 +42,41 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
-// Fetch Event - Stale-While-Revalidate caching strategy for ultra-fast load speed
+// Fetch Event - Network First with Cache Fallback
 self.addEventListener("fetch", (e) => {
-  const url = new URL(e.request.url);
-
-  // Let browser handle Supabase, DevSockets, external telemetry, API endpoints or dynamic POST/PUT requests directly
+  // Let browser handle Supabase, DevSockets, external telemetry or dynamic POST/PUT requests directly
   if (
-    url.hostname.includes("supabase.co") || 
-    url.href.includes("chrome-extension") ||
-    url.pathname.includes("/api/") ||
+    e.request.url.includes("supabase.co") || 
+    e.request.url.includes("chrome-extension") ||
+    e.request.url.includes("/api/") ||
     e.request.method !== "GET"
   ) {
     return;
   }
 
-  // Optimize local origin assets and general static media for near-instant loads
   e.respondWith(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(e.request).then((cachedResponse) => {
-        // Fetch from network in background to refresh cache (Stale-While-Revalidate)
-        const fetchPromise = fetch(e.request)
-          .then((networkResponse) => {
-            if (networkResponse.status === 200) {
-              cache.put(e.request, networkResponse.clone());
-            }
-            return networkResponse;
-          })
-          .catch((err) => {
-            console.debug("[Service Worker] Offline fallback or background fetch warning:", err);
+    fetch(e.request)
+      .then((res) => {
+        // Only cache valid local static GET requests
+        if (res.status === 200 && e.request.url.startsWith(self.location.origin)) {
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, resClone);
           });
-
-        // Serve cached resource instantly, falling back to background fetch if not yet cached
-        return cachedResponse || fetchPromise.catch(() => {
-          // Serve absolute home page if HTML request fails offline
-          if (e.request.mode === 'navigate' || e.request.headers.get("accept")?.includes("text/html")) {
+        }
+        return res;
+      })
+      .catch(() => {
+        // Fallback to cache on network failures
+        return caches.match(e.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // If HTML request failed, serve the main document
+          if (e.request.headers.get("accept")?.includes("text/html")) {
             return caches.match("/");
           }
         });
-      });
-    })
+      })
   );
 });

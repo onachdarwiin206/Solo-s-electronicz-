@@ -19,7 +19,7 @@ import { useAuth } from './AuthContext';
 import { generateDeterministicOrderId, safeGetLocalStorage, safeSetLocalStorage } from './lib/sandboxDb';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
-import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home, AlertCircle } from 'lucide-react';
+import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home } from 'lucide-react';
 
 const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal'));
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
@@ -29,8 +29,6 @@ import AdminLoginModal from './components/auth/LoginModal';
 const UserProfile = lazy(() => import('./components/profile/UserProfile'));
 const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
 const AuthPage = lazy(() => import('./components/auth/AuthPage'));
-import { ToastContainer, ToastData } from './components/ui/Toast';
-import { WishlistDrawer } from './components/shop/WishlistDrawer';
 
 type View = 'shop' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth';
 
@@ -51,58 +49,8 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [showTerms, setShowTerms] = useState(false);
-  const [products, setProducts] = useState<Product[]>(() => {
-    try {
-      const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
-      const cachedRemote = cachedRemoteRaw ? JSON.parse(cachedRemoteRaw) : [];
-      
-      const localCustomRaw = localStorage.getItem('custom_products');
-      const localCustom = localCustomRaw ? JSON.parse(localCustomRaw) : [];
-      
-      const deletedRaw = localStorage.getItem('deleted_product_ids');
-      const deletedIds = new Set<string>(deletedRaw ? JSON.parse(deletedRaw) : []);
-      
-      const combined: Product[] = [];
-      const seenIds = new Set<string>();
-      
-      if (isSupabaseConfigured && cachedRemote.length > 0) {
-        cachedRemote.forEach((p: Product) => {
-          if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-            seenIds.add(p.id);
-            combined.push(p);
-          }
-        });
-      }
-      
-      localCustom.forEach((p: Product) => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      INITIAL_PRODUCTS.forEach((p: Product) => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      return combined;
-    } catch {
-      return INITIAL_PRODUCTS;
-    }
-  });
-  const [loadingProducts, setLoadingProducts] = useState(() => {
-    try {
-      const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
-      if (cachedRemoteRaw) {
-        const cachedRemote = JSON.parse(cachedRemoteRaw);
-        if (cachedRemote.length > 0) return false;
-      }
-    } catch {}
-    return true;
-  });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [language, setLanguage] = useState<Language>('en');
   const [wishlist, setWishlist] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -120,23 +68,6 @@ export default function App() {
       return [];
     }
   });
-
-  const [wishlistOpen, setWishlistOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastData[]>([]);
-
-  const addToast = (toast: Omit<ToastData, 'id'>) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { ...toast, id }]);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
-  const wishlistProducts = useMemo(() => {
-    const ids = user && user.id !== 'legacy-admin' ? (user.wishlist || []) : wishlist;
-    return products.filter(p => ids.includes(p.id));
-  }, [user, wishlist, products]);
 
   const getMergedProducts = (remoteData: Product[]): Product[] => {
     if (isSupabaseConfigured) {
@@ -258,11 +189,8 @@ export default function App() {
       return;
     }
     
-    // Non-blocking background sync of local offline actions
-    syncLocalProductsToSupabase();
-    
-    // Only trigger full-screen loading skeleton if we don't have cached products rendered
-    if (!silent && products.length === 0) {
+    if (!silent) {
+      await syncLocalProductsToSupabase();
       setLoadingProducts(true);
     }
     
@@ -271,7 +199,7 @@ export default function App() {
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
- 
+
       if (error) {
         if (error.code === 'PGRST116' || error.code === '42P01' || error.hint?.includes('not found')) {
           console.warn("[Supabase] 'products' table missing. Using hardware feed fallback.");
@@ -310,9 +238,6 @@ export default function App() {
                 // Re-fetch to sync completely down
                 supabase.from('products').select('*').order('created_at', { ascending: false }).then(({ data: freshData }) => {
                   if (freshData && freshData.length > 0) {
-                    try {
-                      localStorage.setItem('cached_remote_products', JSON.stringify(freshData));
-                    } catch (e) {}
                     setProducts(getMergedProducts(freshData as Product[]));
                   }
                 });
@@ -322,11 +247,6 @@ export default function App() {
             console.warn("[Supabase] Background seeding fail:", seedErr);
           }
         } else {
-          try {
-            localStorage.setItem('cached_remote_products', JSON.stringify(data));
-          } catch (e) {
-            console.warn("Failed to update remote cache:", e);
-          }
           setProducts(getMergedProducts(data as Product[]));
         }
       }
@@ -338,7 +258,9 @@ export default function App() {
       }
       setProducts(getMergedProducts([]));
     } finally {
-      setLoadingProducts(false);
+      if (!silent) {
+        setLoadingProducts(false);
+      }
     }
   };
 
@@ -542,7 +464,7 @@ export default function App() {
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
       const receiptTemplate = `
-🧾 *EMMA ELECTRONICS - DIGITAL RECEIPT*
+🧾 *[BUSINESS NAME] ELECTRONICS - DIGITAL RECEIPT*
 ---------------------------------------
 *Order ID:* ${orderId}
 *Date:* ${new Date().toLocaleDateString()}
@@ -556,7 +478,7 @@ ${cartSummary}
 
 *PHONE:* ${phone}
 
-_Thank you for choosing Emma Electronics!_
+_Thank you for choosing [Business Name] Electronics!_
 _Your order is now being processed._
 `.trim();
       
@@ -596,7 +518,7 @@ _Your order is now being processed._
       const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
       
       const receiptTemplate = `
-🧾 *EMMA ELECTRONICS - DIGITAL RECEIPT*
+🧾 *[BUSINESS NAME] ELECTRONICS - DIGITAL RECEIPT*
 ---------------------------------------
 *Order ID:* ${orderId}
 *Date:* ${new Date().toLocaleDateString()}
@@ -610,7 +532,7 @@ ${cartSummary}
 
 *CONTACT PHONE:* ${phone}
 
-_Thank you for choosing Emma Electronics!_
+_Thank you for choosing [Business Name] Electronics!_
 _Your order is now being processed._
       `.trim();
       
@@ -621,30 +543,16 @@ _Your order is now being processed._
       return orderId;
     } catch (e: any) {
       console.warn("[Supabase] Order warning:", e.message);
-      alert("Command Failure: Your purchase signature could not be committed to the hardware pool. Please contact Emma Support.");
+      alert("Command Failure: Your purchase signature could not be committed to the hardware pool. Please contact [Business Name] Support.");
       return null;
     }
   };
 
   const handleToggleWishlist = async (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    const isAdding = !isItemWishlisted(productId);
-
     if (user && user.id !== 'legacy-admin') {
       await authToggleWishlist(productId);
     } else {
       setWishlist(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
-    }
-
-    if (isAdding && product) {
-      addToast({
-        productId: product.id,
-        productName: product.name,
-        productImage: (product.images && product.images.length > 0) ? product.images[0] : product.image,
-        message: "Added to your saved hardware items.",
-        actionText: "Open Wishlist",
-        onAction: () => setWishlistOpen(true)
-      });
     }
   };
 
@@ -684,9 +592,8 @@ _Your order is now being processed._
             onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }}
             onSearch={setSearchQuery}
             cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-            wishlistCount={wishlistProducts.length}
+            wishlistCount={wishlist.length}
             onCartClick={() => setCartOpen(true)}
-            onWishlistClick={() => setWishlistOpen(true)}
             onMarketingClick={() => setView('marketing')}
             isAdmin={isAdmin}
             currentLanguage={language}
@@ -731,7 +638,7 @@ _Your order is now being processed._
                          <CategoryBar onCategorySelect={(cat) => setCategory(cat)} selectedCategory={category} />
                       </div>
 
-                      {products.length > 0 ? (
+                      {products.length > 0 && (
                         <HomeHero 
                           products={products}
                           filteredProducts={filteredProducts}
@@ -750,31 +657,6 @@ _Your order is now being processed._
                           onSearch={setSearchQuery}
                           t={t}
                         />
-                      ) : loadingProducts ? (
-                        <div className="py-40 flex flex-col items-center justify-center min-h-[50vh]">
-                          <Loader2 className="animate-spin text-blue-500 mb-4" size={48} />
-                          <p className="text-xs font-mono tracking-widest uppercase text-zinc-400 animate-pulse">Syncing Hardware Feed...</p>
-                        </div>
-                      ) : (
-                        <div className="max-w-md mx-auto px-4 py-32 text-center min-h-[50vh] flex flex-col items-center justify-center">
-                          <div className="bg-[#07070c]/5 border border-white/[0.06] rounded-[2.5rem] p-10 space-y-6">
-                            <div className="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
-                              <AlertCircle size={28} />
-                            </div>
-                            <div className="space-y-2">
-                              <h2 className="text-lg font-bold font-sans tracking-tight text-white uppercase">Sourcing Database Off-Grid</h2>
-                              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                                Our live hardware grid is currently undergoing server updates or your browser cache has been cleared. Tap below to reload the catalog.
-                              </p>
-                            </div>
-                            <button 
-                              onClick={() => fetchProducts()} 
-                              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-mono text-[10px] font-black uppercase tracking-widest p-3.5 rounded-2xl transition-all active:scale-98 shadow-lg shadow-blue-600/20 cursor-pointer"
-                            >
-                              Sync Hardware Catalog
-                            </button>
-                          </div>
-                        </div>
                       )}
                     </>
                   )}
@@ -830,17 +712,6 @@ _Your order is now being processed._
           <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
           <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
           
-          <WishlistDrawer 
-            isOpen={wishlistOpen} 
-            onClose={() => setWishlistOpen(false)} 
-            items={wishlistProducts} 
-            onRemove={handleToggleWishlist} 
-            onAddToCart={addToCart} 
-            onProductClick={(p) => { setSelectedProduct(p); setView('product-detail'); }} 
-          />
-
-          <ToastContainer toasts={toasts} onDismiss={removeToast} />
-          
           <AdminLoginModal 
             isOpen={isAdminModalOpen} 
             onClose={() => setIsAdminModalOpen(false)} 
@@ -856,7 +727,7 @@ _Your order is now being processed._
                  <div className="bg-gray-900 border border-white/10 p-8 rounded-[3rem] max-w-2xl w-full relative">
                     <button onClick={() => setShowTerms(false)} className="absolute top-8 right-8"><X size={24} /></button>
                     <h2 className="text-3xl font-black mb-8 italic uppercase">Warranty & Service</h2>
-                    <div className="space-y-6 text-gray-400 text-sm"><p>All hardware comes with a 12-month Emma Assurance guarantee. We facilitate repairs and replacements directly with brand importers in Lira City.</p></div>
+                    <div className="space-y-6 text-gray-400 text-sm"><p>All hardware comes with a 12-month [Business Name] Assurance guarantee. We facilitate repairs and replacements directly with brand importers in Lira City.</p></div>
                  </div>
               </motion.div>
             )}

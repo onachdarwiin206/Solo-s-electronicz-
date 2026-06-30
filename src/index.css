@@ -26,11 +26,11 @@
 
 @layer base {
   :root {
-    --background: #ffffff;
+    --background: #f3f4f6;
     --foreground: #090d16;
-    --card: #fcfdfe;
+    --card: #ffffff;
     --card-foreground: #090d16;
-    --border: rgba(9, 13, 22, 0.06);
+    --border: rgba(9, 13, 22, 0.08);
     --ring: #3b82f6;
   }
 
@@ -63,7 +63,7 @@
 
   body {
     @apply font-sans antialiased transition-colors duration-300;
-    background-color: transparent !important;
+    background-color: var(--background);
     color: var(--foreground);
   }
 

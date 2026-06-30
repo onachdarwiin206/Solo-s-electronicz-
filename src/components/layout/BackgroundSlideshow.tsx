@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../ThemeContext';
-import { 
-  Play, Pause, Sliders, X, Sparkles, CheckCircle, Eye, 
-  Cpu, Compass, Palette, EyeOff, Layers, Settings, ChevronRight
-} from 'lucide-react';
-
-import abstractNeon from '../../assets/images/abstract_neon_bg_1781818038084.jpg';
-import liraLuxury from '../../assets/images/lira_luxury_background_1781811057487.jpg';
-import showroomBg from '../../assets/images/showroom_bg_1781811030624.jpg';
 
 interface Particle {
   id: number;
@@ -22,98 +14,57 @@ interface Particle {
 }
 
 interface Slide {
-  id: string;
-  name: string;
-  description: string;
+  type: 'video' | 'image';
   url: string;
-  tag: string;
+  fallbackUrl: string;
 }
 
 const SLIDES: Slide[] = [
   {
-    id: 'abstract-neon',
-    name: 'Abstract Neon Vibe',
-    description: 'Dynamic cyberpunk violet & cyan luminescence matching modern smartphone/laptop screens.',
-    url: abstractNeon,
-    tag: 'CYBERPUNK NEON'
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1600'
   },
   {
-    id: 'luxury-quartz',
-    name: 'Luxury Obsidian Quartz',
-    description: 'Sophisticated deep dark crystalline glass refractions with diamond-like highlights.',
-    url: liraLuxury,
-    tag: 'LUXURY CLASS'
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1600'
   },
   {
-    id: 'showroom-cinematic',
-    name: 'Showroom Cinematic',
-    description: 'Cinematic showroom depth, capturing authentic electronics presentation showcases.',
-    url: showroomBg,
-    tag: 'STUDIO AMBIENT'
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?q=80&w=1600'
+  },
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1601524909162-be87252be298?q=80&w=1600'
+  },
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1591453089816-0fbb971b454c?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1591453089816-0fbb971b454c?q=80&w=1600'
+  },
+  {
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1600',
+    fallbackUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1600'
   }
 ];
-
-type ParticleDensity = 'none' | 'low' | 'high' | 'hyper';
-type SpotlightColor = 'cobalt' | 'teal' | 'fuchsia' | 'gold' | 'off';
 
 export function BackgroundSlideshow() {
   const { theme } = useTheme();
   const bgRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [hudOpen, setHudOpen] = useState(false);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
-  // States with local storage hydration
-  const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('solo_bg_slide_id');
-      if (saved) {
-        const found = SLIDES.findIndex(s => s.id === saved);
-        return found !== -1 ? found : 0;
-      }
-    } catch {}
-    return 0;
-  });
-
-  const [isSlideshowPaused, setIsSlideshowPaused] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('solo_bg_paused');
-      return saved === 'true';
-    } catch {}
-    return false;
-  });
-
-  const [particleDensity, setParticleDensity] = useState<ParticleDensity>(() => {
-    try {
-      const saved = localStorage.getItem('solo_bg_particle_density') as ParticleDensity | null;
-      if (saved && ['none', 'low', 'high', 'hyper'].includes(saved)) return saved;
-    } catch {}
-    return 'high';
-  });
-
-  const [spotlightColor, setSpotlightColor] = useState<SpotlightColor>(() => {
-    try {
-      const saved = localStorage.getItem('solo_bg_spotlight_color') as SpotlightColor | null;
-      if (saved && ['cobalt', 'teal', 'fuchsia', 'gold', 'off'].includes(saved)) return saved;
-    } catch {}
-    return 'cobalt';
-  });
-
-  // Save states to local storage
+  // Auto transition dynamic tech video/image slides
   useEffect(() => {
-    localStorage.setItem('solo_bg_slide_id', SLIDES[currentSlideIndex].id);
-  }, [currentSlideIndex]);
-
-  useEffect(() => {
-    localStorage.setItem('solo_bg_paused', String(isSlideshowPaused));
-  }, [isSlideshowPaused]);
-
-  useEffect(() => {
-    localStorage.setItem('solo_bg_particle_density', particleDensity);
-  }, [particleDensity]);
-
-  useEffect(() => {
-    localStorage.setItem('solo_bg_spotlight_color', spotlightColor);
-  }, [spotlightColor]);
+    const timer = setInterval(() => {
+      setCurrentSlideIndex((prev) => (prev + 1) % SLIDES.length);
+    }, 9000); // 9 seconds interval for cinematic feel
+    return () => clearInterval(timer);
+  }, []);
 
   // Responsive device classification
   useEffect(() => {
@@ -125,16 +76,7 @@ export function BackgroundSlideshow() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Automatic slideshow transition sequence
-  useEffect(() => {
-    if (isSlideshowPaused) return;
-    const timer = setInterval(() => {
-      setCurrentSlideIndex((prev) => (prev + 1) % SLIDES.length);
-    }, 11000); // Cinematic slow rotation
-    return () => clearInterval(timer);
-  }, [isSlideshowPaused]);
-
-  // Mouse interaction handling
+  // Parallax interaction handling (pure CSS custom property updates for 60fps performance)
   useEffect(() => {
     if (isMobile) return;
 
@@ -142,14 +84,10 @@ export function BackgroundSlideshow() {
       const { clientX, clientY } = e;
       const xPct = (clientX / window.innerWidth - 0.5) * 2; // -1 to +1
       const yPct = (clientY / window.innerHeight - 0.5) * 2; // -1 to +1
-      const pctX = (clientX / window.innerWidth) * 100;
-      const pctY = (clientY / window.innerHeight) * 100;
       
       if (bgRef.current) {
         bgRef.current.style.setProperty('--mouse-x', `${xPct}`);
         bgRef.current.style.setProperty('--mouse-y', `${yPct}`);
-        bgRef.current.style.setProperty('--mouse-x-pct', `${pctX}%`);
-        bgRef.current.style.setProperty('--mouse-y-pct', `${pctY}%`);
       }
     };
 
@@ -170,55 +108,38 @@ export function BackgroundSlideshow() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Spatial static grid alignments (purely visual subtle wireframe elements)
-  const techIndicators = useMemo(() => {
-    if (isMobile) return [];
-    return [
-      { top: '15%', left: '8%', label: 'GRID.POS.01' },
-      { top: '35%', right: '12%', label: 'LUXURY.AURA.7' },
-      { top: '75%', left: '6%', label: 'SYS.SPECTRUM.B' },
-      { top: '85%', right: '15%', label: 'STANDBY.IDLE.0' },
-    ];
-  }, [isMobile]);
-
-  // Dynamically configure spotlight halo color gradients
-  const selectSpotlightStyle = () => {
-    if (spotlightColor === 'off') return 'transparent';
-    const colorMap: Record<Exclude<SpotlightColor, 'off'>, string> = {
-      cobalt: theme === 'light' ? 'rgba(59, 130, 246, 0.08)' : 'rgba(37, 99, 235, 0.16)',
-      teal: theme === 'light' ? 'rgba(20, 184, 166, 0.09)' : 'rgba(13, 148, 136, 0.17)',
-      fuchsia: theme === 'light' ? 'rgba(217, 70, 239, 0.07)' : 'rgba(162, 28, 175, 0.16)',
-      gold: theme === 'light' ? 'rgba(234, 179, 8, 0.06)' : 'rgba(161, 98, 7, 0.14)'
-    };
-    const activeColor = colorMap[spotlightColor];
-    return `radial-gradient(circle 380px at var(--mouse-x-pct, 50%) var(--mouse-y-pct, 50%), ${activeColor}, transparent 80%)`;
-  };
-
-  // Memoize floating particles to avoid high frequency re-renders
+  // Floating Particles coordinates (statically memoized for stability across render frames)
   const particles = useMemo<Particle[]>(() => {
-    if (particleDensity === 'none') return [];
-    let count = isMobile ? 8 : 28;
-    if (particleDensity === 'low') count = Math.floor(count * 0.4);
-    if (particleDensity === 'hyper') count = Math.floor(count * 1.8);
-
+    const count = isMobile ? 8 : 28;
     return Array.from({ length: count }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: Math.random() * 2.2 + 0.8, // 0.8px to 3px
-      depth: (Math.random() * 1.6) + 0.4, 
-      glow: Math.random() > 0.45,
-      opacity: Math.random() * 0.28 + 0.08,
-      pulseSpeed: Math.random() * 4.5 + 1.5, // 1.5s to 6s
+      size: Math.random() * 2 + 1, // 1px to 3px
+      depth: (Math.random() * 1.5) + 0.5, // 0.5x to 2.0x translation intensity
+      glow: Math.random() > 0.6,
+      opacity: Math.random() * 0.25 + 0.1,
+      pulseSpeed: Math.random() * 4 + 2, // 2s to 6s
     }));
-  }, [isMobile, particleDensity]);
+  }, [isMobile]);
+
+  // Static tech marker grid coordinates
+  const techIndicators = useMemo(() => {
+    if (isMobile) return [];
+    return [
+      { top: '15%', left: '8%', label: 'GRID.POS.01' },
+      { top: '35%', right: '12%', label: 'LOGIS.CHAN.7' },
+      { top: '75%', left: '6%', label: 'SYS.NOD.B' },
+      { top: '85%', right: '15%', label: 'TERM.CON.0' },
+    ];
+  }, [isMobile]);
 
   return (
     <div 
       ref={bgRef}
       className="fixed inset-0 z-[-1] overflow-hidden select-none pointer-events-none"
       style={{
-        backgroundColor: theme === 'light' ? '#fbfcfe' : '#020207',
+        backgroundColor: theme === 'light' ? '#ffffff' : '#03030c',
         '--mouse-x': '0',
         '--mouse-y': '0',
         '--scroll-y': '0px',
@@ -226,383 +147,259 @@ export function BackgroundSlideshow() {
     >
       {/* Embedded High-Performance Animations Styles */}
       <style>{`
+        @keyframes bgBaseBreath {
+          0% { background-position: 0% 50%; opacity: 0.96; }
+          50% { background-position: 100% 50%; opacity: 1; }
+          100% { background-position: 0% 50%; opacity: 0.96; }
+        }
+
         @keyframes meshOrbitPrimary {
           0% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
-          50% { transform: translate(40px, -35px) scale(1.1) rotate(180deg); }
+          33% { transform: translate(30px, -45px) scale(1.08) rotate(120deg); }
+          66% { transform: translate(-20px, 30px) scale(0.97) rotate(240deg); }
           100% { transform: translate(0px, 0px) scale(1) rotate(360deg); }
         }
 
         @keyframes meshOrbitSecondary {
-          0% { transform: translate(0px, 0px) scale(1.05) rotate(180deg); }
-          50% { transform: translate(-45px, 25px) scale(0.95) rotate(360deg); }
-          100% { transform: translate(0px, 0px) scale(1.05) rotate(540deg); }
+          0% { transform: translate(0px, 0px) scale(1.02) rotate(180deg); }
+          50% { transform: translate(-35px, 35px) scale(0.95) rotate(360deg); }
+          100% { transform: translate(0px, 0px) scale(1.02) rotate(540deg); }
         }
 
         @keyframes particlePulse {
-          0%, 100% { opacity: 0.06; transform: scale(0.9); }
-          50% { opacity: 0.45; transform: scale(1.2); }
+          0%, 100% { opacity: 0.05; transform: scale(0.85); }
+          50% { opacity: 0.45; transform: scale(1.15); }
         }
 
         @keyframes auroraWavelength {
           0% { transform: translate(0px, 0px) scaleY(1); opacity: 0.01; }
-          50% { transform: translate(25px, -15px) scaleY(1.05); opacity: 0.025; }
+          50% { transform: translate(15px, -10px) scaleY(1.04); opacity: 0.02; }
           100% { transform: translate(0px, 0px) scaleY(1); opacity: 0.01; }
         }
 
         .animated-mesh-primary {
-          animation: meshOrbitPrimary 50s infinite ease-in-out;
+          animation: meshOrbitPrimary 45s infinite ease-in-out;
         }
 
         .animated-mesh-secondary {
-          animation: meshOrbitSecondary 65s infinite ease-in-out;
+          animation: meshOrbitSecondary 52s infinite ease-in-out;
         }
 
         .glass-contrast-overlay {
-          background-image: radial-gradient(circle at 50% 50%, transparent 15%, ${theme === 'light' ? '#ffffff' : '#020207'} 98%);
+          background-image: radial-gradient(circle at 50% 50%, transparent 20%, ${theme === 'light' ? '#ffffff' : '#03030c'} 95%);
         }
 
         .tech-fineline-grid {
           background-image: 
-            linear-gradient(${theme === 'light' ? 'rgba(30, 41, 59, 0.035)' : 'rgba(255, 255, 255, 0.006)'} 1px, transparent 1px),
-            linear-gradient(90deg, ${theme === 'light' ? 'rgba(30, 41, 59, 0.035)' : 'rgba(255, 255, 255, 0.006)'} 1px, transparent 1px);
-          background-size: 60px 60px;
+            linear-gradient(${theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255, 255, 255, 0.007)'} 1px, transparent 1px),
+            linear-gradient(90deg, ${theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255, 255, 255, 0.007)'} 1px, transparent 1px);
+          background-size: 50px 50px;
           background-position: center center;
-          mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 10%, rgba(0,0,0,0.1) 90%);
-          -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 10%, rgba(0,0,0,0.1) 90%);
-        }
-
-        .custom-glass-panel {
-          background: ${theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(9, 9, 14, 0.85)'};
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+          mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 15%, rgba(0,0,0,0.1) 90%);
+          -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,1) 15%, rgba(0,0,0,0.1) 90%);
         }
       `}</style>
 
-      {/* LAYER 1: CINEMATIC IMAGES CROSSFADE */}
+      {/* LAYER 1: DEEP GRADIENT COLD SOLID BASE */}
+      <div 
+        className={`absolute inset-0 bg-gradient-to-tr bg-[length:200%_200%] transition-all duration-1000 ${
+          theme === 'light' 
+            ? "from-[#f1f5f9] via-[#f8fafc] to-[#ffffff]" 
+            : "from-[#020208] via-[#050616] to-[#0a0515]"
+        }`}
+        style={{
+          animation: 'bgBaseBreath 40s infinite ease-in-out',
+        }}
+      />
+
+      {/* LAYER 2: CINEMATIC TECHNICAL VIDEO & IMAGE SLIDESHOW */}
       <div 
         className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none"
         style={{
-          transform: 'scale(1.06) translate(calc(var(--mouse-x) * 14px), calc(var(--mouse-y) * 14px))',
+          transform: 'translate(calc(var(--mouse-x) * 6px), calc(var(--mouse-y) * 6px))',
           willChange: 'transform',
-          transition: 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)',
         }}
       >
         <AnimatePresence mode="popLayout">
-          <motion.img
+          <motion.div
             key={currentSlideIndex}
-            src={SLIDES[currentSlideIndex].url}
-            alt={SLIDES[currentSlideIndex].name}
             initial={{ opacity: 0, scale: 1.03 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 1.2, ease: 'easeInOut' }}
-            className="absolute inset-0 w-full h-full object-cover select-none"
-            referrerPolicy="no-referrer"
-            style={{
-              filter: theme === 'light'
-                ? 'contrast(0.4) brightness(1.28) saturate(0.5)'
-                : 'contrast(0.55) brightness(0.68) saturate(0.85)',
-              transition: 'filter 0.6s ease-in-out',
+            animate={{ 
+              opacity: theme === 'light' ? 0.08 : 0.22, 
+              scale: 1 
             }}
-          />
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 1.8, ease: "easeInOut" }}
+            className="absolute inset-0 w-full h-full"
+          >
+            {SLIDES[currentSlideIndex].type === 'video' ? (
+              <div 
+                className="w-full h-full bg-cover bg-center relative" 
+                style={{ backgroundImage: `url(${SLIDES[currentSlideIndex].fallbackUrl})` }}
+              >
+                <video
+                  src={SLIDES[currentSlideIndex].url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                  onError={() => {
+                    console.info("[BackgroundSlideshow] Transitioning video to standard active wallpaper.");
+                  }}
+                />
+              </div>
+            ) : (
+              <img
+                src={SLIDES[currentSlideIndex].url}
+                alt="Electronic Slides"
+                className="w-full h-full object-cover"
+              />
+            )}
+            
+            {/* Gradient matrix shading to anchor active content cards */}
+            <div className={`absolute inset-0 pointer-events-none ${
+              theme === 'light' ? 'bg-white/10' : 'bg-gradient-to-b from-[#03030c]/20 via-[#03030c]/60 to-[#03030c]'
+            }`} />
+          </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* LAYER 2: BLUR SPATIAL GLOWS MESH */}
+      {/* DISMISSED COGNITIVE MESH ELEMENT CODES */}
+      <div className="hidden text-transparent opacity-0 pointer-events-none w-0 h-0">
       <div 
-        className={`absolute inset-0 z-0 overflow-hidden blur-[120px] md:blur-[160px] pointer-events-none transition-all duration-1000 ${
-          theme === 'light' ? 'opacity-[0.45] mix-blend-multiply' : 'opacity-[0.38] mix-blend-screen'
+        className={`absolute inset-0 z-0 overflow-hidden blur-[110px] md:blur-[150px] transition-all duration-1000 ${
+          theme === 'light' ? 'opacity-[0.5] mix-blend-multiply' : 'opacity-[0.35] mix-blend-screen'
         }`}
         style={{
-          transform: 'translate(calc(var(--mouse-x) * 7px), calc(var(--mouse-y) * 7px))',
+          transform: 'translate(calc(var(--mouse-x) * 8px), calc(var(--mouse-y) * 8px))',
           willChange: 'transform',
         }}
       >
-        {/* Neon Blob A */}
+        {/* Blob A - Electric Blue/Teal */}
         <div 
-          className={`animated-mesh-primary absolute w-[260px] h-[260px] md:w-[500px] md:h-[500px] rounded-full transition-colors duration-1000 ${
-            theme === 'light' ? 'bg-blue-300/30' : 'bg-cyan-500/10'
-          } top-[-5%] left-[-5%]`} 
+          className={`animated-mesh-primary absolute w-[240px] h-[240px] md:w-[480px] md:h-[480px] rounded-full transition-colors duration-1000 ${
+            theme === 'light' ? 'bg-blue-300/30' : 'bg-cyan-500/8'
+          } top-[-10%] left-[-5%]`} 
           style={{ willChange: 'transform' }}
         />
         
-        {/* Neon Blob B */}
+        {/* Blob B - Deep Rich Indigo Accent */}
         <div 
-          className={`animated-mesh-secondary absolute w-[300px] h-[300px] md:w-[650px] md:h-[650px] rounded-full transition-colors duration-1000 ${
-            theme === 'light' ? 'bg-indigo-200/30' : 'bg-indigo-500/15'
-          } bottom-[-10%] right-[-5%]`} 
+          className={`animated-mesh-secondary absolute w-[300px] h-[300px] md:w-[600px] md:h-[600px] rounded-full transition-colors duration-1000 ${
+            theme === 'light' ? 'bg-indigo-200/30' : 'bg-indigo-500/12'
+          } bottom-[-15%] right-[-5%]`} 
           style={{ willChange: 'transform' }}
         />
 
-        {/* Neon Blob C */}
+        {/* Blob C - Vibrant Fuchsia Glow */}
         <div 
-          className="animated-mesh-primary absolute w-[180px] h-[180px] md:w-[420px] md:h-[420px] rounded-full bg-violet-600/8 top-[20%] left-[35%] blur-[120px]"
+          className={`animated-mesh-primary absolute w-[200px] h-[200px] md:w-[450px] md:h-[450px] rounded-full transition-colors duration-1000 ${
+            theme === 'light' ? 'bg-purple-200/20' : 'bg-fuchsia-500/8'
+          } top-[25%] left-[30%]`} 
           style={{ 
-            animationDelay: '-18s',
+            animationDelay: '-15s',
             willChange: 'transform' 
           }}
         />
+
+        {/* Dynamic theme-specific supplemental blur in Glass Mode for rich refraction */}
+        {theme === 'glass' && (
+          <div 
+            className="absolute w-[350px] h-[350px] md:w-[550px] md:h-[550px] rounded-full bg-indigo-600/10 top-[15%] right-[20%] blur-[130px]" 
+          />
+        )}
+      </div>
       </div>
 
-      {/* LAYER 3: INTERACTIVE MOUSE HALO GRADIENT */}
-      {!isMobile && spotlightColor !== 'off' && (
-        <div 
-          className="absolute inset-0 z-10 pointer-events-none mix-blend-screen transition-all duration-1000"
-          style={{
-            background: selectSpotlightStyle(),
-            willChange: 'background',
-          }}
-        />
-      )}
+      {/* LAYER 3: INTERACTIVE PARTICLE FIELD */}
+      <div className="absolute inset-0 z-10 overflow-hidden">
+        {particles.map((p) => {
+          const depthMultiplier = p.depth;
+          return (
+            <div
+              key={p.id}
+              className={`absolute rounded-full transition-all duration-1000 ${
+                theme === 'light' ? 'bg-slate-400' : 'bg-white'
+              }`}
+              style={{
+                left: `${p.x}%`,
+                top: `${p.y}%`,
+                width: `${p.size}px`,
+                height: `${p.size}px`,
+                opacity: theme === 'light' ? p.opacity * 1.5 : p.opacity,
+                boxShadow: p.glow && theme !== 'light' ? '0 0 6px rgba(147, 51, 234, 0.3)' : undefined,
+                transform: `translate(
+                  calc(var(--mouse-x) * ${depthMultiplier * 15}px),
+                  calc(var(--mouse-y) * ${depthMultiplier * 15}px + var(--scroll-y) * ${depthMultiplier * -0.08})
+                )`,
+                animation: `particlePulse ${p.pulseSpeed}s ease-in-out ${p.id * 0.3}s infinite`,
+                willChange: 'transform',
+              }}
+            />
+          );
+        })}
+      </div>
 
-      {/* LAYER 4: FLOATING CYBERPUNK PARTICLES */}
-      {particles.length > 0 && (
-        <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
-          {particles.map((p) => {
-            const depthMultiplier = p.depth;
-            return (
-              <div
-                key={p.id}
-                className={`absolute rounded-full bg-white transition-all duration-1000 ${theme === 'light' ? 'bg-zinc-800' : 'bg-white'}`}
-                style={{
-                  left: `${p.x}%`,
-                  top: `${p.y}%`,
-                  width: `${p.size}px`,
-                  height: `${p.size}px`,
-                  opacity: p.opacity,
-                  boxShadow: p.glow && theme !== 'light' ? '0 0 8px rgba(147, 51, 234, 0.4)' : undefined,
-                  transform: `translate(
-                    calc(var(--mouse-x) * ${depthMultiplier * 16}px),
-                    calc(var(--mouse-y) * ${depthMultiplier * 16}px + var(--scroll-y) * ${depthMultiplier * -0.06})
-                  )`,
-                  animation: `particlePulse ${p.pulseSpeed}s ease-in-out ${p.id * 0.2}s infinite`,
-                  willChange: 'transform',
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {/* LAYER 5: TECH LINEWIRE GRID */}
+      {/* LAYER 4: LOGISTICS TECHNICAL GRID OVERLAY */}
       <div 
-        className="absolute inset-0 z-0 tech-fineline-grid opacity-[0.14] md:opacity-[0.18] pointer-events-none"
+        className="absolute inset-0 z-0 tech-fineline-grid opacity-[0.12] md:opacity-[0.16]"
         style={{
-          transform: 'translateY(calc(var(--scroll-y) * -0.03))',
+          transform: 'translateY(calc(var(--scroll-y) * -0.02))',
           willChange: 'transform',
         }}
       />
 
-      {/* LAYER 6: ALIGNMENTS CUES CROSSHAIRS */}
+      {/* SUBTLE LOGISTICS MATRIX CORNER ALIGNMENTS OR INDICATORS (Layer 4 Continued) */}
       {!isMobile && (
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-10">
           {techIndicators.map((ti, index) => (
             <div 
               key={index} 
-              className="absolute text-[8px] font-mono tracking-[0.2em] select-none flex items-center gap-2 transition-colors duration-1000 text-blue-500/50"
+              className={`absolute text-[8px] font-mono tracking-widest select-none flex items-center gap-2 transition-colors duration-1000 ${
+                theme === 'light' ? 'text-slate-800/60' : 'text-blue-500/50'
+              }`}
               style={{
                 top: ti.top,
                 left: ti.left,
                 right: ti.right,
-                transform: 'translate(calc(var(--mouse-x) * 3px), calc(var(--mouse-y) * 3px))',
+                transform: 'translate(calc(var(--mouse-x) * 2px), calc(var(--mouse-y) * 2px))',
                 willChange: 'transform',
               }}
             >
-              <span className="font-extrabold text-[10px] text-blue-400">+</span>
+              {/* Corner crosshairs */}
+              <span className={`font-extrabold text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-blue-500/70'}`}>+</span>
               <span>{ti.label}</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* LAYER 7: AMBIENT OPTICS STREAKS */}
-      <div className="absolute inset-x-0 bottom-[15%] top-[35%] z-0 pointer-events-none overflow-hidden mix-blend-screen opacity-[0.02] filter blur-[80px]"
+      {/* LAYER 5: AMBIENT AURORA ENERGY STREAKS */}
+      <div className="absolute inset-x-0 bottom-[10%] top-[40%] z-0 pointer-events-none overflow-hidden mix-blend-screen opacity-[0.015] filter blur-[70px]"
            style={{
-             animation: 'auroraWavelength 28s infinite ease-in-out',
+             animation: 'auroraWavelength 32s infinite ease-in-out',
              willChange: 'transform',
            }}>
-        <svg viewBox="0 0 1440 400" className="w-full h-full text-blue-500 fill-none opacity-45">
+        <svg viewBox="0 0 1440 400" className="w-full h-full text-blue-500 fill-none opacity-40">
           <path 
-            d="M-50,180 C200,300 400,100 750,260 C1100,420 1250,80 1590,220 L1590,400 L-50,400 Z" 
-            stroke="rgba(59, 130, 246, 0.2)" 
-            strokeWidth="2.5"
-            fill="url(#optic-grad)"
+            d="M-100,200 C150,320 350,120 700,280 C1050,440 1200,100 1540,240 L1540,400 L-100,400 Z" 
+            stroke="rgba(37, 99, 235, 0.2)" 
+            strokeWidth="2"
+            fill="url(#aurora-gradient)"
           />
           <defs>
-            <linearGradient id="optic-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(37, 99, 235, 0.12)" />
-              <stop offset="50%" stopColor="rgba(168, 85, 247, 0.1)" />
-              <stop offset="100%" stopColor="rgba(14, 165, 233, 0.12)" />
+            <linearGradient id="aurora-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="rgba(29, 78, 216, 0.1)" />
+              <stop offset="50%" stopColor="rgba(147, 51, 234, 0.08)" />
+              <stop offset="100%" stopColor="rgba(59, 130, 246, 0.1)" />
             </linearGradient>
           </defs>
         </svg>
       </div>
 
       {/* RADIAL SCREEN VIGNETTE GLASS CONTRAST */}
-      <div className="absolute inset-0 z-0 glass-contrast-overlay pointer-events-none opacity-[0.3]" />
-
-
-      {/* INTERACTIVE CONTROLLER FLOATING TRIGGER — BOTTOM-LEFT */}
-      <div className="fixed bottom-4 left-4 md:bottom-8 md:left-8 z-50 flex flex-col items-start gap-4 pointer-events-auto">
-        <AnimatePresence>
-          {hudOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 15 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="w-[320px] rounded-3xl border border-zinc-150 dark:border-zinc-800/80 p-5 shadow-2xl custom-glass-panel flex flex-col gap-4 text-left pointer-events-auto"
-            >
-              {/* Header */}
-              <div className="flex justify-between items-center pb-2.5 border-b border-zinc-200/50 dark:border-zinc-800/50">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 px-1.5 bg-blue-600/10 text-blue-500 rounded-lg">
-                    <Sliders size={13} strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <h4 className="text-[10px] font-black tracking-[0.15em] uppercase text-zinc-400">Atmosphere Engine</h4>
-                    <span className="text-[8px] font-mono leading-none flex items-center gap-1 text-emerald-500 mt-0.5">
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-                      LIVE CALIBRATION
-                    </span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setHudOpen(false)}
-                  className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-100 bg-zinc-100/50 dark:bg-zinc-800/50 p-1.5 rounded-full hover:scale-105 transition-all cursor-pointer"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-
-              {/* Theme Slides selection list */}
-              <div className="space-y-2">
-                <span className="text-[8.5px] font-black uppercase text-zinc-400 flex items-center gap-1">
-                  <Layers size={10} />
-                  Vignette Background Canvas
-                </span>
-                <div className="grid grid-cols-1 gap-1.5 max-h-[140px] overflow-y-auto pr-1 no-scrollbar">
-                  {SLIDES.map((slide, idx) => {
-                    const isSelected = idx === currentSlideIndex;
-                    return (
-                      <button
-                        key={slide.id}
-                        onClick={() => {
-                          setCurrentSlideIndex(idx);
-                        }}
-                        className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all text-xs cursor-pointer border ${
-                          isSelected 
-                            ? 'bg-blue-600/10 border-blue-500/30 text-blue-600 dark:text-blue-400 font-bold' 
-                            : 'bg-zinc-50/50 dark:bg-zinc-950/20 border-zinc-100 dark:border-zinc-850 hover:bg-zinc-100/40 dark:hover:bg-zinc-900/40 hover:border-zinc-200 dark:hover:border-zinc-800 text-zinc-600 dark:text-zinc-300'
-                        }`}
-                      >
-                        <div className="min-w-0 pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="truncate">{slide.name}</span>
-                            <span className="text-[7.5px] px-1 bg-zinc-200/50 dark:bg-zinc-800/50 text-zinc-500 rounded font-mono font-bold leading-relaxed whitespace-nowrap uppercase">
-                              {slide.tag}
-                            </span>
-                          </div>
-                          <p className="text-[9px] text-zinc-400 leading-tight mt-0.5 truncate max-w-[210px]">
-                            {slide.description}
-                          </p>
-                        </div>
-                        {isSelected ? <CheckCircle size={12} className="shrink-0 text-blue-500" /> : <Eye size={11} className="text-zinc-400 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Slider panel properties */}
-              <div className="grid grid-cols-2 gap-3.5">
-                {/* Control particle density */}
-                <div className="space-y-1">
-                  <label className="text-[8.5px] font-black uppercase text-zinc-400 flex items-center gap-1">
-                    <Sparkles size={10} />
-                    Aether Particles
-                  </label>
-                  <select
-                    value={particleDensity}
-                    onChange={(e) => setParticleDensity(e.target.value as ParticleDensity)}
-                    className="w-full bg-zinc-50/80 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-850 rounded-xl p-2 text-[10px] font-bold focus:outline-none cursor-pointer text-zinc-700 dark:text-zinc-200"
-                  >
-                    <option value="none">Disabled</option>
-                    <option value="low">Sparse Sparse</option>
-                    <option value="high">Luminescent High</option>
-                    <option value="hyper">Hyper Solar Flow</option>
-                  </select>
-                </div>
-
-                {/* Spotlight following selection */}
-                <div className="space-y-1">
-                  <label className="text-[8.5px] font-black uppercase text-zinc-400 flex items-center gap-1 font-sans">
-                    <Palette size={10} />
-                    Cursor Streak
-                  </label>
-                  <select
-                    value={spotlightColor}
-                    onChange={(e) => setSpotlightColor(e.target.value as SpotlightColor)}
-                    className="w-full bg-zinc-50/80 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-850 rounded-xl p-2 text-[10px] font-bold focus:outline-none cursor-pointer text-zinc-700 dark:text-zinc-200"
-                  >
-                    <option value="off">Off</option>
-                    <option value="cobalt">Cobalt Blue</option>
-                    <option value="teal">Minty Teal</option>
-                    <option value="fuchsia">Tech Fuchsia</option>
-                    <option value="gold">Optic Gold</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Bottom control play-pause */}
-              <div className="flex items-center justify-between border-t border-zinc-200/50 dark:border-zinc-800/50 pt-3 flex-wrap gap-2 text-xs">
-                <button
-                  onClick={() => setIsSlideshowPaused(!isSlideshowPaused)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9.5px] font-black uppercase font-mono tracking-widest cursor-pointer transition-all border ${
-                    isSlideshowPaused 
-                      ? 'bg-zinc-100 hover:bg-zinc-150 text-zinc-700 border-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 dark:text-zinc-300 dark:border-zinc-800' 
-                      : 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-md shadow-blue-600/10'
-                  }`}
-                >
-                  {isSlideshowPaused ? (
-                    <>
-                      <Play size={10} />
-                      SLIDE ROTATION: PAUSED
-                    </>
-                  ) : (
-                    <>
-                      <Pause size={10} />
-                      SLIDE ROTATION: ACTIVE
-                    </>
-                  )}
-                </button>
-                <span className="text-[8px] font-mono text-zinc-400 font-bold uppercase tracking-wider">
-                  V2.4 // 60FPS
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Shutter Toggle button */}
-        {!hudOpen && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setHudOpen(true)}
-            className="w-10 h-10 md:w-11 md:h-11 bg-white/80 dark:bg-zinc-900/90 backdrop-blur-md rounded-full shadow-lg border border-zinc-150 dark:border-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:text-blue-500 hover:dark:text-blue-400 transition-all cursor-pointer group pointer-events-auto"
-            title="Atmosphere Optimization"
-          >
-            <Compass size={18} className="group-hover:rotate-[45deg] transition-transform duration-500 ease-out shrink-0" />
-            
-            {/* Ambient tiny blinking notification badge */}
-            <span className="absolute top-0 right-0 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-          </motion.button>
-        )}
-      </div>
+      <div className="absolute inset-0 z-0 glass-contrast-overlay pointer-events-none opacity-[0.95]" />
     </div>
   );
 }

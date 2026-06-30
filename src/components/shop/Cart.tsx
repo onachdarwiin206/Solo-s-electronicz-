@@ -236,8 +236,8 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                               key={item.id}
                               className="flex gap-4 p-4 bg-white/[0.01] hover:bg-white/[0.03] transition-colors rounded-3xl border border-white/[0.04] relative overflow-hidden group"
                             >
-                              <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-white/[0.05] bg-black/40 flex items-center justify-center">
-                                <OptimizedImage src={itemImage} alt={item.name} className="w-full h-full object-contain p-1.5" />
+                              <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-white/[0.05] bg-black/40">
+                                <OptimizedImage src={itemImage} alt={item.name} className="w-full h-full object-cover" />
                               </div>
                               <div className="flex-1 min-w-0 flex flex-col justify-between text-left">
                                 <div className="flex justify-between items-start gap-2">
@@ -389,7 +389,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                 </div>
 
                 <p className="text-[7.5px] text-center text-gray-600 mt-5 font-bold uppercase tracking-[0.25em] opacity-60 font-mono">
-                  EMMA COMPLIANCE SHIELD // HUB CONSOLE v3.5
+                  [BUSINESS NAME] COMPLIANCE SHIELD // HUB CONSOLE v3.5
                 </p>
               </div>
             )}

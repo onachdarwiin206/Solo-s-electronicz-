@@ -1,5 +1,5 @@
 import { useState, ChangeEvent, useRef, useEffect } from 'react';
-import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList, Sun, Moon, Smartphone, Download, Laptop, Gamepad2, Tv, Layers, Grid } from 'lucide-react';
+import { Menu, X, ShoppingCart, Search, Package, Globe, Bookmark, User, LogOut, ShieldCheck, Sparkles, UserCheck, Eye, HelpCircle, LogIn, ClipboardList, Sun, Moon, Smartphone, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { Language } from '../../translations';
@@ -14,7 +14,6 @@ interface NavbarProps {
   cartCount: number;
   wishlistCount: number;
   onCartClick: () => void;
-  onWishlistClick: () => void;
   onMarketingClick: () => void;
   isAdmin: boolean;
   currentLanguage: Language;
@@ -29,7 +28,6 @@ export function Navbar({
   cartCount, 
   wishlistCount,
   onCartClick, 
-  onWishlistClick,
   onMarketingClick,
   isAdmin,
   currentLanguage,
@@ -77,12 +75,12 @@ export function Navbar({
   };
 
   const navItems = [
-    { name: 'All Devices', category: null, icon: Grid },
-    { name: 'Phones', category: 'Phones & Tablets', icon: Smartphone },
-    { name: 'Computers', category: 'Computers & Laptops', icon: Laptop },
-    { name: 'Gaming', category: 'Gaming & Consoles', icon: Gamepad2 },
-    { name: 'Audio', category: 'TVs & Audio', icon: Tv },
-    { name: 'Accessories', category: 'Accessories', icon: Layers },
+    { name: 'All Devices', category: null },
+    { name: 'Phones', category: 'Phones & Tablets' },
+    { name: 'Computers', category: 'Computers & Laptops' },
+    { name: 'Gaming', category: 'Gaming & Consoles' },
+    { name: 'Audio', category: 'TVs & Audio' },
+    { name: 'Accessories', category: 'Accessories' },
   ];
 
   const languages: { code: Language; label: string; sub: string }[] = [
@@ -99,10 +97,9 @@ export function Navbar({
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Ribbon 1: Identity, Operational Search & Utilities */}
-        <div className="flex items-center justify-between h-16 gap-2">
-          <div className="flex items-center gap-2 lg:gap-8 flex-1 min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-4 lg:gap-8 flex-1">
+            <div className="flex items-center gap-2">
               <button 
                 onClick={() => onCategorySelect(null)}
                 onMouseDown={startPressTimer}
@@ -111,34 +108,44 @@ export function Navbar({
                 onTouchStart={startPressTimer}
                 onTouchEnd={cancelPressTimer}
                 className={cn(
-                  "flex items-center gap-2 sm:gap-3 text-sm sm:text-xl lg:text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all italic select-none outline-none truncate py-1",
+                  "text-lg sm:text-xl lg:text-2xl font-black tracking-tighter text-blue-500 hover:text-blue-400 transition-all shrink-0 italic select-none outline-none",
                   pressTimerActive && "scale-90 opacity-70"
                 )}
               >
-                <span className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500 text-white font-mono font-extrabold not-italic text-xs sm:text-base tracking-normal shadow-lg shadow-blue-500/20 border border-blue-400/30 shrink-0 select-none">
-                  E
-                </span>
-                <span className="inline sm:hidden">EMMA PHONES</span>
-                <span className="hidden sm:inline">EMMA PHONES & ELECTRONICS</span>
+                [BUSINESS NAME]'S PHONES & ELECTRONICS
               </button>
+            </div>
+            
+            <div className="hidden xl:block">
+              <div className="flex items-baseline space-x-2">
+                {navItems.map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => onCategorySelect(item.category)}
+                    className="px-3 py-2 rounded-md text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all font-mono uppercase tracking-tighter"
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md ml-auto min-w-0">
-              <div className="relative w-full group/search">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 group-focus-within/search:text-blue-500 transition-colors" size={16} />
+            <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md">
+              <div className="relative w-full group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-blue-500 transition-colors" size={16} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search products..."
-                  className="w-full bg-white/95 dark:bg-zinc-950/95 border border-zinc-300/80 dark:border-zinc-700/80 rounded-2xl py-2.5 pl-12 pr-4 text-xs font-semibold text-foreground outline-none shadow-sm focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all font-sans placeholder:text-zinc-500/90 dark:placeholder:text-zinc-400/90"
+                  className="w-full bg-foreground/5 border border-border rounded-2xl py-2.5 pl-12 pr-4 text-xs text-foreground outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all font-mono placeholder:text-muted-foreground"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-0.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-3">
             <Tooltip content="Search Products">
               <button 
                 onClick={() => setShowSearch(!showSearch)}
@@ -148,10 +155,23 @@ export function Navbar({
               </button>
             </Tooltip>
 
+            <Tooltip content="Contact Support">
+              <button 
+                onClick={() => {
+                  window.open("https://wa.me/256793405517?text=Hello%20[Business%20Name]%27s%20Electronics!%20I%27d%20like%2520to%2520get%2520in%2520touch%2520with%2520customer%2520support.", "_blank");
+                }}
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <HelpCircle size={20} />
+              </button>
+            </Tooltip>
+
             <Tooltip content="Wishlist">
               <button 
-                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={onWishlistClick}
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => {
+                   // Optional: feature to show wishlist modal if requested, for now just show count
+                }}
               >
                 <Bookmark size={20} />
                 {wishlistCount > 0 && (
@@ -209,23 +229,6 @@ export function Navbar({
             </button>
           </div>
         </div>
-
-        {/* Ribbon 2: Secondary Category Browser Navigation - Scrollable on mobile/tablet */}
-        <div className="flex xl:justify-center items-center h-11 border-t border-border/80 gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap px-4 py-1 select-none">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.name}
-                onClick={() => onCategorySelect(item.category)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-105 active:scale-95 transition-all duration-200 font-mono uppercase tracking-tighter cursor-pointer shrink-0"
-              >
-                <Icon size={13} className="shrink-0" />
-                <span>{item.name}</span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Inline Mobile Search */}
@@ -238,15 +241,15 @@ export function Navbar({
             className="md:hidden bg-background/80 border-b border-border overflow-hidden"
           >
             <div className="p-4">
-              <div className="relative group/mobilesearch">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 group-focus-within/mobilesearch:text-blue-500 transition-colors" size={16} />
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                 <input
                   autoFocus
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search for hardware..."
-                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700/80 rounded-2xl py-3 pl-12 pr-4 text-sm font-semibold text-foreground outline-none shadow-md focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all placeholder:text-zinc-500 dark:placeholder:text-zinc-400"
+                  className="w-full bg-foreground/5 border border-border rounded-2xl py-3 pl-12 pr-4 text-sm text-foreground outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -266,24 +269,42 @@ export function Navbar({
           >
             Home / Landing
           </button>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.name}
-                onClick={() => {
-                  onCategorySelect(item.category);
-                  setIsOpen(false);
-                }}
-                className="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10"
-              >
-                <Icon size={16} className="shrink-0 text-muted-foreground/70" />
-                <span>{item.name}</span>
-              </button>
-            );
-          })}
+          {navItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => {
+                onCategorySelect(item.category);
+                setIsOpen(false);
+              }}
+              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10"
+            >
+              {item.name}
+            </button>
+          ))}
 
-
+          <div className="px-3 py-4 border-t border-border mt-4">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">Select Region / Language</p>
+            <div className="grid grid-cols-2 gap-2">
+              {languages.map((lang) => (
+                <button 
+                  key={lang.code}
+                  onClick={() => {
+                    onLanguageChange(lang.code);
+                    setIsOpen(false);
+                  }}
+                  className={cn(
+                    "flex flex-col p-3 rounded-2xl border transition-all text-left", 
+                    currentLanguage === lang.code 
+                      ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/20" 
+                      : "bg-foreground/5 border-border text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span className="text-[10px] font-black uppercase tracking-tighter">{lang.label}</span>
+                  <span className="text-[8px] font-mono opacity-60 mt-1">{lang.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="px-3 py-4 border-t border-border">
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">Appearance / Theme</p>
@@ -305,7 +326,7 @@ export function Navbar({
                       "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center gap-1.5 cursor-pointer", 
                       isSelected 
                         ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/20" 
-                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
+                        : "bg-foreground/5 border-border text-muted-foreground hover:text-foreground"
                     )}
                   >
                     <IconComponent size={14} className={isSelected ? 'text-white' : item.color} />
