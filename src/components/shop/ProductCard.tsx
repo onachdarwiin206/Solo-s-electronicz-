@@ -52,17 +52,15 @@ export function ProductCard({
     const img = e.currentTarget;
     if (img.naturalWidth && img.naturalHeight) {
       const ratio = img.naturalWidth / img.naturalHeight;
-      setImageAspectRatio(ratio);
+      setImageAspectRatio(prev => prev === ratio ? prev : ratio);
     }
   };
 
-  const getFilteredImages = () => {
+  const images = React.useMemo(() => {
     const rawImages = product.images && product.images.length > 0 ? product.images : [product.image];
     const filtered = rawImages.filter(img => typeof img === 'string' && img.trim() !== '');
     return filtered.length > 0 ? filtered : [''];
-  };
-
-  const images = getFilteredImages();
+  }, [product.images ? product.images.join(',') : '', product.image]);
 
   useEffect(() => {
     const imageUrl = images[currentImageIndex];
@@ -71,12 +69,14 @@ export function ProductCard({
       img.src = imageUrl;
       if (img.complete) {
         if (img.naturalWidth && img.naturalHeight) {
-          setImageAspectRatio(img.naturalWidth / img.naturalHeight);
+          const ratio = img.naturalWidth / img.naturalHeight;
+          setImageAspectRatio(prev => prev === ratio ? prev : ratio);
         }
       } else {
         img.onload = () => {
           if (img.naturalWidth && img.naturalHeight) {
-            setImageAspectRatio(img.naturalWidth / img.naturalHeight);
+            const ratio = img.naturalWidth / img.naturalHeight;
+            setImageAspectRatio(prev => prev === ratio ? prev : ratio);
           }
         };
       }

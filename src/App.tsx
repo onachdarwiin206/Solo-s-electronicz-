@@ -19,7 +19,7 @@ import { useAuth } from './AuthContext';
 import { generateDeterministicOrderId, safeGetLocalStorage, safeSetLocalStorage } from './lib/sandboxDb';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
-import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home } from 'lucide-react';
+import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home, AlertCircle } from 'lucide-react';
 
 const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal'));
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
@@ -731,7 +731,7 @@ _Your order is now being processed._
                          <CategoryBar onCategorySelect={(cat) => setCategory(cat)} selectedCategory={category} />
                       </div>
 
-                      {products.length > 0 && (
+                      {products.length > 0 ? (
                         <HomeHero 
                           products={products}
                           filteredProducts={filteredProducts}
@@ -750,6 +750,31 @@ _Your order is now being processed._
                           onSearch={setSearchQuery}
                           t={t}
                         />
+                      ) : loadingProducts ? (
+                        <div className="py-40 flex flex-col items-center justify-center min-h-[50vh]">
+                          <Loader2 className="animate-spin text-blue-500 mb-4" size={48} />
+                          <p className="text-xs font-mono tracking-widest uppercase text-zinc-400 animate-pulse">Syncing Hardware Feed...</p>
+                        </div>
+                      ) : (
+                        <div className="max-w-md mx-auto px-4 py-32 text-center min-h-[50vh] flex flex-col items-center justify-center">
+                          <div className="bg-[#07070c]/5 border border-white/[0.06] rounded-[2.5rem] p-10 space-y-6">
+                            <div className="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+                              <AlertCircle size={28} />
+                            </div>
+                            <div className="space-y-2">
+                              <h2 className="text-lg font-bold font-sans tracking-tight text-white uppercase">Sourcing Database Off-Grid</h2>
+                              <p className="text-[11px] text-zinc-400 leading-relaxed">
+                                Our live hardware grid is currently undergoing server updates or your browser cache has been cleared. Tap below to reload the catalog.
+                              </p>
+                            </div>
+                            <button 
+                              onClick={() => fetchProducts()} 
+                              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-mono text-[10px] font-black uppercase tracking-widest p-3.5 rounded-2xl transition-all active:scale-98 shadow-lg shadow-blue-600/20 cursor-pointer"
+                            >
+                              Sync Hardware Catalog
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </>
                   )}
