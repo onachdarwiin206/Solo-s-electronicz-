@@ -1,497 +1,120 @@
-import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
 import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
 import { BottomNav } from './components/layout/BottomNav';
-import { ProductCard } from './components/shop/ProductCard';
 import { Cart } from './components/shop/Cart';
 import { CategoryBar } from './components/shop/CategoryBar';
 import { HomeHero } from './components/home/HomeHero';
-import { FlashSales } from './components/shop/FlashSales';
 import { Footer } from './components/layout/Footer';
 import { AndroidInstallPrompt } from './components/layout/AndroidInstallPrompt';
 import { WhatsAppFloat } from './components/ui/WhatsAppFloat';
-import { INITIAL_PRODUCTS, PRODUCT_CATEGORIES } from './constants';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
-import { Product, CartItem, PaymentMethod } from './types';
-import { format, addDays } from 'date-fns';
+import { isSupabaseConfigured } from './lib/supabase';
+import { Product } from './types';
 import { useAuth } from './AuthContext';
-import { generateDeterministicOrderId, safeGetLocalStorage, safeSetLocalStorage } from './lib/sandboxDb';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { translations, Language } from './translations';
-import { ShieldCheck, ChevronRight, X, UserCog, Loader2, Home, AlertCircle } from 'lucide-react';
+import { X, UserCog, Loader2, AlertCircle } from 'lucide-react';
 
 const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal'));
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 const ProductDetail = lazy(() => import('./components/shop/ProductDetail'));
 const QuickViewModal = lazy(() => import('./components/shop/QuickViewModal'));
 import AdminLoginModal from './components/auth/LoginModal';
-const UserProfile = lazy(() => import('./components/profile/UserProfile'));
 const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
-const AuthPage = lazy(() => import('./components/auth/AuthPage'));
-import { ToastContainer, ToastData } from './components/ui/Toast';
+import { ToastContainer } from './components/ui/Toast';
 import { WishlistDrawer } from './components/shop/WishlistDrawer';
 
-type View = 'shop' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth';
+// Custom Refactored Hooks
+import { useToasts } from './hooks/useToasts';
+import { useCart } from './hooks/useCart';
+import { useProducts } from './hooks/useProducts';
+import { useWishlistAndLikes } from './hooks/useWishlistAndLikes';
+import { useAppNavigation } from './hooks/useAppNavigation';
 
-const WHATSAPP_NUMBER = "256793405517";
-
+/**
+ * App Component - Refactored Main Orchestrator.
+ * Handles routing, layout composition, and coordinates clean custom state hooks.
+ */
 export default function App() {
-  const { user, isAdmin, isRecovering, loading: authResolving, toggleWishlist: authToggleWishlist, toggleLike: authToggleLike } = useAuth();
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const { 
+    user, 
+    isAdmin, 
+    isRecovering, 
+    loading: authResolving, 
+    toggleWishlist: authToggleWishlist, 
+    toggleLike: authToggleLike 
+  } = useAuth();
 
-  const [view, setView] = useState<View>('shop');
-  const prevUserRef = useRef<any>(null);
-  const prevIsAdminRef = useRef<boolean>(false);
-  const modalWasOpenRef = useRef<boolean>(false);
+  // Basic layout/UI states kept local to avoid excessive prop drilling
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [category, setCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [cartOpen, setCartOpen] = useState(false);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [showTerms, setShowTerms] = useState(false);
-  const [products, setProducts] = useState<Product[]>(() => {
-    try {
-      const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
-      const cachedRemote = cachedRemoteRaw ? JSON.parse(cachedRemoteRaw) : [];
-      
-      const localCustomRaw = localStorage.getItem('custom_products');
-      const localCustom = localCustomRaw ? JSON.parse(localCustomRaw) : [];
-      
-      const deletedRaw = localStorage.getItem('deleted_product_ids');
-      const deletedIds = new Set<string>(deletedRaw ? JSON.parse(deletedRaw) : []);
-      
-      const combined: Product[] = [];
-      const seenIds = new Set<string>();
-      
-      if (isSupabaseConfigured && cachedRemote.length > 0) {
-        cachedRemote.forEach((p: Product) => {
-          if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-            seenIds.add(p.id);
-            combined.push(p);
-          }
-        });
-      }
-      
-      localCustom.forEach((p: Product) => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      INITIAL_PRODUCTS.forEach((p: Product) => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      return combined;
-    } catch {
-      return INITIAL_PRODUCTS;
-    }
-  });
-  const [loadingProducts, setLoadingProducts] = useState(() => {
-    try {
-      const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
-      if (cachedRemoteRaw) {
-        const cachedRemote = JSON.parse(cachedRemoteRaw);
-        if (cachedRemote.length > 0) return false;
-      }
-    } catch {}
-    return true;
-  });
   const [language, setLanguage] = useState<Language>('en');
-  const [wishlist, setWishlist] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(localStorage.getItem('wishlist') || '[]');
-    } catch {
-      return [];
-    }
-  });
-  const [likes, setLikes] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(localStorage.getItem('likes') || '[]');
-    } catch {
-      return [];
-    }
-  });
-
   const [wishlistOpen, setWishlistOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastData[]>([]);
 
-  const addToast = (toast: Omit<ToastData, 'id'>) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { ...toast, id }]);
-  };
+  // Hook-managed state & operations
+  const { toasts, addToast, removeToast } = useToasts();
+  const { 
+    cart, 
+    cartOpen, 
+    setCartOpen, 
+    addToCart, 
+    updateCartQuantity, 
+    removeFromCart, 
+    handleCheckout, 
+    cartCount 
+  } = useCart(user);
 
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
+  const { products, loadingProducts, fetchProducts } = useProducts();
 
-  const wishlistProducts = useMemo(() => {
-    const ids = user && user.id !== 'legacy-admin' ? (user.wishlist || []) : wishlist;
-    return products.filter(p => ids.includes(p.id));
-  }, [user, wishlist, products]);
+  const { 
+    wishlistProducts, 
+    isItemWishlisted, 
+    isItemLiked, 
+    handleToggleWishlist, 
+    handleToggleLike 
+  } = useWishlistAndLikes(
+    user,
+    products,
+    authToggleWishlist,
+    authToggleLike,
+    addToast,
+    setWishlistOpen
+  );
 
-  const getMergedProducts = (remoteData: Product[]): Product[] => {
-    if (isSupabaseConfigured) {
-      // Direct remote-first source of truth: strictly only use products fetched from Supabase.
-      // If the remote table has 0 rows (empty / new project), fallback to INITIAL_PRODUCTS so the UI is never empty.
-      return remoteData.length > 0 ? remoteData : INITIAL_PRODUCTS;
-    }
-
-    try {
-      const localCustomRaw = localStorage.getItem('custom_products');
-      const localCustom: Product[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
-      
-      const deletedRaw = localStorage.getItem('deleted_product_ids');
-      const deletedIds = new Set<string>(deletedRaw ? JSON.parse(deletedRaw) : []);
-      
-      const combined: Product[] = [];
-      const seenIds = new Set<string>();
-      
-      // 1. Process remote products (highest priority, as they are fully synced down)
-      remoteData.forEach(p => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      // 2. Process local custom products (items created or updated on this client)
-      localCustom.forEach(p => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      // 3. Process default items (lowest priority)
-      INITIAL_PRODUCTS.forEach(p => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      return combined;
-    } catch (err) {
-      console.warn("Error merging products:", err);
-      return remoteData.length > 0 ? remoteData : INITIAL_PRODUCTS;
-    }
-  };
-
-  const syncLocalProductsToSupabase = async () => {
-    if (!isSupabaseConfigured) return;
-    try {
-      // 1. Sync custom products (additions / updates)
-      const localCustomRaw = localStorage.getItem('custom_products');
-      if (localCustomRaw) {
-        const localCustomsRaw: Product[] = JSON.parse(localCustomRaw);
-        const validCategories = [
-          'Phones & Tablets',
-          'Computers & Laptops',
-          'Gaming & Consoles',
-          'TVs & Audio',
-          'Accessories',
-          'Networking',
-          'Home Appliances',
-          'Smart Devices',
-          'Cameras & Security'
-        ];
-        
-        const localCustoms = localCustomsRaw.map(p => ({
-          id: p.id,
-          name: p.name,
-          description: p.description || '',
-          price: Number(p.price) || 0,
-          category: validCategories.includes(p.category) ? p.category : 'Phones & Tablets',
-          image: p.image || '',
-          stock: Number(p.stock) || 0,
-          featured: !!p.featured,
-          specifications: p.specifications || 'High performance device with official store warranty.',
-          images: Array.isArray(p.images) ? p.images : [p.image || ''],
-          videos: Array.isArray(p.videos) ? p.videos : [],
-          is_verified: !!p.is_verified,
-          rating: Number(p.rating) || 5.0,
-          created_at: p.created_at || new Date().toISOString(),
-          updated_at: p.updated_at || new Date().toISOString()
-        }));
-
-        if (localCustoms.length > 0) {
-          console.log(`[Supabase Sync] Upserting ${localCustoms.length} offline custom/edited products to remote database...`);
-          const { error } = await supabase.from('products').upsert(localCustoms);
-          if (error) {
-            console.error("[Supabase Sync] Product upsert failed:", error);
-          } else {
-            console.log("[Supabase Sync] Successfully synchronized all local products to Supabase.");
-          }
-        }
-      }
-
-      // 2. Sync local deletions
-      const deletedRaw = localStorage.getItem('deleted_product_ids');
-      if (deletedRaw) {
-        const deletedIds: string[] = JSON.parse(deletedRaw);
-        if (deletedIds.length > 0) {
-          console.log(`[Supabase Sync] Syncing ${deletedIds.length} deletions to remote database...`);
-          for (const id of deletedIds) {
-            await supabase.from('products').delete().eq('id', id);
-          }
-          localStorage.setItem('deleted_product_ids', JSON.stringify([]));
-        }
-      }
-    } catch (err) {
-      console.warn("[Supabase Sync] Error during automatic synchronization pass:", err);
-    }
-  };
-
-  const fetchProducts = async (silent = false) => {
-    if (!isSupabaseConfigured) {
-      setProducts(getMergedProducts([]));
-      setLoadingProducts(false);
-      return;
-    }
-    
-    // Non-blocking background sync of local offline actions
-    syncLocalProductsToSupabase();
-    
-    // Only trigger full-screen loading skeleton if we don't have cached products rendered
-    if (!silent && products.length === 0) {
-      setLoadingProducts(true);
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
- 
-      if (error) {
-        if (error.code === 'PGRST116' || error.code === '42P01' || error.hint?.includes('not found')) {
-          console.warn("[Supabase] 'products' table missing. Using hardware feed fallback.");
-        } else {
-          console.warn("[Supabase] Query warning:", error.message || error);
-        }
-        setProducts(getMergedProducts([]));
-      } else if (data) {
-        if (data.length === 0) {
-          console.log("[Supabase] Remote products table is empty. Mounting INITIAL_PRODUCTS and auto-seeding in background...");
-          setProducts(getMergedProducts([]));
-          
-          // Auto-seed in the background to ensure Supabase database isn't empty
-          try {
-            const seedData = INITIAL_PRODUCTS.map(p => ({
-              id: p.id,
-              name: p.name,
-              description: p.description || '',
-              price: p.price,
-              category: p.category,
-              image: p.image || '',
-              stock: p.stock || 10,
-              featured: p.featured || false,
-              specifications: 'High performance device with official store warranty.',
-              images: [p.image],
-              is_verified: true,
-              rating: 5.0,
-              created_at: new Date().toISOString()
-            }));
-            
-            supabase.from('products').insert(seedData).then(({ error: seedErr }) => {
-              if (seedErr) {
-                console.warn("[Supabase] Background seed issue:", seedErr);
-              } else {
-                console.log("[Supabase] Successfully auto-seeded database in background.");
-                // Re-fetch to sync completely down
-                supabase.from('products').select('*').order('created_at', { ascending: false }).then(({ data: freshData }) => {
-                  if (freshData && freshData.length > 0) {
-                    try {
-                      localStorage.setItem('cached_remote_products', JSON.stringify(freshData));
-                    } catch (e) {}
-                    setProducts(getMergedProducts(freshData as Product[]));
-                  }
-                });
-              }
-            });
-          } catch (seedErr) {
-            console.warn("[Supabase] Background seeding fail:", seedErr);
-          }
-        } else {
-          try {
-            localStorage.setItem('cached_remote_products', JSON.stringify(data));
-          } catch (e) {
-            console.warn("Failed to update remote cache:", e);
-          }
-          setProducts(getMergedProducts(data as Product[]));
-        }
-      }
-    } catch (err: any) {
-      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-        console.warn("[Supabase] Connection Failure: Check if project URL is correct.");
-      } else {
-        console.warn("[Supabase] Dynamic warning (handled):", err);
-      }
-      setProducts(getMergedProducts([]));
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
-    let channel: any = null;
-    if (isSupabaseConfigured) {
-      try {
-        channel = supabase.channel('products_changes')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts(true))
-          .subscribe();
-      } catch (e) {
-        console.warn("[Realtime] Subscription failed.", e);
-      }
-    }
-    return () => { if (channel) supabase.removeChannel(channel); };
-  }, []);
-
-  useEffect(() => {
-    const handleOpenAdmin = () => setIsAdminModalOpen(true);
-    window.addEventListener('openAdmin', handleOpenAdmin);
-    return () => {
-      window.removeEventListener('openAdmin', handleOpenAdmin);
-    };
-  }, []);
-  
-  // Auth Redirection & Protection Logic
-  useEffect(() => {
-    if (authResolving) return;
-
-    const loggedInTransition = !prevUserRef.current && !!user;
-    const adminTransition = !prevIsAdminRef.current && isAdmin;
-    const isRedirectPending = sessionStorage.getItem('auth_redirect_pending') === 'true';
-    
-    // 1. Redirection Logic (Triggered on login)
-    if (loggedInTransition || adminTransition || isRedirectPending) {
-      if (isAdmin && (isRedirectPending || view === 'shop' || view === 'marketing')) {
-        console.info("[Auth] Role: Admin. Navigating to Command Center.");
-        setView('admin');
-        setIsAdminModalOpen(false);
-        sessionStorage.removeItem('auth_redirect_pending');
-      } else if (user && (isRedirectPending || view === 'shop' || view === 'marketing' || view === 'product-detail')) {
-        console.info("[Auth] Role: Customer. Redirect to Shop.");
-        setView('shop');
-        setIsAdminModalOpen(false);
-        sessionStorage.removeItem('auth_redirect_pending');
-      }
-    }
-
-    // 2. Protection Logic (Triggered on view changes or logged-out state)
-    // Only auto-open modal if user explicitly navigated to a protected zone
-    if (view === 'admin' && !isAdmin && !authResolving) {
-      setView('shop');
-      setIsAdminModalOpen(true);
-    }
-
-    prevUserRef.current = user;
-    prevIsAdminRef.current = isAdmin;
-  }, [user, isAdmin, authResolving, view]);
-
-  useEffect(() => {
-    if (isRecovering && view !== 'reset-password') {
-      setView('reset-password');
-    }
-  }, [isRecovering, view]);
-
-  // Browser Navigation & History API Management
-  useEffect(() => {
-    // Initialize history state on first load if not present
-    if (!window.history.state) {
-      window.history.replaceState({ view: 'shop' }, '', '');
-    }
-
-    const handlePopState = (event: PopStateEvent) => {
-      let handled = false;
-
-      // 1. Handle Overlays (Close them if open)
-      if (cartOpen) { setCartOpen(false); handled = true; }
-      if (quickViewProduct) { setQuickViewProduct(null); handled = true; }
-      if (showTerms) { setShowTerms(false); handled = true; }
-      if (isAdminModalOpen) { setIsAdminModalOpen(false); handled = true; }
-      
-      // 2. Handle Filtered Categories within Shop
-      if (category && view === 'shop') {
-        setCategory(null);
-        handled = true;
-      }
-
-      // 3. Update View State if provided in history
-      if (event.state?.view && event.state.view !== view) {
-        setView(event.state.view);
-        handled = true;
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [cartOpen, quickViewProduct, showTerms, isAdminModalOpen, category, view]);
-
-  // Sync View state forward to History
-  useEffect(() => {
-    const currentState = window.history.state;
-    if (currentState && currentState.view !== view && !currentState.overlay) {
-      window.history.pushState({ view }, '', '');
-    }
-  }, [view]);
-
-  // Push "Overlay" state to History when modals open to allow "Back" to close them
-  useEffect(() => {
-    const isAnyOverlayOpen = cartOpen || !!quickViewProduct || showTerms || isAdminModalOpen || (!!category && view === 'shop');
-    const currentState = window.history.state;
-    
-    if (isAnyOverlayOpen && !currentState?.overlay) {
-      window.history.pushState({ view, overlay: true }, '', '');
-    }
-  }, [cartOpen, quickViewProduct, showTerms, isAdminModalOpen, category, view]);
-
-  useEffect(() => {
-    const handleNav = (e: any) => { if (e.detail) setView(e.detail); };
-    window.addEventListener('changeView', handleNav);
-    return () => window.removeEventListener('changeView', handleNav);
-  }, []);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [view, category]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('wishlist', JSON.stringify(wishlist));
-    } catch (e) {
-      console.warn('[Storage] Wishlist write blocked:', e);
-    }
-  }, [wishlist]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('likes', JSON.stringify(likes));
-    } catch (e) {
-      console.warn('[Storage] Likes write blocked:', e);
-    }
-  }, [likes]);
+  const { view, setView } = useAppNavigation({
+    cartOpen,
+    setCartOpen,
+    quickViewProduct,
+    setQuickViewProduct,
+    showTerms,
+    setShowTerms,
+    isAdminModalOpen,
+    setIsAdminModalOpen,
+    category,
+    setCategory,
+    user,
+    isAdmin,
+    authResolving,
+    isRecovering
+  });
 
   const t = translations[language];
 
+  // Dynamic products filtering & grouping memoization
   const filteredProducts = useMemo(() => products.filter(p => {
     const matchesCategory = category ? p.category === category : true;
     const q = searchQuery?.toLowerCase() ?? '';
-    const matchesSearch = (
-      (p.name?.toLowerCase() ?? '').includes(q) || 
-      (p.description?.toLowerCase() ?? '').includes(q)
+    return (
+      matchesCategory && (
+        (p.name?.toLowerCase() ?? '').includes(q) || 
+        (p.description?.toLowerCase() ?? '').includes(q)
+      )
     );
-    return matchesCategory && matchesSearch;
   }), [products, category, searchQuery]);
 
   const groupedMainProducts = useMemo(() => {
@@ -504,176 +127,14 @@ export default function App() {
     }, {} as Record<string, Product[]>);
   }, [products, category, searchQuery]);
 
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-      return [...prev, { ...product, quantity: 1 }];
-    });
-  };
-
-  const updateCartQuantity = (id: string, delta: number) => {
-    setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item).filter(i => i.quantity > 0));
-  };
-
-  const handleCheckout = async (method: PaymentMethod, district: string, deliveryFee: number, phone: string, address: string, customerName: string) => {
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const total = subtotal + deliveryFee;
-    const orderId = generateDeterministicOrderId(phone, district);
-    const createdAt = new Date().toISOString();
-    const estDelivery = format(addDays(new Date(createdAt), 3), 'PPP');
-
-    const orderData = {
-      id: orderId,
-      user_id: user?.id || null,
-      customer_name: customerName,
-      customer_phone: phone,
-      items: cart,
-      total: total,
-      status: 'pending',
-      delivery_address: address,
-      district,
-      payment_method: method,
-      created_at: createdAt,
-      estimated_delivery: estDelivery,
-      tracking_logs: [
-        { status: 'pending', message: 'Order initialized in the hardware pool.', timestamp: createdAt }
-      ]
+  // Subscribe to external admin open triggers (e.g. from footer triggers)
+  useEffect(() => {
+    const handleOpenAdmin = () => setIsAdminModalOpen(true);
+    window.addEventListener('openAdmin', handleOpenAdmin);
+    return () => {
+      window.removeEventListener('openAdmin', handleOpenAdmin);
     };
-
-    if (!isSupabaseConfigured) {
-      const sandboxOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
-      sandboxOrders.push(orderData);
-      safeSetLocalStorage('solo_sandbox_orders', sandboxOrders);
-      console.log("[Sandbox] Order recorded locally via safe database layer:", orderData);
-      
-      const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
-      
-      const receiptTemplate = `
-🧾 *EMMA ELECTRONICS - DIGITAL RECEIPT*
----------------------------------------
-*Order ID:* ${orderId}
-*Date:* ${new Date().toLocaleDateString()}
-*Customer:* ${customerName}
-
-*ITEMS:*
-${cartSummary}
-
----------------------------------------
-*TOTAL:* UGX ${total.toLocaleString()}
-
-*PHONE:* ${phone}
-
-_Thank you for choosing Emma Electronics!_
-_Your order is now being processed._
-`.trim();
-      
-      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(receiptTemplate)}`;
-      window.open(whatsappUrl, '_blank');
-      
-      setCart([]);
-      return orderId;
-    }
-
-    try {
-      let { error } = await supabase.from('orders').insert(orderData);
-      
-      // Fallback for missing columns (if user hasn't run the latest migration script)
-      if (error && (error.message?.includes('estimated_delivery') || error.message?.includes('tracking_logs') || error.code === 'PGRST204')) {
-        console.warn("[Supabase] Extended order columns missing. Falling back to legacy schema.");
-        const { 
-          id, user_id, customer_name, customer_phone, items, total, 
-          status, delivery_address, district, payment_method, created_at 
-        } = orderData;
-        const legacyData = { 
-          id, user_id, customer_name, customer_phone, items, total, 
-          status, delivery_address, district, payment_method, created_at 
-        };
-        const { error: retryError } = await supabase.from('orders').insert(legacyData);
-        error = retryError;
-      }
-
-      if (error) {
-        if (error.code === '42P01' || error.message?.includes('not found')) {
-          console.warn("[Supabase] Orders table missing. Persistence unavailable.");
-        } else {
-          throw error;
-        }
-      }
-      
-      const cartSummary = cart.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
-      
-      const receiptTemplate = `
-🧾 *EMMA ELECTRONICS - DIGITAL RECEIPT*
----------------------------------------
-*Order ID:* ${orderId}
-*Date:* ${new Date().toLocaleDateString()}
-*Customer:* ${customerName}
-
-*ITEMS:*
-${cartSummary}
-
----------------------------------------
-*TOTAL:* UGX ${total.toLocaleString()}
-
-*CONTACT PHONE:* ${phone}
-
-_Thank you for choosing Emma Electronics!_
-_Your order is now being processed._
-      `.trim();
-      
-      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(receiptTemplate)}`;
-      window.open(whatsappUrl, '_blank');
-      
-      setCart([]);
-      return orderId;
-    } catch (e: any) {
-      console.warn("[Supabase] Order warning:", e.message);
-      alert("Command Failure: Your purchase signature could not be committed to the hardware pool. Please contact Emma Support.");
-      return null;
-    }
-  };
-
-  const handleToggleWishlist = async (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    const isAdding = !isItemWishlisted(productId);
-
-    if (user && user.id !== 'legacy-admin') {
-      await authToggleWishlist(productId);
-    } else {
-      setWishlist(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
-    }
-
-    if (isAdding && product) {
-      addToast({
-        productId: product.id,
-        productName: product.name,
-        productImage: (product.images && product.images.length > 0) ? product.images[0] : product.image,
-        message: "Added to your saved hardware items.",
-        actionText: "Open Wishlist",
-        onAction: () => setWishlistOpen(true)
-      });
-    }
-  };
-
-  const handleToggleLike = async (productId: string) => {
-    if (user && user.id !== 'legacy-admin') {
-      await authToggleLike(productId);
-    } else {
-      setLikes(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
-    }
-  };
-
-  // Helper to check if item is wishlisted/liked (handles both local and auth state)
-  const isItemWishlisted = (id: string) => {
-    if (user && user.id !== 'legacy-admin') return user.wishlist?.includes(id) || false;
-    return wishlist.includes(id);
-  };
-
-  const isItemLiked = (id: string) => {
-    if (user && user.id !== 'legacy-admin') return user.likes?.includes(id) || false;
-    return likes.includes(id);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -691,7 +152,7 @@ _Your order is now being processed._
           <Navbar 
             onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }}
             onSearch={setSearchQuery}
-            cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
+            cartCount={cartCount}
             wishlistCount={wishlistProducts.length}
             onCartClick={() => setCartOpen(true)}
             onWishlistClick={() => setWishlistOpen(true)}
@@ -719,14 +180,14 @@ _Your order is now being processed._
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 window.dispatchEvent(new CustomEvent('toggleSearch'));
               } else if (v === 'profile') {
-                // Profile view has been deactivated per user request
+                // Profile view is deactivated per user request
                 return;
               } else {
                 setView(v);
                 setCategory(null);
               }
             }}
-            cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
+            cartCount={cartCount}
           />
 
           <main className="pb-24 md:pb-0">
@@ -835,8 +296,23 @@ _Your order is now being processed._
             )}
           </main>
 
-          <Footer t={t} onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} />
-          <Cart isOpen={cartOpen} onClose={() => setCartOpen(false)} items={cart} onUpdateQuantity={updateCartQuantity} onRemove={(id) => setCart(p => p.filter(i => i.id !== id))} onCheckout={handleCheckout} orderResult={null} t={t} />
+          <Footer 
+            t={t} 
+            onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} 
+            onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} 
+          />
+          <Cart 
+            isOpen={cartOpen} 
+            onClose={() => setCartOpen(false)} 
+            items={cart} 
+            onUpdateQuantity={updateCartQuantity} 
+            onRemove={removeFromCart} 
+            onCheckout={(method, district, fee, phone, address, name) => 
+              handleCheckout(method, district, fee, phone, address, name, products)
+            } 
+            orderResult={null} 
+            t={t} 
+          />
           
           <WishlistDrawer 
             isOpen={wishlistOpen} 
