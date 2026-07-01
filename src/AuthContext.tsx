@@ -1,8 +1,10 @@
-import { createContext, useEffect, useState, useContext, ReactNode, useRef } from "react";
+import { createContext, useEffect, useContext, ReactNode, useRef } from "react";
 import { supabase, isSupabaseConfigured, resolveUserProfile } from "./lib/supabase";
 import { UserProfile } from './types';
 import { signUp as supaSignUp, login as supaLogin, logoutUser, sendResetPasswordEmail, AuthResponse, loginWithGoogle as supaLoginWithGoogle } from './auth';
 import { safeGetLocalStorage, safeSetLocalStorage, SANDBOX_SYNC_EVENT } from "./lib/sandboxDb";
+import { queueOfflineMutation, getOfflineQueue } from "./services/syncService";
+import { useAppState, useAppDispatch } from "./context/AppStateContext";
 
 type AuthType = {
   user: UserProfile | null;
@@ -16,7 +18,7 @@ type AuthType = {
   resetPassword: (email: string) => Promise<AuthResponse>;
   toggleWishlist: (productId: string) => Promise<boolean>;
   toggleLike: (productId: string) => Promise<boolean>;
-  loginWithPin: (pin: string, email?: string) => boolean;
+  loginWithPin: (pin: string, email?: string) => Promise<boolean>;
   logout: () => Promise<void>;
 };
 
@@ -32,20 +34,44 @@ const AuthContext = createContext<AuthType>({
   resetPassword: async () => ({ success: false, error: 'Not implemented' }),
   toggleWishlist: async () => false,
   toggleLike: async () => false,
-  loginWithPin: () => false,
+  loginWithPin: async () => false,
   logout: async () => {}
 });
 
 export const ADMIN_EMAILS = ['onachdarwiin@gmail.com', 'wanchaaaron@gmail.com'];
-export const ADMIN_PIN = "8585";
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isRecovering, setIsRecovering] = useState<boolean>(false);
-  const [loading, setLoading] = useState(true);
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+
+  const user = state.user;
+  const isAdmin = state.isAdmin;
+  const isRecovering = state.isRecovering;
+  const loading = state.authResolving;
+
+  const setUser = (u: UserProfile | null) => {
+    dispatch({ type: 'SET_USER', payload: u });
+    if (u) {
+      dispatch({ type: 'SET_IS_ADMIN', payload: u.role === 'admin' || ADMIN_EMAILS.includes(u.email?.toLowerCase()) });
+    } else {
+      dispatch({ type: 'SET_IS_ADMIN', payload: false });
+    }
+  };
+
+  const setIsAdmin = (adm: boolean) => {
+    dispatch({ type: 'SET_IS_ADMIN', payload: adm });
+  };
+
+  const setIsRecovering = (rec: boolean) => {
+    dispatch({ type: 'SET_IS_RECOVERING', payload: rec });
+  };
+
+  const setLoading = (ld: boolean) => {
+    dispatch({ type: 'SET_AUTH_RESOLVING', payload: ld });
+  };
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Synchronize state across tabs & local triggers
@@ -64,6 +90,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener(SANDBOX_SYNC_EVENT, handleSync);
     return () => window.removeEventListener(SANDBOX_SYNC_EVENT, handleSync);
   }, []);
+
+  // Automatic Sync Engine Orchestration
+  useEffect(() => {
+    if (!isSupabaseConfigured || !user) return;
+
+    const triggerSync = async () => {
+      try {
+        const { executeSyncEngine } = await import("./services/syncService");
+        const report = await executeSyncEngine(supabase, user);
+        if (report.syncedOrders > 0 || report.syncedProfileUpdates > 0) {
+          console.log("[Sync Engine] Replayed mutations successfully:", report);
+        }
+      } catch (err) {
+        console.warn("[Sync Engine] Auto sync pass warning:", err);
+      }
+    };
+
+    // 1. Run on startup or user change
+    triggerSync();
+
+    // 2. Run on network reconnect
+    const handleOnline = () => {
+      console.log("[Sync Engine] Network restored. Triggering sync replay.");
+      triggerSync();
+    };
+    window.addEventListener("online", handleOnline);
+
+    // 3. Run on periodic interval (every 30 seconds)
+    const syncInterval = setInterval(triggerSync, 30000);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      clearInterval(syncInterval);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.opener && (window.location.hash.includes('access_token=') || window.location.search.includes('code='))) {
@@ -224,30 +285,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAdmin]);
 
-  const loginWithPin = (pin: string, email?: string) => {
-    if (pin === ADMIN_PIN) {
-      const normalizedEmail = email?.toLowerCase();
+  const loginWithPin = async (pin: string, email?: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/v1/admin/login-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, email })
+      });
+      const data = await response.json();
       
-      // If an email is provided, it MUST be one of the admin emails
-      if (normalizedEmail && !ADMIN_EMAILS.includes(normalizedEmail)) {
-        return false;
-      }
+      if (data.success && data.token) {
+        sessionStorage.setItem('admin_token', data.token);
+        const normalizedEmail = email?.toLowerCase();
+        
+        // If an email is provided, it MUST be one of the admin emails
+        if (normalizedEmail && !ADMIN_EMAILS.includes(normalizedEmail)) {
+          return false;
+        }
 
-      setIsAdmin(true);
-      
-      // Use existing user if they are one of the admins, otherwise set placeholder
-      if (user && (ADMIN_EMAILS.includes(user.email.toLowerCase()) || user.id === 'legacy-admin')) {
-        setUser({ ...user, role: 'admin' });
-      } else {
-        const targetEmail = normalizedEmail || ADMIN_EMAILS[0];
-        setUser({ 
-          id: 'legacy-admin', 
-          name: 'Authorized Admin', 
-          email: targetEmail, 
-          role: 'admin' 
-        } as any);
+        setIsAdmin(true);
+        
+        // Use existing user if they are one of the admins, otherwise set placeholder
+        if (user && (ADMIN_EMAILS.includes(user.email.toLowerCase()) || user.id === 'legacy-admin')) {
+          setUser({ ...user, role: 'admin' });
+        } else {
+          const targetEmail = normalizedEmail || ADMIN_EMAILS[0];
+          setUser({ 
+            id: 'legacy-admin', 
+            name: 'Authorized Admin', 
+            email: targetEmail, 
+            role: 'admin' 
+          } as any);
+        }
+        return true;
       }
-      return true;
+    } catch (e) {
+      console.error("[Auth] Pin verification connection failure:", e);
     }
     return false;
   };
@@ -258,6 +331,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAdmin(false);
     sessionStorage.removeItem('admin_auth');
     sessionStorage.removeItem('admin_last_active');
+    sessionStorage.removeItem('admin_token');
   };
 
   const toggleWishlist = async (productId: string) => {
@@ -268,14 +342,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ? currentWishlist.filter(id => id !== productId)
       : [...currentWishlist, productId];
     
+    // Always apply optimistic state update instantly for crisp UX
+    const updatedUser = { ...user, wishlist: newWishlist };
+    setUser(updatedUser);
+
     if (!isSupabaseConfigured) {
-      const updatedUser = { ...user, wishlist: newWishlist };
-      setUser(updatedUser);
       safeSetLocalStorage('solo_sandbox_session', updatedUser);
-      
       const users = safeGetLocalStorage<any[]>('solo_sandbox_users', []);
       const updatedUsers = users.map((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase() ? { ...u, wishlist: newWishlist } : u);
       safeSetLocalStorage('solo_sandbox_users', updatedUsers);
+      return true;
+    }
+
+    // High fidelity offline-first sequencing logic
+    const isOffline = typeof window !== 'undefined' && !navigator.onLine;
+    const existingQueue = getOfflineQueue().filter(m => m.entityType === 'wishlist');
+
+    if (isOffline || existingQueue.length > 0) {
+      // Queue mutation to preserve strict chronological ordering
+      queueOfflineMutation('wishlist', isWishlisted ? 'delete' : 'update', { productId });
       return true;
     }
 
@@ -284,14 +369,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('profiles')
         .update({ wishlist: newWishlist })
         .eq('id', user.id);
+      
       if (!error) {
-        setUser({ ...user, wishlist: newWishlist });
+        return true;
+      } else {
+        console.warn("[Wishlist] Remote update failed. Queueing mutation fallback.");
+        queueOfflineMutation('wishlist', isWishlisted ? 'delete' : 'update', { productId });
         return true;
       }
     } catch (e) {
-      console.error("Wishlist toggle error:", e);
+      console.error("[Wishlist] Exception occurred. Queueing mutation fallback:", e);
+      queueOfflineMutation('wishlist', isWishlisted ? 'delete' : 'update', { productId });
+      return true;
     }
-    return false;
   };
 
   const toggleLike = async (productId: string) => {
@@ -302,14 +392,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ? currentLikes.filter(id => id !== productId)
       : [...currentLikes, productId];
     
+    // Always apply optimistic state update instantly for crisp UX
+    const updatedUser = { ...user, likes: newLikes };
+    setUser(updatedUser);
+
     if (!isSupabaseConfigured) {
-      const updatedUser = { ...user, likes: newLikes };
-      setUser(updatedUser);
       safeSetLocalStorage('solo_sandbox_session', updatedUser);
-      
       const users = safeGetLocalStorage<any[]>('solo_sandbox_users', []);
       const updatedUsers = users.map((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase() ? { ...u, likes: newLikes } : u);
       safeSetLocalStorage('solo_sandbox_users', updatedUsers);
+      return true;
+    }
+
+    // High fidelity offline-first sequencing logic
+    const isOffline = typeof window !== 'undefined' && !navigator.onLine;
+    const existingQueue = getOfflineQueue().filter(m => m.entityType === 'like');
+
+    if (isOffline || existingQueue.length > 0) {
+      // Queue mutation to preserve strict chronological ordering
+      queueOfflineMutation('like', isLiked ? 'delete' : 'update', { productId });
       return true;
     }
 
@@ -318,19 +419,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('profiles')
         .update({ likes: newLikes })
         .eq('id', user.id);
+      
       if (!error) {
-        setUser({ ...user, likes: newLikes });
-        // Also update likes count in products table
-        await supabase.rpc('toggle_product_like', { 
-          p_id: productId, 
-          increment: !isLiked 
-        });
+        // Increment/decrement remote likes count in products table
+        try {
+          await supabase.rpc('toggle_product_like', { 
+            p_id: productId, 
+            increment: !isLiked 
+          });
+        } catch (rpcErr) {
+          console.warn("[Like Counter] RPC like count sync skipped:", rpcErr);
+        }
+        return true;
+      } else {
+        console.warn("[Like] Remote update failed. Queueing mutation fallback.");
+        queueOfflineMutation('like', isLiked ? 'delete' : 'update', { productId });
         return true;
       }
     } catch (e) {
-      console.error("Likes toggle error:", e);
+      console.error("[Like] Exception occurred. Queueing mutation fallback:", e);
+      queueOfflineMutation('like', isLiked ? 'delete' : 'update', { productId });
+      return true;
     }
-    return false;
   };
 
   const contextSignUp = async (email: string, password: string, fullName: string, whatsapp: string) => {

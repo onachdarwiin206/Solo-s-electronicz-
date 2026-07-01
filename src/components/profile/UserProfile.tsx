@@ -200,10 +200,18 @@ export default function UserProfile() {
       setLoading(true);
 
       if (!isSupabaseConfigured) {
-        // Fetch sandbox local orders for this user
-        const localOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
-        const userOrders = localOrders.filter((o: any) => o.user_id === user.id);
-        setOrders(userOrders);
+        // Fetch sandbox local orders for this user from IndexedDB
+        try {
+          const { getOrders } = await import('../../lib/offlineDB');
+          const localOrders = await getOrders();
+          const userOrders = localOrders.filter((o: any) => o.user_id === user.id);
+          setOrders(userOrders as any[]);
+        } catch (dbErr) {
+          console.error('[UserProfile] Failed to load offline orders from IndexedDB:', dbErr);
+          const localOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
+          const userOrders = localOrders.filter((o: any) => o.user_id === user.id);
+          setOrders(userOrders);
+        }
 
         // Get product arrays
         const wlIds = user.wishlist || [];

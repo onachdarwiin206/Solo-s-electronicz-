@@ -165,9 +165,9 @@ export default function AdminDashboard({ products, onRefresh }: AdminDashboardPr
     setLoadingOrders(true);
     if (!isSupabaseConfigured) {
       try {
-        const sandboxRaw = localStorage.getItem('solo_sandbox_orders');
-        const list: Order[] = sandboxRaw ? JSON.parse(sandboxRaw) : [];
-        setOrders(list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+        const { getOrders } = await import('../../lib/offlineDB');
+        const list = await getOrders();
+        setOrders((list as any[]).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       } catch (err) {
         console.warn(err);
       } finally {
@@ -186,9 +186,13 @@ export default function AdminDashboard({ products, onRefresh }: AdminDashboardPr
       if (data) setOrders(data as Order[]);
     } catch (err: any) {
       console.warn("Orders fetch failure, mounting local sandboxes:", err.message);
-      const sandboxRaw = localStorage.getItem('solo_sandbox_orders');
-      const list: Order[] = sandboxRaw ? JSON.parse(sandboxRaw) : [];
-      setOrders(list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      try {
+        const { getOrders } = await import('../../lib/offlineDB');
+        const list = await getOrders();
+        setOrders((list as any[]).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      } catch (innerErr) {
+        console.warn(innerErr);
+      }
     } finally {
       setLoadingOrders(false);
     }
@@ -202,11 +206,14 @@ export default function AdminDashboard({ products, onRefresh }: AdminDashboardPr
   const handleUpdateOrderStatus = async (orderId: string, status: OrderStatus) => {
     // 1. Sync client offline database
     try {
-      const sandboxRaw = localStorage.getItem('solo_sandbox_orders');
-      if (sandboxRaw) {
-        let sandboxList: Order[] = JSON.parse(sandboxRaw);
-        sandboxList = sandboxList.map(o => o.id === orderId ? { ...o, status } : o);
-        localStorage.setItem('solo_sandbox_orders', JSON.stringify(sandboxList));
+      const { getOrders, addOrder } = await import('../../lib/offlineDB');
+      const list = await getOrders();
+      const matchedOrder = list.find(o => o.id === orderId);
+      if (matchedOrder) {
+        await addOrder({
+          ...matchedOrder,
+          status
+        });
       }
     } catch (e) {
       console.warn(e);

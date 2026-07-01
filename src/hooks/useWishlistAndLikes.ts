@@ -1,5 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Product } from '../types';
+import { secureSetItem } from '../services/syncService';
+import { useAppState, useAppDispatch } from '../context/AppStateContext';
 
 /**
  * Custom hook to manage wishlist and liked products.
@@ -13,38 +15,28 @@ export function useWishlistAndLikes(
   addToast: (toast: any) => void,
   setWishlistOpen: (open: boolean) => void
 ) {
-  const [wishlist, setWishlist] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(localStorage.getItem('wishlist') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const state = useAppState();
+  const dispatch = useAppDispatch();
 
-  const [likes, setLikes] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(localStorage.getItem('likes') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const wishlist = state.wishlist;
+  const likes = state.likes;
+
+  const setWishlist = (newWishlist: string[] | ((prev: string[]) => string[])) => {
+    const nextVal = typeof newWishlist === 'function' ? newWishlist(wishlist) : newWishlist;
+    dispatch({ type: 'SET_WISHLIST', payload: nextVal });
+  };
+
+  const setLikes = (newLikes: string[] | ((prev: string[]) => string[])) => {
+    const nextVal = typeof newLikes === 'function' ? newLikes(likes) : newLikes;
+    dispatch({ type: 'SET_LIKES', payload: nextVal });
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem('wishlist', JSON.stringify(wishlist));
-    } catch (e) {
-      console.warn('[Storage] Wishlist write blocked:', e);
-    }
+    secureSetItem('wishlist', wishlist);
   }, [wishlist]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('likes', JSON.stringify(likes));
-    } catch (e) {
-      console.warn('[Storage] Likes write blocked:', e);
-    }
+    secureSetItem('likes', likes);
   }, [likes]);
 
   const wishlistProducts = useMemo(() => {

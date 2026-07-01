@@ -23,14 +23,17 @@ export interface CheckoutParams {
 export interface CheckoutResult {
   success: boolean;
   orderId?: string;
+  verificationToken?: string;
+  paymentDeadline?: string;
+  total?: number;
   error?: string;
+  offline?: boolean;
 }
 
 /**
  * Centered checkout & order creation engine.
  * Protects against tampering, ensures stock validation, tracks idempotency,
- * handles atomicity between order generation & inventory depletion,
- * and only wipes the cart upon fully verified transaction commit.
+ * and calls the backend API to atomically reserve stock and generate verification codes.
  */
 export async function executeCheckout({
   cart,
@@ -66,12 +69,11 @@ export async function executeCheckout({
     };
   }
 
-  // 3. Price Tampering Prevention & Server-Side Valuation Recalculation
+  // 3. Price Tampering Prevention & Server-Side Valuation Recalculation (Pre-verification)
   let subtotal = 0;
   const verifiedCartItems: CartItem[] = [];
 
   for (const item of cart) {
-    // Find trusted price of product in master catalog
     const trustedProduct = masterProducts.find(p => p.id === item.id);
     if (!trustedProduct) {
       recentCheckouts.delete(idempotencyKey);
@@ -85,14 +87,90 @@ export async function executeCheckout({
     subtotal += trustedPrice * item.quantity;
     verifiedCartItems.push({
       ...item,
-      price: trustedPrice // Override with verified price
+      price: trustedPrice
     });
   }
 
   const totalValuation = subtotal + deliveryFee;
+  const isCurrentlyOffline = typeof window !== 'undefined' && !navigator.onLine;
+
+  // 4. Secure Backend Order Routing Flow
+  if (!isCurrentlyOffline) {
+    try {
+      console.log("[Checkout Pipeline] Sourcing order via backend API...");
+      const response = await fetch("/api/v1/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          items: verifiedCartItems,
+          customerName,
+          phone,
+          address,
+          district,
+          deliveryFee,
+          paymentMethod: method
+        })
+      });
+
+      const resData = await response.json();
+
+      if (!response.ok || !resData.success) {
+        recentCheckouts.delete(idempotencyKey);
+        return {
+          success: false,
+          error: resData.error || "Order creation failure on database reservation."
+        };
+      }
+
+      const { orderId, verificationToken, paymentDeadline, total } = resData;
+
+      // Launch WhatsApp receipt with verification token embedded
+      launchWhatsAppReceipt({
+        orderId,
+        customerName,
+        items: verifiedCartItems,
+        total,
+        phone,
+        verificationToken,
+        paymentDeadline
+      });
+
+      recentCheckouts.delete(idempotencyKey);
+      return {
+        success: true,
+        orderId,
+        verificationToken,
+        paymentDeadline,
+        total
+      };
+
+    } catch (err: any) {
+      console.warn("[Checkout Pipeline] Connection failed, falling back to local sandbox:", err);
+    }
+  }
+
+  // 5. Offline Sandbox Sourcing (Reliability Fallback)
+  console.log("[Checkout Pipeline] Offline status or backend timeout. Creating mock order locally.");
   const orderId = generateDeterministicOrderId(phone, district);
-  const createdAt = new Date().toISOString();
-  const estDelivery = format(addDays(new Date(createdAt), 3), 'PPP');
+  const verificationToken = `VT-LOC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const paymentDeadline = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+  // Verify stock locally
+  const customProducts: Product[] = safeGetLocalStorage<Product[]>('custom_products', []);
+  for (const item of verifiedCartItems) {
+    const matchedProduct = customProducts.find(p => p.id === item.id) || masterProducts.find(p => p.id === item.id);
+    const currentStock = matchedProduct?.stock ?? 10;
+
+    if (currentStock < item.quantity) {
+      recentCheckouts.delete(idempotencyKey);
+      return {
+        success: false,
+        error: `Logistics Limit: Requested quantity of "${item.name}" exceeds current available stock (${currentStock} available).`
+      };
+    }
+  }
 
   const orderData = {
     id: orderId,
@@ -101,155 +179,122 @@ export async function executeCheckout({
     customer_phone: phone,
     items: verifiedCartItems,
     total: totalValuation,
-    status: 'pending',
+    status: 'pending_payment',
     delivery_address: address,
     district,
     payment_method: method,
-    created_at: createdAt,
-    estimated_delivery: estDelivery,
+    verification_token: verificationToken,
+    payment_deadline: paymentDeadline,
+    payment_verified_at: null,
+    created_at: new Date().toISOString(),
     tracking_logs: [
-      { status: 'pending', message: 'Order initialized in the hardware pool.', timestamp: createdAt }
+      { status: 'pending_payment' as const, message: `Order recorded offline. Awaiting payment verification. Local token: ${verificationToken}`, timestamp: new Date().toISOString() }
     ]
   };
 
-  // 4. Sourcing Pipeline: Remote (Supabase) vs. Sandbox Local Sourcing
-  if (isSupabaseConfigured) {
-    try {
-      // A. Real-time Inventory Verification & Depletion
-      // Retrieve fresh stock data directly from database to prevent concurrency overrides
-      const { data: dbProducts, error: fetchErr } = await supabase
-        .from('products')
-        .select('id, name, stock')
-        .in('id', verifiedCartItems.map(i => i.id));
-
-      if (fetchErr) throw fetchErr;
-
-      // Verify stock sufficiency for each component
-      for (const item of verifiedCartItems) {
-        const dbProduct = dbProducts?.find(p => p.id === item.id);
-        const currentStock = dbProduct?.stock ?? 10; // Default to 10 if stock missing
-
-        if (currentStock < item.quantity) {
-          recentCheckouts.delete(idempotencyKey);
-          return {
-            success: false,
-            error: `Logistics Limit: Requested quantity of "${item.name}" exceeds current available stock (${currentStock} available).`
-          };
-        }
-      }
-
-      // B. Create Order record
-      let { error: insertErr } = await supabase.from('orders').insert(orderData);
-      
-      // Fallback for older schemas lacking tracker columns
-      if (insertErr && (insertErr.message?.includes('estimated_delivery') || insertErr.message?.includes('tracking_logs') || insertErr.code === 'PGRST204')) {
-        console.warn("[Checkout Pipeline] Old orders table detected. Running legacy payload fallback.");
-        const { 
-          id, user_id, customer_name, customer_phone, items: legacyItems, total: legacyTotal, 
-          status, delivery_address, district, payment_method, created_at 
-        } = orderData;
-        const legacyData = { 
-          id, user_id, customer_name, customer_phone, items: legacyItems, total: legacyTotal, 
-          status, delivery_address, district, payment_method, created_at 
-        };
-        const { error: retryError } = await supabase.from('orders').insert(legacyData);
-        insertErr = retryError;
-      }
-
-      if (insertErr) {
-        if (insertErr.code === '42P01' || insertErr.message?.includes('not found')) {
-          console.warn("[Checkout Pipeline] Orders table is missing on remote DB. Sourcing as sandbox fallback.");
-        } else {
-          throw insertErr;
-        }
-      }
-
-      // C. Deplete stock atomically on Supabase
-      for (const item of verifiedCartItems) {
-        const dbProduct = dbProducts?.find(p => p.id === item.id);
-        const currentStock = dbProduct?.stock ?? 10;
-        const updatedStock = Math.max(0, currentStock - item.quantity);
-        
-        await supabase
-          .from('products')
-          .update({ stock: updatedStock, updated_at: new Date().toISOString() })
-          .eq('id', item.id);
-      }
-
-      // Success Path: Send message and return
-      launchWhatsAppReceipt(orderId, customerName, verifiedCartItems, totalValuation, phone);
-      recentCheckouts.delete(idempotencyKey);
-      return { success: true, orderId };
-
-    } catch (err: any) {
-      console.error("[Checkout Pipeline] Transaction aborted due to database failure:", err);
-      recentCheckouts.delete(idempotencyKey);
-      return {
-        success: false,
-        error: `Database Sourcing Error: ${err.message || "Failed to commit order signature."}`
-      };
-    }
-  } else {
-    // 5. Offline Sandbox Sourcing
-    // Verify local/cached stock sufficiency
-    const customProducts: Product[] = safeGetLocalStorage<Product[]>('custom_products', []);
-    
-    for (const item of verifiedCartItems) {
-      const matchedProduct = customProducts.find(p => p.id === item.id) || masterProducts.find(p => p.id === item.id);
-      const currentStock = matchedProduct?.stock ?? 10;
-
-      if (currentStock < item.quantity) {
-        recentCheckouts.delete(idempotencyKey);
-        return {
-          success: false,
-          error: `Logistics Limit: Requested quantity of "${item.name}" exceeds current available stock (${currentStock} available).`
-        };
-      }
-    }
-
-    // Write order locally
+  // Write order locally to IndexedDB so it's tracked securely offline with unlimited capacity
+  try {
+    const { addOrderToQueue } = await import('../lib/offlineDB');
+    await addOrderToQueue(orderData);
+  } catch (queueErr) {
+    console.error("[Checkout Pipeline] IndexedDB Queue failed, falling back to legacy LocalStorage:", queueErr);
+    // Legacy fallback just in case
     const sandboxOrders = safeGetLocalStorage<any[]>('solo_sandbox_orders', []);
     sandboxOrders.push(orderData);
     safeSetLocalStorage('solo_sandbox_orders', sandboxOrders);
-
-    // Deplete stock in local storage
-    const updatedCustoms = customProducts.map(p => {
-      const orderedItem = verifiedCartItems.find(item => item.id === p.id);
-      if (orderedItem) {
-        return { ...p, stock: Math.max(0, (p.stock ?? 10) - orderedItem.quantity) };
-      }
-      return p;
-    });
-    safeSetLocalStorage('custom_products', updatedCustoms);
-
-    // Also dispatch localized event for real-time app update
-    window.dispatchEvent(new CustomEvent('sandbox_custom_products_updated', { detail: updatedCustoms }));
-
-    // Send message and return
-    launchWhatsAppReceipt(orderId, customerName, verifiedCartItems, totalValuation, phone);
-    recentCheckouts.delete(idempotencyKey);
-    return { success: true, orderId };
   }
+
+  // Deplete stock in local storage
+  simulateLocalDepletion(verifiedCartItems, masterProducts);
+
+  // Launch WhatsApp with local verification details
+  launchWhatsAppReceipt({
+    orderId,
+    customerName,
+    items: verifiedCartItems,
+    total: totalValuation,
+    phone,
+    verificationToken,
+    paymentDeadline
+  });
+
+  recentCheckouts.delete(idempotencyKey);
+  return {
+    success: true,
+    orderId,
+    verificationToken,
+    paymentDeadline,
+    total: totalValuation,
+    offline: true
+  };
 }
 
 /**
- * Triggers native WhatsApp redirect containing formatted purchase transaction summary.
+ * Simulates stock depletion in local storage to ensure immediate, snappy visual feedback
  */
-function launchWhatsAppReceipt(
-  orderId: string, 
-  customerName: string, 
-  items: CartItem[], 
-  total: number, 
-  phone: string
-) {
+function simulateLocalDepletion(items: CartItem[], masterProducts: Product[]) {
+  const customProducts: Product[] = safeGetLocalStorage<Product[]>('custom_products', []);
+  const updatedCustoms = customProducts.map(p => {
+    const orderedItem = items.find(item => item.id === p.id);
+    if (orderedItem) {
+      return { ...p, stock: Math.max(0, (p.stock ?? 10) - orderedItem.quantity) };
+    }
+    return p;
+  });
+
+  // If a product from master catalog is ordered but not yet customized, insert it into custom_products
+  for (const item of items) {
+    if (!updatedCustoms.some(p => p.id === item.id)) {
+      const original = masterProducts.find(p => p.id === item.id);
+      if (original) {
+        updatedCustoms.push({
+          ...original,
+          stock: Math.max(0, (original.stock ?? 10) - item.quantity)
+        });
+      }
+    }
+  }
+
+  safeSetLocalStorage('custom_products', updatedCustoms);
+  window.dispatchEvent(new CustomEvent('sandbox_custom_products_updated', { detail: updatedCustoms }));
+}
+
+interface WhatsAppReceiptParams {
+  orderId: string;
+  customerName: string;
+  items: CartItem[];
+  total: number;
+  phone: string;
+  verificationToken: string;
+  paymentDeadline: string;
+}
+
+/**
+ * Triggers native WhatsApp redirect containing formatted purchase transaction summary with embedded verification details.
+ */
+function launchWhatsAppReceipt({
+  orderId,
+  customerName,
+  items,
+  total,
+  phone,
+  verificationToken,
+  paymentDeadline
+}: WhatsAppReceiptParams) {
   const cartSummary = items.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
-  
+  const formattedDeadline = format(new Date(paymentDeadline), 'p (PPP)');
+
   const receiptTemplate = `
 🧾 *DIGITAL HOME - HARDWARE RECEIPT*
 ---------------------------------------
 *Order ID:* ${orderId}
-*Date:* ${new Date().toLocaleDateString()}
 *Customer:* ${customerName}
+*Date:* ${new Date().toLocaleDateString()}
+
+*PAYMENT VERIFICATION REQUIRED:*
+*Verification Token:* ${verificationToken}
+*Payment Deadline:* ${formattedDeadline}
+*Order Status:* Pending Payment
 
 *ITEMS:*
 ${cartSummary}
@@ -259,8 +304,11 @@ ${cartSummary}
 
 *CONTACT PHONE:* ${phone}
 
+⚠️ *INSTRUCTIONS:*
+Please complete your payment on Mobile Money (MOMO) / Bank and share the confirmation receipt screenshot.
+Always quote your *Verification Token: ${verificationToken}* to guarantee swift, automatic system matching and dispatch!
+
 _Thank you for choosing Digital Home!_
-_Your hardware order is now being processed._
 `.trim();
   
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(receiptTemplate)}`;

@@ -25,7 +25,7 @@ interface CartProps {
     phone: string, 
     address: string, 
     customerName: string
-  ) => Promise<string | undefined>;
+  ) => Promise<any>;
   orderResult: any;
   t: any;
 }
@@ -44,6 +44,50 @@ const WhatsAppIcon = ({ size = 14, className = "" }: { size?: number; className?
   </svg>
 );
 
+function CountdownTimer({ deadline }: { deadline: string }) {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = new Date(deadline).getTime() - Date.now();
+      return Math.max(0, Math.floor(difference / 1000));
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      const seconds = calculateTimeLeft();
+      setTimeLeft(seconds);
+      if (seconds <= 0) {
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [deadline]);
+
+  if (timeLeft <= 0) {
+    return (
+      <span className="text-red-500 font-extrabold animate-pulse">
+        EXPIRED (ORDER AUTO-CANCELLED)
+      </span>
+    );
+  }
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+  return (
+    <div className="flex flex-col items-center gap-1 bg-amber-500/5 px-4 py-2 rounded-2xl border border-amber-500/10 mb-4">
+      <span className="text-[10px] font-mono tracking-widest text-amber-500 font-black uppercase">RECONCILIATION DEADLINE</span>
+      <span className="text-amber-500 font-mono font-black text-sm tracking-widest animate-pulse">
+        ⏱️ {formattedTime}
+      </span>
+    </div>
+  );
+}
+
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onCheckout, t }: CartProps) {
   const { user } = useAuth();
   const [step, setStep] = useState<CheckoutStep>('basket');
@@ -55,7 +99,10 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
   // Processing States
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isOfflineOrder, setIsOfflineOrder] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
+  const [verificationToken, setVerificationToken] = useState('');
+  const [paymentDeadline, setPaymentDeadline] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -97,7 +144,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
     setIsProcessing(true);
 
     try {
-      const orderId = await onCheckout(
+      const checkoutRes = await onCheckout(
         'cod', 
         'Corporate Showroom', 
         0, 
@@ -106,15 +153,18 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
         customerName
       );
 
-      if (!orderId) {
+      if (!checkoutRes || !checkoutRes.orderId) {
         throw new Error("Could not initialize order registry.");
       }
 
-      setLastOrderId(orderId);
+      setLastOrderId(checkoutRes.orderId);
+      setVerificationToken(checkoutRes.verificationToken || '');
+      setPaymentDeadline(checkoutRes.paymentDeadline || null);
+      setIsOfflineOrder(!!checkoutRes.offline);
       setIsSuccess(true);
     } catch (error: any) {
       console.error("Checkout transaction error:", error);
-      setValidationError("Your sourcing request signature failed to lock. Please contact support.");
+      setValidationError(error.message || "Your sourcing request signature failed to lock. Please contact support.");
     } finally {
       setIsProcessing(false);
     }
@@ -138,26 +188,64 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
             >
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
               
-              <div className="w-20 h-20 bg-blue-500/10 rounded-[2rem] flex items-center justify-center mb-6 border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.15)] animate-pulse">
-                <CheckCircle2 className="text-blue-400" size={40} />
+              <div className={`w-16 h-16 ${isOfflineOrder ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'} rounded-[2rem] flex items-center justify-center mb-4 border shadow-[0_0_30px_rgba(16,185,129,0.15)]`}>
+                <CheckCircle2 className={isOfflineOrder ? 'text-amber-400' : 'text-emerald-400'} size={32} />
               </div>
               
-              <span className="text-[10px] font-mono tracking-[0.4em] text-blue-400 font-bold uppercase">INQUIRY DOCKET COMPILED</span>
-              <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight mt-2 mb-2">Quote Request Sent</h2>
-              
-              <div className="text-[9px] font-mono uppercase bg-blue-500/5 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full mb-6">
-                Active Inquiry ID: #{lastOrderId}
-              </div>
+              {isOfflineOrder ? (
+                <>
+                  <span className="text-[9px] font-mono tracking-[0.4em] text-amber-400 font-bold uppercase">ORDER SAVED OFFLINE</span>
+                  <h2 className="text-xl sm:text-2xl font-display font-medium text-white tracking-tight mt-1 mb-4">Will Sync When Online</h2>
+                </>
+              ) : (
+                <>
+                  <span className="text-[9px] font-mono tracking-[0.4em] text-emerald-400 font-bold uppercase">ORDER REGISTERED</span>
+                  <h2 className="text-xl sm:text-2xl font-display font-medium text-white tracking-tight mt-1 mb-4">Pending Payment</h2>
+                </>
+              )}
 
-              <p className="text-gray-400 text-xs sm:text-sm font-medium leading-relaxed mb-8 max-w-xs">
-                Your luxury hardware list is ready. A detailed quote summary has been compiled and routed to WhatsApp. Click continue to finalize quantities with our team.
-              </p>
+              <div className="w-full bg-white/[0.02] border border-white/[0.05] rounded-3xl p-5 mb-6 text-left space-y-4">
+                <div className="flex justify-between items-center pb-2.5 border-b border-white/[0.04] font-mono">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">Order Reference</span>
+                  <span className="text-xs text-white font-bold font-sans">#{lastOrderId}</span>
+                </div>
+
+                <div className="flex flex-col gap-1.5 pb-2.5 border-b border-white/[0.04]">
+                  <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Verification Token</span>
+                  <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] px-3.5 py-2.5 rounded-2xl">
+                    <span className="text-xs font-mono font-extrabold text-blue-400 tracking-wider">{verificationToken}</span>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(verificationToken);
+                        alert("Token copied to clipboard!");
+                      }}
+                      className="text-[9px] font-mono uppercase bg-white/[0.05] text-gray-300 hover:text-white px-2 py-1 rounded-lg border border-white/[0.05] cursor-pointer"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                {!isOfflineOrder && paymentDeadline && (
+                  <CountdownTimer deadline={paymentDeadline} />
+                )}
+              </div>
+              
+              {isOfflineOrder ? (
+                <p className="text-amber-300/80 text-xs font-semibold leading-relaxed mb-6 max-w-xs bg-amber-500/5 border border-amber-500/15 rounded-2xl p-4 text-left font-mono">
+                  ⚠️ You are currently offline. Your order has been securely queued in local IndexedDB and will automatically sync with the backend once internet access is restored.
+                </p>
+              ) : (
+                <p className="text-gray-400 text-xs font-medium leading-relaxed mb-6 max-w-xs">
+                  To finalize and confirm your purchase, please submit mobile money payment. The verification details and hardware breakdown have been copied and loaded into WhatsApp.
+                </p>
+              )}
 
               <button 
                 onClick={() => { setIsSuccess(false); onClose(); }}
-                className="w-full py-4.5 bg-white text-black font-semibold rounded-2xl transition-all uppercase tracking-widest text-xs active:scale-95 duration-100 shadow-xl shadow-white/5"
+                className="w-full py-4 bg-white text-black font-semibold rounded-2xl transition-all uppercase tracking-widest text-xs active:scale-95 duration-100 shadow-xl shadow-white/5 cursor-pointer"
               >
-                Continue Showroom Sourcing
+                Continue Sourcing
               </button>
             </motion.div>
           </>

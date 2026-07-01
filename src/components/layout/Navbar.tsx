@@ -7,6 +7,8 @@ import { Tooltip } from '../ui/Tooltip';
 import { useAuth } from '../../AuthContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { useTheme } from '../../ThemeContext';
+import { useSyncQueue } from '../../hooks/useSyncQueue';
+import { WifiOff, CloudUpload } from 'lucide-react';
 
 interface NavbarProps {
   onCategorySelect: (category: string | null) => void;
@@ -39,6 +41,7 @@ export function Navbar({
 }: NavbarProps) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme, setTheme } = useTheme();
+  const { queue, isSyncing, syncNow } = useSyncQueue();
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -139,6 +142,33 @@ export function Navbar({
           </div>
 
           <div className="flex items-center gap-0.5 sm:gap-3 shrink-0">
+            {/* Offline Sync Status Widget */}
+            {typeof window !== 'undefined' && !navigator.onLine && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-400 text-[10px] font-mono tracking-wider font-bold">
+                <WifiOff size={11} />
+                <span>OFFLINE</span>
+              </div>
+            )}
+
+            {isSyncing && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[10px] font-mono tracking-wider font-bold animate-pulse">
+                <CloudUpload size={11} className="animate-bounce" />
+                <span>SYNCING...</span>
+              </div>
+            )}
+
+            {!isSyncing && typeof window !== 'undefined' && navigator.onLine && queue.length > 0 && (
+              <Tooltip content={`Sync ${queue.length} offline orders now`}>
+                <button 
+                  onClick={() => syncNow()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/30 rounded-full text-emerald-400 text-[10px] font-mono tracking-wider font-bold cursor-pointer transition-colors"
+                >
+                  <CloudUpload size={11} />
+                  <span>SYNC ({queue.length})</span>
+                </button>
+              </Tooltip>
+            )}
+
             <Tooltip content="Search Products">
               <button 
                 onClick={() => setShowSearch(!showSearch)}

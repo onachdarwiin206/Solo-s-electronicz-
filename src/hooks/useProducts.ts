@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Product } from '../types';
 import { INITIAL_PRODUCTS } from '../constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAppState, useAppDispatch } from '../context/AppStateContext';
 
 const getMergedProducts = (remoteData: Product[]): Product[] => {
   if (isSupabaseConfigured) {
@@ -114,59 +115,69 @@ const syncLocalProductsToSupabase = async () => {
  * Combines cached remote items, local custom items, and handles Postgres real-time events.
  */
 export function useProducts() {
-  const [products, setProducts] = useState<Product[]>(() => {
-    try {
-      const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
-      const cachedRemote = cachedRemoteRaw ? JSON.parse(cachedRemoteRaw) : [];
-      
-      const localCustomRaw = localStorage.getItem('custom_products');
-      const localCustom = localCustomRaw ? JSON.parse(localCustomRaw) : [];
-      
-      const deletedRaw = localStorage.getItem('deleted_product_ids');
-      const deletedIds = new Set<string>(deletedRaw ? JSON.parse(deletedRaw) : []);
-      
-      const combined: Product[] = [];
-      const seenIds = new Set<string>();
-      
-      if (isSupabaseConfigured && cachedRemote.length > 0) {
-        cachedRemote.forEach((p: Product) => {
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+
+  const products = state.products;
+  const loadingProducts = state.loadingProducts;
+
+  const setProducts = (p: Product[]) => {
+    dispatch({ type: 'SET_PRODUCTS', payload: p });
+  };
+
+  const setLoadingProducts = (l: boolean) => {
+    dispatch({ type: 'SET_LOADING_PRODUCTS', payload: l });
+  };
+
+  // Initialize cached products on mount if global state is empty
+  useEffect(() => {
+    if (products.length === 0) {
+      try {
+        const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
+        const cachedRemote = cachedRemoteRaw ? JSON.parse(cachedRemoteRaw) : [];
+        
+        const localCustomRaw = localStorage.getItem('custom_products');
+        const localCustom = localCustomRaw ? JSON.parse(localCustomRaw) : [];
+        
+        const deletedRaw = localStorage.getItem('deleted_product_ids');
+        const deletedIds = new Set<string>(deletedRaw ? JSON.parse(deletedRaw) : []);
+        
+        const combined: Product[] = [];
+        const seenIds = new Set<string>();
+        
+        if (isSupabaseConfigured && cachedRemote.length > 0) {
+          cachedRemote.forEach((p: Product) => {
+            if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
+              seenIds.add(p.id);
+              combined.push(p);
+            }
+          });
+        }
+        
+        localCustom.forEach((p: Product) => {
           if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
             seenIds.add(p.id);
             combined.push(p);
           }
         });
-      }
-      
-      localCustom.forEach((p: Product) => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      INITIAL_PRODUCTS.forEach((p: Product) => {
-        if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
-          seenIds.add(p.id);
-          combined.push(p);
-        }
-      });
-      
-      return combined;
-    } catch {
-      return INITIAL_PRODUCTS;
-    }
-  });
+        
+        INITIAL_PRODUCTS.forEach((p: Product) => {
+          if (!deletedIds.has(p.id) && !seenIds.has(p.id)) {
+            seenIds.add(p.id);
+            combined.push(p);
+          }
+        });
 
-  const [loadingProducts, setLoadingProducts] = useState(() => {
-    try {
-      const cachedRemoteRaw = localStorage.getItem('cached_remote_products');
-      if (cachedRemoteRaw) {
-        const cachedRemote = JSON.parse(cachedRemoteRaw);
-        if (cachedRemote.length > 0) return false;
+        dispatch({ type: 'SET_PRODUCTS', payload: combined });
+        
+        const hasCached = cachedRemote.length > 0;
+        dispatch({ type: 'SET_LOADING_PRODUCTS', payload: !hasCached });
+      } catch {
+        dispatch({ type: 'SET_PRODUCTS', payload: INITIAL_PRODUCTS });
+        dispatch({ type: 'SET_LOADING_PRODUCTS', payload: true });
       }
-    } catch {}
-    return true;
-  });
+    }
+  }, []);
 
   const fetchProducts = async (silent = false) => {
     if (!isSupabaseConfigured) {

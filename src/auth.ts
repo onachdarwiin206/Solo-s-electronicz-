@@ -151,7 +151,7 @@ export const loginWithGoogle = async (): Promise<AuthResponse> => {
       email: 'onachdarwiin@gmail.com', // Simulate user email if matching
       name: 'Google Sync Guest',
       avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces',
-      role: 'admin', // Auto grant admin for convenience in testing the sandboxed Google login button!
+      role: 'customer', // Sandbox guest default role
       wishlist: [],
       likes: [],
       created_at: new Date().toISOString()

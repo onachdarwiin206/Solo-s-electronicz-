@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import { AuthProvider } from './AuthContext';
 import { ThemeProvider } from './ThemeContext';
+import { AppStateProvider } from './context/AppStateContext';
 import { supabase } from './lib/supabase';
 import { initializeSandboxSchema } from './lib/sandboxDb';
 import './index.css';
@@ -88,10 +89,12 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </AuthProvider>
+    <AppStateProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </AuthProvider>
+    </AppStateProvider>
   </StrictMode>,
 );

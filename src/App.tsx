@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useEffect, useMemo, lazy, Suspense, useReducer } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
 import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
@@ -10,11 +10,14 @@ import { Footer } from './components/layout/Footer';
 import { AndroidInstallPrompt } from './components/layout/AndroidInstallPrompt';
 import { WhatsAppFloat } from './components/ui/WhatsAppFloat';
 import { isSupabaseConfigured } from './lib/supabase';
-import { Product } from './types';
+import { Product } from './types/index';
 import { useAuth } from './AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { translations, Language } from './translations';
+import { translations } from './translations';
 import { X, UserCog, Loader2, AlertCircle } from 'lucide-react';
+import { useAppState, useAppDispatch } from './hooks/useAppState';
+import { AppStateContext, AppDispatchContext } from './store/appContext';
+import { appReducer, initialState } from './store/appReducer';
 
 const MarketingPortal = lazy(() => import('./components/marketing/MarketingPortal'));
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
@@ -31,12 +34,28 @@ import { useCart } from './hooks/useCart';
 import { useProducts } from './hooks/useProducts';
 import { useWishlistAndLikes } from './hooks/useWishlistAndLikes';
 import { useAppNavigation } from './hooks/useAppNavigation';
+import { migrateLocalStorageToIndexedDB, syncWithBackoff } from './lib/offlineDB';
 
 /**
- * App Component - Refactored Main Orchestrator.
- * Handles routing, layout composition, and coordinates clean custom state hooks.
+ * Main App Container.
+ * Implements useReducer and provides state/dispatch down to children.
  */
 export default function App() {
+  const [state, dispatch] = useReducer(appReducer, initialState);
+
+  return (
+    <AppStateContext.Provider value={state}>
+      <AppDispatchContext.Provider value={dispatch}>
+        <AppContent />
+      </AppDispatchContext.Provider>
+    </AppStateContext.Provider>
+  );
+}
+
+/**
+ * AppContent Component - Handles layout composition and consumes state from the centralized useReducer store.
+ */
+function AppContent() {
   const { 
     user, 
     isAdmin, 
@@ -46,22 +65,30 @@ export default function App() {
     toggleLike: authToggleLike 
   } = useAuth();
 
-  // Basic layout/UI states kept local to avoid excessive prop drilling
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [category, setCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [showTerms, setShowTerms] = useState(false);
-  const [language, setLanguage] = useState<Language>('en');
-  const [wishlistOpen, setWishlistOpen] = useState(false);
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+
+  // Destructure centralized state
+  const {
+    view,
+    category,
+    searchQuery,
+    selectedProduct,
+    quickViewProduct,
+    isAdminModalOpen,
+    showTerms,
+    language,
+    loadingProducts,
+    products,
+    cart
+  } = state;
+
+  const cartOpen = state.isCartOpen;
+  const wishlistOpen = state.isWishlistOpen;
 
   // Hook-managed state & operations
   const { toasts, addToast, removeToast } = useToasts();
   const { 
-    cart, 
-    cartOpen, 
-    setCartOpen, 
     addToCart, 
     updateCartQuantity, 
     removeFromCart, 
@@ -69,7 +96,7 @@ export default function App() {
     cartCount 
   } = useCart(user);
 
-  const { products, loadingProducts, fetchProducts } = useProducts();
+  const { fetchProducts } = useProducts();
 
   const { 
     wishlistProducts, 
@@ -83,20 +110,20 @@ export default function App() {
     authToggleWishlist,
     authToggleLike,
     addToast,
-    setWishlistOpen
+    (open: boolean) => dispatch({ type: 'SET_WISHLIST_OPEN', payload: open })
   );
 
-  const { view, setView } = useAppNavigation({
+  const { setView } = useAppNavigation({
     cartOpen,
-    setCartOpen,
+    setCartOpen: (open: boolean) => dispatch({ type: 'SET_CART_OPEN', payload: open }),
     quickViewProduct,
-    setQuickViewProduct,
+    setQuickViewProduct: (product: any) => dispatch({ type: 'SET_QUICK_VIEW_PRODUCT', payload: product }),
     showTerms,
-    setShowTerms,
+    setShowTerms: (show: boolean) => dispatch({ type: 'SET_SHOW_TERMS', payload: show }),
     isAdminModalOpen,
-    setIsAdminModalOpen,
+    setIsAdminModalOpen: (open: boolean) => dispatch({ type: 'SET_ADMIN_MODAL_OPEN', payload: open }),
     category,
-    setCategory,
+    setCategory: (cat: string | null) => dispatch({ type: 'SET_CATEGORY', payload: cat }),
     user,
     isAdmin,
     authResolving,
@@ -127,14 +154,73 @@ export default function App() {
     }, {} as Record<string, Product[]>);
   }, [products, category, searchQuery]);
 
-  // Subscribe to external admin open triggers (e.g. from footer triggers)
+  // Subscribe to external admin open triggers
   useEffect(() => {
-    const handleOpenAdmin = () => setIsAdminModalOpen(true);
+    const handleOpenAdmin = () => dispatch({ type: 'SET_ADMIN_MODAL_OPEN', payload: true });
     window.addEventListener('openAdmin', handleOpenAdmin);
     return () => {
       window.removeEventListener('openAdmin', handleOpenAdmin);
     };
+  }, [dispatch]);
+
+  // Handle Offline Database Migration & Automatic Syncing
+  useEffect(() => {
+    const initOfflineEngine = async () => {
+      try {
+        await migrateLocalStorageToIndexedDB();
+        if (navigator.onLine) {
+          console.log('[Offline Engine] Sourcing pending queue items...');
+          await syncWithBackoff();
+        }
+      } catch (err) {
+        console.error('[Offline Engine] Initialization failure:', err);
+      }
+    };
+    initOfflineEngine();
   }, []);
+
+  // Listen to Custom Order Synchronization events and render premium Toast confirmations
+  useEffect(() => {
+    const handleSyncSuccess = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      addToast({
+        productId: 'sync_success_' + detail.orderId,
+        productName: `Order #${detail.orderId} Registered`,
+        productImage: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?q=75&w=800&auto=format&fit=crop',
+        message: 'Your offline order has been successfully registered with the live catalog feed!'
+      });
+    };
+
+    const handleSyncConflict = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      addToast({
+        productId: 'sync_conflict_' + detail.orderId,
+        productName: `Sync Alert: Order #${detail.orderId}`,
+        productImage: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?q=75&w=800&auto=format&fit=crop',
+        message: `Order rejected during sync: ${detail.error}`
+      });
+    };
+
+    const handleSyncFailed = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      addToast({
+        productId: 'sync_failed_' + detail.orderId,
+        productName: 'Sync Postponed',
+        productImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=75&w=800&auto=format&fit=crop',
+        message: `Temporary server issue syncing order #${detail.orderId}. System will retry automatically.`
+      });
+    };
+
+    window.addEventListener('order_sync_success', handleSyncSuccess);
+    window.addEventListener('order_sync_conflict', handleSyncConflict);
+    window.addEventListener('order_sync_failed', handleSyncFailed);
+
+    return () => {
+      window.removeEventListener('order_sync_success', handleSyncSuccess);
+      window.removeEventListener('order_sync_conflict', handleSyncConflict);
+      window.removeEventListener('order_sync_failed', handleSyncFailed);
+    };
+  }, [addToast]);
 
   return (
     <div className="min-h-screen">
@@ -150,17 +236,20 @@ export default function App() {
       ) : (
         <>
           <Navbar 
-            onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }}
-            onSearch={setSearchQuery}
+            onCategorySelect={(cat) => { 
+              dispatch({ type: 'SET_CATEGORY', payload: cat }); 
+              dispatch({ type: 'SET_VIEW', payload: 'shop' }); 
+            }}
+            onSearch={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: query })}
             cartCount={cartCount}
             wishlistCount={wishlistProducts.length}
-            onCartClick={() => setCartOpen(true)}
-            onWishlistClick={() => setWishlistOpen(true)}
-            onMarketingClick={() => setView('marketing')}
+            onCartClick={() => dispatch({ type: 'TOGGLE_CART_OPEN' })}
+            onWishlistClick={() => dispatch({ type: 'TOGGLE_WISHLIST_OPEN' })}
+            onMarketingClick={() => dispatch({ type: 'SET_VIEW', payload: 'marketing' })}
             isAdmin={isAdmin}
             currentLanguage={language}
-            onLanguageChange={setLanguage}
-            onAuthClick={() => setView('auth')}
+            onLanguageChange={(lang) => dispatch({ type: 'SET_LANGUAGE', payload: lang })}
+            onAuthClick={() => dispatch({ type: 'SET_VIEW', payload: 'auth' })}
             t={t}
           />
 
@@ -175,16 +264,15 @@ export default function App() {
             activeView={view} 
             onViewChange={(v) => {
               if (v === 'cart') {
-                setCartOpen(true);
+                dispatch({ type: 'TOGGLE_CART_OPEN' });
               } else if (v === 'search') {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 window.dispatchEvent(new CustomEvent('toggleSearch'));
               } else if (v === 'profile') {
-                // Profile view is deactivated per user request
                 return;
               } else {
-                setView(v);
-                setCategory(null);
+                dispatch({ type: 'SET_VIEW', payload: v });
+                dispatch({ type: 'SET_CATEGORY', payload: null });
               }
             }}
             cartCount={cartCount}
@@ -197,7 +285,7 @@ export default function App() {
                   {view === 'shop' && (
                     <>
                       <div className="z-40">
-                         <CategoryBar onCategorySelect={(cat) => setCategory(cat)} selectedCategory={category} />
+                         <CategoryBar onCategorySelect={(cat) => dispatch({ type: 'SET_CATEGORY', payload: cat })} selectedCategory={category} />
                       </div>
 
                       {products.length > 0 ? (
@@ -209,14 +297,17 @@ export default function App() {
                           category={category}
                           searchQuery={searchQuery}
                           onAddToCart={addToCart}
-                          onProductClick={(p) => { setSelectedProduct(p); setView('product-detail'); }}
-                          onQuickView={(p) => setQuickViewProduct(p)}
-                          onCategorySelect={(cat) => setCategory(cat)}
+                          onProductClick={(p) => { 
+                            dispatch({ type: 'SET_SELECTED_PRODUCT', payload: p }); 
+                            dispatch({ type: 'SET_VIEW', payload: 'product-detail' }); 
+                          }}
+                          onQuickView={(p) => dispatch({ type: 'SET_QUICK_VIEW_PRODUCT', payload: p })}
+                          onCategorySelect={(cat) => dispatch({ type: 'SET_CATEGORY', payload: cat })}
                           isItemWishlisted={isItemWishlisted}
                           onToggleWishlist={handleToggleWishlist}
                           isItemLiked={isItemLiked}
                           onToggleLike={handleToggleLike}
-                          onSearch={setSearchQuery}
+                          onSearch={(q) => dispatch({ type: 'SET_SEARCH_QUERY', payload: q })}
                           t={t}
                         />
                       ) : loadingProducts ? (
@@ -258,7 +349,7 @@ export default function App() {
                       onToggleWishlist={handleToggleWishlist}
                       isLiked={isItemLiked(selectedProduct.id)}
                       onToggleLike={handleToggleLike}
-                      onProductClick={(p) => setSelectedProduct(p)}
+                      onProductClick={(p) => dispatch({ type: 'SET_SELECTED_PRODUCT', payload: p })}
                     />
                   )}
 
@@ -298,12 +389,16 @@ export default function App() {
 
           <Footer 
             t={t} 
-            onCategorySelect={(cat) => { setCategory(cat); setView('shop'); }} 
-            onAdminPanelClick={() => isAdmin ? setView('admin') : setIsAdminModalOpen(true)} 
+            onCategorySelect={(cat) => { 
+              dispatch({ type: 'SET_CATEGORY', payload: cat }); 
+              dispatch({ type: 'SET_VIEW', payload: 'shop' }); 
+            }} 
+            onAdminPanelClick={() => isAdmin ? setView('admin') : dispatch({ type: 'SET_ADMIN_MODAL_OPEN', payload: true })} 
           />
+          
           <Cart 
             isOpen={cartOpen} 
-            onClose={() => setCartOpen(false)} 
+            onClose={() => dispatch({ type: 'SET_CART_OPEN', payload: false })} 
             items={cart} 
             onUpdateQuantity={updateCartQuantity} 
             onRemove={removeFromCart} 
@@ -316,29 +411,36 @@ export default function App() {
           
           <WishlistDrawer 
             isOpen={wishlistOpen} 
-            onClose={() => setWishlistOpen(false)} 
+            onClose={() => dispatch({ type: 'SET_WISHLIST_OPEN', payload: false })} 
             items={wishlistProducts} 
             onRemove={handleToggleWishlist} 
             onAddToCart={addToCart} 
-            onProductClick={(p) => { setSelectedProduct(p); setView('product-detail'); }} 
+            onProductClick={(p) => { 
+              dispatch({ type: 'SET_SELECTED_PRODUCT', payload: p }); 
+              dispatch({ type: 'SET_VIEW', payload: 'product-detail' }); 
+            }} 
           />
 
           <ToastContainer toasts={toasts} onDismiss={removeToast} />
           
           <AdminLoginModal 
             isOpen={isAdminModalOpen} 
-            onClose={() => setIsAdminModalOpen(false)} 
-            onSuccess={() => { setView('admin'); setIsAdminModalOpen(false); }}
+            onClose={() => dispatch({ type: 'SET_ADMIN_MODAL_OPEN', payload: false })} 
+            onSuccess={() => { 
+              dispatch({ type: 'SET_VIEW', payload: 'admin' }); 
+              dispatch({ type: 'SET_ADMIN_MODAL_OPEN', payload: false }); 
+            }}
           />
+          
           <Suspense fallback={null}>
-            <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={addToCart} />
+            <QuickViewModal product={quickViewProduct} onClose={() => dispatch({ type: 'SET_QUICK_VIEW_PRODUCT', payload: null })} onAddToCart={addToCart} />
           </Suspense>
 
           <AnimatePresence>
             {showTerms && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
                  <div className="bg-gray-900 border border-white/10 p-8 rounded-[3rem] max-w-2xl w-full relative">
-                    <button onClick={() => setShowTerms(false)} className="absolute top-8 right-8"><X size={24} /></button>
+                    <button onClick={() => dispatch({ type: 'SET_SHOW_TERMS', payload: false })} className="absolute top-8 right-8"><X size={24} /></button>
                     <h2 className="text-3xl font-black mb-8 italic uppercase">Warranty & Service</h2>
                     <div className="space-y-6 text-gray-400 text-sm"><p>All hardware comes with a 12-month Emma Assurance guarantee. We facilitate repairs and replacements directly with brand importers in Lira City.</p></div>
                  </div>

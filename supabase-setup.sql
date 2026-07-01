@@ -172,23 +172,31 @@ $$ language plpgsql security definer;
 
 -- Profiles Policies
 drop policy if exists "Public profiles are viewable by everyone." on public.profiles;
-create policy "Public profiles are viewable by everyone." on public.profiles for select using (true);
+create policy "Users can view own profile or admins can view all" on public.profiles 
+  for select using (auth.uid() = id or public.is_admin());
 
 drop policy if exists "Users can update own profile." on public.profiles;
--- We allow users to update their own row, but we add a check to ensure they don't change their role
--- Note: In Supabase RLS, we can't easily check 'affected columns' in the 'using' clause besides comparing new vs old
--- A common pattern is to just allow the update but have a database trigger that flattens any role change attempts from non-admins
-create policy "Users can update own profile." on public.profiles for update using (auth.uid() = id);
+create policy "Users can update own profile." on public.profiles 
+  for update using (auth.uid() = id);
 
 drop policy if exists "Users can insert own profile." on public.profiles;
-create policy "Users can insert own profile." on public.profiles for insert with check (auth.uid() = id);
+create policy "Users can insert own profile." on public.profiles 
+  for insert with check (auth.uid() = id);
 
 -- Secure role management trigger
 create or replace function public.preserve_role_integrity()
 returns trigger as $$
 begin
-  if (not public.is_admin()) then
-    new.role := old.role; -- Revert role change if not an admin
+  if (tg_op = 'INSERT') then
+    -- On insert, unless they are an admin doing it, default role to customer
+    if (not public.is_admin()) then
+      new.role := 'customer';
+    end if;
+  elsif (tg_op = 'UPDATE') then
+    -- On update, prevent normal users from upgrading their role or changing someone else's
+    if (not public.is_admin()) then
+      new.role := old.role;
+    end if;
   end if;
   return new;
 end;
@@ -196,52 +204,75 @@ $$ language plpgsql security definer;
 
 drop trigger if exists on_profile_update_integrity on public.profiles;
 create trigger on_profile_update_integrity
-  before update on public.profiles
+  before insert or update on public.profiles
   for each row execute procedure public.preserve_role_integrity();
 
 -- Products Policies
 drop policy if exists "Products viewable by everyone." on public.products;
-create policy "Products viewable by everyone." on public.products for select using (true);
+create policy "Products viewable by everyone." on public.products 
+  for select using (true);
 
 drop policy if exists "Admins can manage products." on public.products;
--- WARNING: Relaxed to allow PIN-authorized admins (anonymous to Supabase) to manage products.
--- In a production environment, you should use Supabase Auth and restricted RLS.
-create policy "Admins can manage products." on public.products for all using (true); 
+create policy "Admins can manage products." on public.products 
+  for all using (public.is_admin()) with check (public.is_admin()); 
 
 -- Reviews Policies
 drop policy if exists "Reviews viewable by everyone." on public.reviews;
-create policy "Reviews viewable by everyone." on public.reviews for select using (true);
+create policy "Reviews viewable by everyone." on public.reviews 
+  for select using (true);
 
 drop policy if exists "Authenticated users can post a review." on public.reviews;
-create policy "Authenticated users can post a review." on public.reviews for insert with check (true); -- Relaxed for easier review submission
+create policy "Authenticated or guest reviews insertion" on public.reviews 
+  for insert with check (
+    (auth.uid() is null and user_id = 'guest') or
+    (auth.uid() is not null and user_id = auth.uid()::text) or
+    public.is_admin()
+  );
 
 drop policy if exists "Owners can delete reviews." on public.reviews;
-create policy "Owners can delete reviews." on public.reviews for delete using (true);
+create policy "Owners or admins can delete own reviews" on public.reviews 
+  for delete using (
+    (auth.uid() is not null and user_id = auth.uid()::text) or
+    public.is_admin()
+  );
+
+drop policy if exists "Owners or admins can update own reviews" on public.reviews;
+create policy "Owners or admins can update own reviews" on public.reviews 
+  for update using (
+    (auth.uid() is not null and user_id = auth.uid()::text) or
+    public.is_admin()
+  );
 
 -- Orders Policies
 drop policy if exists "Users can view own orders." on public.orders;
-create policy "Users can view own orders." on public.orders for select using (true);
+create policy "Users can select own orders" on public.orders 
+  for select using (auth.uid() = user_id or public.is_admin());
 
 drop policy if exists "Anyone can create an order." on public.orders;
-create policy "Anyone can create an order." on public.orders for insert with check (true);
+create policy "Anyone can create own orders" on public.orders 
+  for insert with check (auth.uid() = user_id or user_id is null);
 
 drop policy if exists "Admins can manage all orders." on public.orders;
--- WARNING: Relaxed to allow PIN-authorized admins to manage orders.
-create policy "Admins can manage all orders." on public.orders for all using (true);
+create policy "Admins can manage all orders" on public.orders 
+  for all using (public.is_admin()) with check (public.is_admin());
 
 -- Admin Table Policies
 drop policy if exists "Admins can view admin list." on public.admins;
-create policy "Admins can view admin list." on public.admins for select using (is_admin());
+create policy "Admins can view admin list." on public.admins 
+  for select using (public.is_admin());
 
 drop policy if exists "Super admins can manage admins." on public.admins;
-create policy "Super admins can manage admins." on public.admins for all using (is_admin());
+create policy "Super admins can manage admins." on public.admins 
+  for all using (public.is_admin());
 
 -- System Config Policies
 drop policy if exists "System config viewable by everyone." on public.system_config;
-create policy "System config viewable by everyone." on public.system_config for select using (true);
+create policy "System config viewable by everyone." on public.system_config 
+  for select using (true);
 
 drop policy if exists "Admins can manage system config." on public.system_config;
-create policy "Admins can manage system config." on public.system_config for all using (is_admin());
+create policy "Admins can manage system config." on public.system_config 
+  for all using (public.is_admin());
 
 --- AUTOMATION: Auto-create profile on signup ---
 create or replace function public.handle_new_user()
@@ -252,10 +283,7 @@ begin
     new.id, 
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', 'User'), 
     new.email, 
-    case 
-      when exists (select 1 from public.admins where email = new.email) then 'admin'
-      else 'customer'
-    end
+    'customer' -- Always sign up as customer. Role escalation is prevented.
   );
   return new;
 end;
@@ -283,6 +311,83 @@ create table if not exists public.wishlists (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
+-- 9. AUDIT LOGS Table
+create table if not exists public.audit_logs (
+  id uuid default gen_random_uuid() primary key,
+  action_type text not null, -- 'INSERT', 'UPDATE', 'DELETE'
+  table_name text not null,  -- 'products', 'orders', 'profiles' etc.
+  record_id text not null,   -- PK of modified record
+  old_data jsonb,            -- Prior state
+  new_data jsonb,            -- New state
+  changed_by uuid,           -- auth.uid() of operator
+  changed_by_email text,     -- auth.email() of operator
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on Audit Logs
+alter table public.audit_logs enable row level security;
+
+-- Read restricted to Admins, no direct writes allowed
+drop policy if exists "Only admins can select audit logs" on public.audit_logs;
+create policy "Only admins can select audit logs" on public.audit_logs
+  for select using (public.is_admin());
+
+-- Audit Logging trigger function
+create or replace function public.log_table_modification()
+returns trigger as $$
+declare
+  v_old_data jsonb := null;
+  v_new_data jsonb := null;
+  v_record_id text;
+begin
+  if (tg_op = 'UPDATE' or tg_op = 'DELETE') then
+    v_old_data := to_jsonb(old);
+  end if;
+  if (tg_op = 'INSERT' or tg_op = 'UPDATE') then
+    v_new_data := to_jsonb(new);
+  end if;
+
+  if (tg_op = 'DELETE') then
+    v_record_id := coalesce(old.id::text, 'unknown');
+  else
+    v_record_id := coalesce(new.id::text, 'unknown');
+  end if;
+
+  insert into public.audit_logs (action_type, table_name, record_id, old_data, new_data, changed_by, changed_by_email)
+  values (
+    tg_op,
+    tg_table_name,
+    v_record_id,
+    v_old_data,
+    v_new_data,
+    auth.uid(),
+    auth.email()
+  );
+
+  if (tg_op = 'DELETE') then
+    return old;
+  else
+    return new;
+  end if;
+end;
+$$ language plpgsql security definer;
+
+-- Setup Audit triggers
+drop trigger if exists audit_profiles_trigger on public.profiles;
+create trigger audit_profiles_trigger
+  after insert or update or delete on public.profiles
+  for each row execute procedure public.log_table_modification();
+
+drop trigger if exists audit_products_trigger on public.products;
+create trigger audit_products_trigger
+  after insert or update or delete on public.products
+  for each row execute procedure public.log_table_modification();
+
+drop trigger if exists audit_orders_trigger on public.orders;
+create trigger audit_orders_trigger
+  after insert or update or delete on public.orders
+  for each row execute procedure public.log_table_modification();
+
 --- RLS POLICIES for carts/wishlists ---
 do $$
 begin
@@ -298,11 +403,18 @@ exception when others then
   raise notice 'RLS already enabled or table missing';
 end $$;
 
+-- Hardened Cart Policies
 drop policy if exists "Users can manage own cart." on public.carts;
-create policy "Users can manage own cart." on public.carts for all using (auth.uid() = user_id);
+create policy "Users can select own cart" on public.carts for select using (auth.uid() = user_id);
+create policy "Users can insert own cart" on public.carts for insert with check (auth.uid() = user_id);
+create policy "Users can update own cart" on public.carts for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can delete own cart" on public.carts for delete using (auth.uid() = user_id);
 
+-- Hardened Wishlist Policies
 drop policy if exists "Users can manage own wishlist." on public.wishlists;
-create policy "Users can manage own wishlist." on public.wishlists for all using (auth.uid() = user_id);
+create policy "Users can select own wishlist" on public.wishlists for select using (auth.uid() = user_id);
+create policy "Users can insert own wishlist" on public.wishlists for insert with check (auth.uid() = user_id);
+create policy "Users can delete own wishlist" on public.wishlists for delete using (auth.uid() = user_id);
 
 --- REALTIME (idempotent) ---
 DO $$
@@ -357,22 +469,32 @@ on conflict (id) do nothing;
 
 --- STORAGE POLICIES ---
 
--- Storage Policies Consolidating all for PIN-based admin functionality
-drop policy if exists "Public Access" on storage.objects;
-drop policy if exists "Admin Upload" on storage.objects;
-drop policy if exists "Admin Update" on storage.objects;
-drop policy if exists "Admin Delete" on storage.objects;
-create policy "Product Images Management" on storage.objects for all 
-using (bucket_id = 'product-images')
-with check (bucket_id = 'product-images');
+-- Hardened storage bucket policies
+drop policy if exists "Product Images Management" on storage.objects;
+create policy "Product Images Public Select" on storage.objects for select
+  using (bucket_id = 'product-images');
 
-drop policy if exists "Public Access Videos" on storage.objects;
-drop policy if exists "Admin Upload Videos" on storage.objects;
-drop policy if exists "Admin Update Videos" on storage.objects;
-drop policy if exists "Admin Delete Videos" on storage.objects;
-create policy "Product Videos Management" on storage.objects for all 
-using (bucket_id = 'product-videos')
-with check (bucket_id = 'product-videos');
+create policy "Product Images Admin Insertion" on storage.objects for insert
+  with check (bucket_id = 'product-images' and public.is_admin());
+
+create policy "Product Images Admin Modification" on storage.objects for update
+  using (bucket_id = 'product-images' and public.is_admin());
+
+create policy "Product Images Admin Deletion" on storage.objects for delete
+  using (bucket_id = 'product-images' and public.is_admin());
+
+drop policy if exists "Product Videos Management" on storage.objects;
+create policy "Product Videos Public Select" on storage.objects for select
+  using (bucket_id = 'product-videos');
+
+create policy "Product Videos Admin Insertion" on storage.objects for insert
+  with check (bucket_id = 'product-videos' and public.is_admin());
+
+create policy "Product Videos Admin Modification" on storage.objects for update
+  using (bucket_id = 'product-videos' and public.is_admin());
+
+create policy "Product Videos Admin Deletion" on storage.objects for delete
+  using (bucket_id = 'product-videos' and public.is_admin());
 
 --- INDEXES ---
 create index if not exists idx_products_category on public.products(category);
@@ -387,6 +509,16 @@ returns void as $$
 begin
   update public.products
   set likes_count = case when increment then likes_count + 1 else likes_count - 1 end
+  where id = p_id;
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.deplete_product_stock(p_id text, p_qty int)
+returns void as $$
+begin
+  update public.products
+  set stock = greatest(0, stock - p_qty),
+      updated_at = now()
   where id = p_id;
 end;
 $$ language plpgsql security definer;

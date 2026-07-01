@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'confirmed' | 'delivering' | 'delivered';
+export type OrderStatus = 'pending_payment' | 'pending' | 'confirmed' | 'delivering' | 'delivered';
 
 export interface Product {
   id: string;
@@ -73,6 +73,9 @@ export interface Order {
   payment_method?: PaymentMethod;
   estimated_delivery?: string;
   tracking_logs?: TrackingLog[];
+  verification_token?: string;
+  payment_verified_at?: string;
+  payment_deadline?: string;
 }
 
 export type PaymentMethod = 'cod' | 'momo';

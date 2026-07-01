@@ -251,11 +251,17 @@ export default function MarketingPortal({ products = [] }: MarketingPortalProps)
     if (!selectedProduct) return;
     setGeneratingCaption(true);
     try {
+      const adminToken = sessionStorage.getItem("admin_token");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json"
+      };
+      if (adminToken) {
+        headers["Authorization"] = `Bearer ${adminToken}`;
+      }
+
       const response = await fetch("/api/marketing/generate-caption", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers,
         body: JSON.stringify({
           productName: selectedProduct.name,
           productDescription: selectedProduct.description,

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useAppState, useAppDispatch } from '../context/AppStateContext';
 
 export type View = 'shop' | 'marketing' | 'terms' | 'admin' | 'product-detail' | 'reset-password' | 'auth';
 
@@ -39,7 +40,11 @@ export function useAppNavigation({
   authResolving,
   isRecovering
 }: NavigationParams) {
-  const [view, setView] = useState<View>('shop');
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+  const view = state.view;
+  const setView = (newView: View) => dispatch({ type: 'SET_VIEW', payload: newView });
+
   const prevUserRef = typeof window !== 'undefined' ? { current: null as any } : { current: null };
   const prevIsAdminRef = typeof window !== 'undefined' ? { current: false } : { current: false };
 
