@@ -1,150 +1,155 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://rzbgipdajulkunlswygz.supabase.co" crossorigin>
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=60&w=1200&auto=format&fit=crop" fetchpriority="high">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#2563eb" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Emma's Tech" />
-    <link rel="apple-touch-icon" href="/icon.png" />
-    <script>
-      // Native WebSocket Proxy to safely suppress sandbox connection resets
-      (function() {
-        if (typeof window === 'undefined') return;
-        var NativeWebSocket = window.WebSocket;
-        if (!NativeWebSocket) return;
 
-        function PatchedWebSocket(url, protocols) {
-          var ws;
-          try {
-            if (protocols) {
-              ws = new NativeWebSocket(url, protocols);
-            } else {
-              ws = new NativeWebSocket(url);
-            }
-          } catch (e) {
-            console.debug('[Sandbox WS] WebSocket instantiation blocked:', e);
-            ws = {
-              addEventListener: function() {},
-              removeEventListener: function() {},
-              send: function() {},
-              close: function() {}
-            };
-          }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://rzbgipdajulkunlswygz.supabase.co" crossorigin>
+  <link rel="preload" as="image"
+    href="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=60&w=1200&auto=format&fit=crop"
+    fetchpriority="high">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Solo's Electronics" />
+  <link rel="apple-touch-icon" href="/icon.png" />
+  <script>
+    // Native WebSocket Proxy to safely suppress sandbox connection resets
+    (function () {
+      if (typeof window === 'undefined') return;
+      var NativeWebSocket = window.WebSocket;
+      if (!NativeWebSocket) return;
 
-          var originalAddEventListener = ws.addEventListener;
-          if (typeof originalAddEventListener === 'function') {
-            ws.addEventListener = function(type, listener, options) {
-              if (type === 'error' || type === 'close') {
-                var safeListener = function(err) {
-                  try {
-                    if (listener) listener(err);
-                  } catch (e) {
-                    console.debug('[Sandbox WS] Suppressed connection event listener error:', e);
-                  }
-                };
-                return originalAddEventListener.call(ws, type, safeListener, options);
-              }
-              return originalAddEventListener.call(ws, type, listener, options);
-            };
-          }
-
-          return ws;
-        }
-
-        PatchedWebSocket.prototype = NativeWebSocket.prototype;
-        for (var key in NativeWebSocket) {
-          if (NativeWebSocket.hasOwnProperty(key)) {
-            PatchedWebSocket[key] = NativeWebSocket[key];
-          }
-        }
-        if (NativeWebSocket.CONNECTING !== undefined) {
-          PatchedWebSocket.CONNECTING = NativeWebSocket.CONNECTING;
-          PatchedWebSocket.OPEN = NativeWebSocket.OPEN;
-          PatchedWebSocket.CLOSING = NativeWebSocket.CLOSING;
-          PatchedWebSocket.CLOSED = NativeWebSocket.CLOSED;
-        }
-
-        window.WebSocket = PatchedWebSocket;
-      })();
-
-      // Self-healing block: Catch chunk-load/module script errors caused by stale/deleted hashes in Service Worker cache.
-      // Automatically purges active caches and does a hard-refresh to fetch the fresh bundle assets.
-      window.addEventListener('error', function(e) {
-        var msg = e.message || '';
-        var target = e.target || {};
-        var filename = e.filename || '';
-        
-        // Suppress benign Vite WebSocket and local connection errors
-        var isViteWS = msg.indexOf('WebSocket') > -1 || 
-                       msg.indexOf('vite') > -1 || 
-                       filename.indexOf('vite') > -1;
-        if (isViteWS) {
-          e.preventDefault();
-          e.stopPropagation();
-          return true;
-        }
-
-        var isScriptError = target.tagName === 'SCRIPT' || 
-                            msg.indexOf('Failed to fetch dynamically imported module') > -1 || 
-                            msg.indexOf('Importing a module script failed') > -1 ||
-                            msg.indexOf('chunk') > -1;
-        
-        if (isScriptError) {
-          console.warn('[PWA] Critical script/chunk failed to load. Purging cache...');
-          if ('serviceWorker' in navigator && window.caches) {
-            caches.keys().then(function(keys) {
-              return Promise.all(keys.map(function(key) { return caches.delete(key); }));
-            }).then(function() {
-              window.location.reload(true);
-            }).catch(function() {
-              window.location.reload(true);
-            });
+      function PatchedWebSocket(url, protocols) {
+        var ws;
+        try {
+          if (protocols) {
+            ws = new NativeWebSocket(url, protocols);
           } else {
-            window.location.reload(true);
+            ws = new NativeWebSocket(url);
           }
+        } catch (e) {
+          console.debug('[Sandbox WS] WebSocket instantiation blocked:', e);
+          ws = {
+            addEventListener: function () { },
+            removeEventListener: function () { },
+            send: function () { },
+            close: function () { }
+          };
         }
-      }, true);
 
-      // Gracefully capture and suppress benign Vite WebSocket HMR connectivity failures
-      // that natively happen within the Cloud Run sandbox environment.
-      window.addEventListener('unhandledrejection', function(event) {
-        var reason = event.reason;
-        var message = (reason && (reason.message || reason)) || '';
-        if (typeof message === 'object') {
-          try {
-            message = JSON.stringify(message);
-          } catch(err) {
-            message = String(reason);
-          }
+        var originalAddEventListener = ws.addEventListener;
+        if (typeof originalAddEventListener === 'function') {
+          ws.addEventListener = function (type, listener, options) {
+            if (type === 'error' || type === 'close') {
+              var safeListener = function (err) {
+                try {
+                  if (listener) listener(err);
+                } catch (e) {
+                  console.debug('[Sandbox WS] Suppressed connection event listener error:', e);
+                }
+              };
+              return originalAddEventListener.call(ws, type, safeListener, options);
+            }
+            return originalAddEventListener.call(ws, type, listener, options);
+          };
+        }
+
+        return ws;
+      }
+
+      PatchedWebSocket.prototype = NativeWebSocket.prototype;
+      for (var key in NativeWebSocket) {
+        if (NativeWebSocket.hasOwnProperty(key)) {
+          PatchedWebSocket[key] = NativeWebSocket[key];
+        }
+      }
+      if (NativeWebSocket.CONNECTING !== undefined) {
+        PatchedWebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+        PatchedWebSocket.OPEN = NativeWebSocket.OPEN;
+        PatchedWebSocket.CLOSING = NativeWebSocket.CLOSING;
+        PatchedWebSocket.CLOSED = NativeWebSocket.CLOSED;
+      }
+
+      window.WebSocket = PatchedWebSocket;
+    })();
+
+    // Self-healing block: Catch chunk-load/module script errors caused by stale/deleted hashes in Service Worker cache.
+    // Automatically purges active caches and does a hard-refresh to fetch the fresh bundle assets.
+    window.addEventListener('error', function (e) {
+      var msg = e.message || '';
+      var target = e.target || {};
+      var filename = e.filename || '';
+
+      // Suppress benign Vite WebSocket and local connection errors
+      var isViteWS = msg.indexOf('WebSocket') > -1 ||
+        msg.indexOf('vite') > -1 ||
+        filename.indexOf('vite') > -1;
+      if (isViteWS) {
+        e.preventDefault();
+        e.stopPropagation();
+        return true;
+      }
+
+      var isScriptError = target.tagName === 'SCRIPT' ||
+        msg.indexOf('Failed to fetch dynamically imported module') > -1 ||
+        msg.indexOf('Importing a module script failed') > -1 ||
+        msg.indexOf('chunk') > -1;
+
+      if (isScriptError) {
+        console.warn('[PWA] Critical script/chunk failed to load. Purging cache...');
+        if ('serviceWorker' in navigator && window.caches) {
+          caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+          }).then(function () {
+            window.location.reload(true);
+          }).catch(function () {
+            window.location.reload(true);
+          });
         } else {
-          message = String(message);
+          window.location.reload(true);
         }
-        
-        var isViteWS = message.indexOf('WebSocket') > -1 || 
-                       message.indexOf('vite') > -1 || 
-                       message.indexOf('ws://') > -1 || 
-                       message.indexOf('wss://') > -1;
-        if (isViteWS) {
-          event.preventDefault();
-          event.stopPropagation();
-          console.debug('[PWA/Vite] Suppressed sandbox websocket connection exception:', message);
-          return true;
+      }
+    }, true);
+
+    // Gracefully capture and suppress benign Vite WebSocket HMR connectivity failures
+    // that natively happen within the Cloud Run sandbox environment.
+    window.addEventListener('unhandledrejection', function (event) {
+      var reason = event.reason;
+      var message = (reason && (reason.message || reason)) || '';
+      if (typeof message === 'object') {
+        try {
+          message = JSON.stringify(message);
+        } catch (err) {
+          message = String(reason);
         }
-      });
-    </script>
-    <title>Emma's Electronics</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+      } else {
+        message = String(message);
+      }
+
+      var isViteWS = message.indexOf('WebSocket') > -1 ||
+        message.indexOf('vite') > -1 ||
+        message.indexOf('ws://') > -1 ||
+        message.indexOf('wss://') > -1;
+      if (isViteWS) {
+        event.preventDefault();
+        event.stopPropagation();
+        console.debug('[PWA/Vite] Suppressed sandbox websocket connection exception:', message);
+        return true;
+      }
+    });
+  </script>
+  <title>Solo's Electronics</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
