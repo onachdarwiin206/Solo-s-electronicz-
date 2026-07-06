@@ -8,13 +8,13 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY ?? ''),
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
-      dedupe: ['react', 'react-dom'],
+      dedupe: ['react', 'react-dom', 'react-dom/client'],
     },
     build: {
       cssMinify: true,
@@ -22,28 +22,40 @@ export default defineConfig(({mode}) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
+            // React core MUST be alone — nothing else goes in this chunk
+            // to prevent circular deps with other vendor chunks
+            if (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/scheduler/')
+            ) {
+              return 'vendor-react';
+            }
+            // Motion/framer — depends on react, must be separate
+            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion')) {
+              return 'vendor-motion';
+            }
+            // Supabase — large, no React deps
+            if (id.includes('node_modules/@supabase') || id.includes('node_modules/postgrest')) {
+              return 'vendor-supabase';
+            }
+            // Charts — recharts pulls d3, keep isolated
+            if (id.includes('node_modules/recharts') || id.includes('node_modules/d3') || id.includes('node_modules/victory')) {
+              return 'vendor-charts';
+            }
+            // Redux toolkit used by recharts — keep with charts to avoid cross-chunk React refs
+            if (id.includes('node_modules/@reduxjs') || id.includes('node_modules/react-redux') || id.includes('node_modules/use-sync-external-store')) {
+              return 'vendor-charts';
+            }
+            // Everything else — lottie, lucide, uuid, etc.
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'vendor-react';
-              }
-              if (id.includes('supabase') || id.includes('postgrest')) {
-                return 'vendor-supabase';
-              }
-              if (id.includes('motion') || id.includes('framer')) {
-                return 'vendor-motion';
-              }
-              if (id.includes('recharts') || id.includes('d3')) {
-                return 'vendor-charts';
-              }
-              return 'vendor-others';
+              return 'vendor-misc';
             }
           }
         }
       }
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: false,
     },
   };
