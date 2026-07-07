@@ -814,19 +814,20 @@ export function HomeHero({
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8">
+                    <div className="flex gap-6 overflow-x-auto no-scrollbar pb-6 pt-2 scroll-smooth w-full select-none snap-x snap-mandatory">
                       {catProducts.map((item) => (
-                        <ProductCard
-                          key={item.id}
-                          product={item}
-                          onAddToCart={onAddToCart}
-                          onClick={() => onProductClick(item)}
-                          onQuickView={onQuickView}
-                          isWishlisted={isItemWishlisted(item.id)}
-                          onToggleWishlist={onToggleWishlist}
-                          isLiked={isItemLiked(item.id)}
-                          onToggleLike={onToggleLike}
-                        />
+                        <div key={item.id} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
+                          <ProductCard
+                            product={item}
+                            onAddToCart={onAddToCart}
+                            onClick={() => onProductClick(item)}
+                            onQuickView={onQuickView}
+                            isWishlisted={isItemWishlisted(item.id)}
+                            onToggleWishlist={onToggleWishlist}
+                            isLiked={isItemLiked(item.id)}
+                            onToggleLike={onToggleLike}
+                          />
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -875,7 +876,7 @@ export function HomeHero({
                   key={`rec-marquee-${item.id}-${idx}`}
                   id={`rec-marquee-card-${item.id}-${idx}`}
                   onClick={() => onProductClick(item)}
-                  className="group relative rounded-[2.25rem] bg-[#090a0f]/85 dark:bg-card/70 hover:bg-card border border-white/[0.04] hover:border-blue-500/40 p-5 flex items-center gap-5 w-80 h-32 transition-all duration-300 cursor-pointer shrink-0 shadow-xl hover:shadow-[0_15px_45px_rgba(59,130,246,0.12)]"
+                  className="group relative rounded-[2.25rem] bg-card/35 dark:bg-card/30 backdrop-blur-md hover:bg-card/50 border border-white/[0.04] hover:border-blue-500/40 p-5 flex items-center gap-5 w-80 h-32 transition-all duration-300 cursor-pointer shrink-0 shadow-xl hover:shadow-[0_15px_45px_rgba(59,130,246,0.12)]"
                 >
                   {/* Subtle backdrop element */}
                   <span className="absolute inset-0 bg-gradient-to-b from-white/[0.01] to-transparent pointer-events-none rounded-[2.25rem]" />

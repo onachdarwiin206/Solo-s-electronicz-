@@ -147,7 +147,7 @@ export function ProductCard({
         ref={cardRef}
         whileHover={{ y: -6, transition: { duration: 0.2, ease: "easeOut" } }}
         onClick={onClick}
-        className="group relative bg-[#090a0f]/90 dark:bg-card border border-white/[0.04] hover:border-blue-500/45 rounded-[2.25rem] overflow-hidden transition-all duration-300 shadow-[0_15px_45px_0_rgba(0,0,0,0.18)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.12)] cursor-pointer flex flex-col justify-between h-full min-h-[490px]"
+        className="group relative bg-card/35 dark:bg-card/30 backdrop-blur-md border border-white/[0.04] hover:border-blue-500/45 rounded-[2.25rem] overflow-hidden transition-all duration-300 shadow-[0_15px_45px_0_rgba(0,0,0,0.18)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.12)] cursor-pointer flex flex-col justify-between h-full min-h-[490px]"
       >
         {/* Card backdrop element */}
         <span className="absolute inset-0 bg-gradient-to-b from-white/[0.015] to-transparent pointer-events-none" />
@@ -322,7 +322,7 @@ export function ProductCard({
               </div>
             </div>
 
-            {/* Pricing Section (High-conversion Jumia & Apple hybrid styling) */}
+            {/* Pricing Section (High-conversion Jumia & modern card hybrid styling) */}
             <div className="pt-2 bg-[#0d0e14]/50 border border-white/[0.02] p-3 rounded-2xl flex flex-col justify-center text-left">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm sm:text-base font-mono font-black text-white whitespace-nowrap">

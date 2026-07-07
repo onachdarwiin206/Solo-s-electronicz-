@@ -240,18 +240,28 @@ export function Navbar({
           </div>
         </div>
 
-        {/* Ribbon 2: Secondary Category Browser Navigation - Scrollable on mobile/tablet */}
-        <div className="flex xl:justify-center items-center h-11 border-t border-border/80 gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap px-4 py-1 select-none">
+        {/* Ribbon 2: Secondary Category Browser Navigation - Scrollable horizontally on all screens */}
+        <div className="flex justify-start items-center h-12 border-t border-border/80 gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap px-4 py-1 select-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <button
                 key={item.name}
                 onClick={() => onCategorySelect(item.category)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-105 active:scale-95 transition-all duration-200 font-mono uppercase tracking-tighter cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shrink-0"
               >
-                <Icon size={13} className="shrink-0" />
-                <span>{item.name}</span>
+                <Icon size={15} className="shrink-0" style={{ color: '#0088ff', mixBlendMode: 'screen' }} />
+                <span 
+                  style={{ 
+                    fontFamily: "'Agency FB', sans-serif", 
+                    fontSize: '18.5px', 
+                    color: '#0088ff',
+                    mixBlendMode: 'screen'
+                  }} 
+                  className="font-bold uppercase tracking-wide"
+                >
+                  {item.name}
+                </span>
               </button>
             );
           })}

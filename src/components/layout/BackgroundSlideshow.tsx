@@ -6,9 +6,7 @@ import {
   Cpu, Compass, Palette, EyeOff, Layers, Settings, ChevronRight
 } from 'lucide-react';
 
-import abstractNeon from '../../assets/images/abstract_neon_bg_1781818038084.jpg';
-import liraLuxury from '../../assets/images/lira_luxury_background_1781811057487.jpg';
-import showroomBg from '../../assets/images/showroom_bg_1781811030624.jpg';
+import techExperienceBg from '../../assets/images/tech_experience_bg_1783451786483.jpg';
 
 interface Particle {
   id: number;
@@ -31,25 +29,11 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    id: 'abstract-neon',
-    name: 'Abstract Neon Vibe',
-    description: 'Dynamic cyberpunk violet & cyan luminescence matching modern smartphone/laptop screens.',
-    url: abstractNeon,
-    tag: 'CYBERPUNK NEON'
-  },
-  {
-    id: 'luxury-quartz',
-    name: 'Luxury Obsidian Quartz',
-    description: 'Sophisticated deep dark crystalline glass refractions with diamond-like highlights.',
-    url: liraLuxury,
-    tag: 'LUXURY CLASS'
-  },
-  {
-    id: 'showroom-cinematic',
-    name: 'Showroom Cinematic',
-    description: 'Cinematic showroom depth, capturing authentic electronics presentation showcases.',
-    url: showroomBg,
-    tag: 'STUDIO AMBIENT'
+    id: 'tech-experience-bg',
+    name: 'Tech Experience',
+    description: 'A premium, cinematic, futuristic electronics showroom experience center.',
+    url: techExperienceBg,
+    tag: 'FUTURISTIC TECH'
   }
 ];
 
@@ -62,25 +46,10 @@ export function BackgroundSlideshow() {
   const [isMobile, setIsMobile] = useState(false);
   const [hudOpen, setHudOpen] = useState(false);
 
-  // States with local storage hydration
-  const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('solo_bg_slide_id');
-      if (saved) {
-        const found = SLIDES.findIndex(s => s.id === saved);
-        return found !== -1 ? found : 0;
-      }
-    } catch {}
-    return 0;
-  });
+  // States with local storage hydration - locked to 0 (the new image) per user request
+  const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
 
-  const [isSlideshowPaused, setIsSlideshowPaused] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('solo_bg_paused');
-      return saved === 'true';
-    } catch {}
-    return false;
-  });
+  const [isSlideshowPaused, setIsSlideshowPaused] = useState<boolean>(true);
 
   const [particleDensity, setParticleDensity] = useState<ParticleDensity>(() => {
     try {
@@ -141,14 +110,10 @@ export function BackgroundSlideshow() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Automatic slideshow transition sequence
+  // Automatic slideshow transition sequence is disabled to maintain the second image in the background
   useEffect(() => {
-    if (isSlideshowPaused) return;
-    const timer = setInterval(() => {
-      setCurrentSlideIndex((prev) => (prev + 1) % SLIDES.length);
-    }, 11000); // Cinematic slow rotation
-    return () => clearInterval(timer);
-  }, [isSlideshowPaused]);
+    // Disabled to maintain the second image
+  }, []);
 
   // Mouse interaction handling
   useEffect(() => {
@@ -292,36 +257,43 @@ export function BackgroundSlideshow() {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
         }
+
+        @keyframes customZoomEvery5s {
+          0%, 100% {
+            transform: scale(1.0);
+          }
+          50% {
+            transform: scale(1.15);
+          }
+        }
+
+        .animated-custom-zoom {
+          animation: customZoomEvery5s 5s infinite ease-in-out;
+          will-change: transform;
+        }
       `}</style>
 
-      {/* LAYER 1: CINEMATIC IMAGES CROSSFADE */}
+      {/* LAYER 1: CINEMATIC IMAGES CROSSFADE WITH ZOOM EFFECT */}
       <div 
         className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none"
         style={{
-          transform: 'scale(1.06) translate(calc(var(--mouse-x) * 14px), calc(var(--mouse-y) * 14px))',
+          transform: 'translate(calc(var(--mouse-x) * 14px), calc(var(--mouse-y) * 14px))',
           willChange: 'transform',
           transition: 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)',
         }}
       >
-        <AnimatePresence mode="popLayout">
-          <motion.img
-            key={currentSlideIndex}
-            src={SLIDES[currentSlideIndex].url}
-            alt={SLIDES[currentSlideIndex].name}
-            initial={{ opacity: 0, scale: 1.03 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 1.2, ease: 'easeInOut' }}
-            className="absolute inset-0 w-full h-full object-cover select-none"
-            referrerPolicy="no-referrer"
-            style={{
-              filter: theme === 'light'
-                ? 'contrast(0.4) brightness(1.28) saturate(0.5)'
-                : 'contrast(0.55) brightness(0.68) saturate(0.85)',
-              transition: 'filter 0.6s ease-in-out',
-            }}
-          />
-        </AnimatePresence>
+        <img
+          src={SLIDES[0].url}
+          alt={SLIDES[0].name}
+          className="absolute inset-0 w-full h-full object-cover select-none animated-custom-zoom"
+          referrerPolicy="no-referrer"
+          style={{
+            filter: theme === 'light'
+              ? 'contrast(0.4) brightness(1.28) saturate(0.5)'
+              : 'contrast(0.55) brightness(0.68) saturate(0.85)',
+            transition: 'filter 0.6s ease-in-out',
+          }}
+        />
       </div>
 
       {/* LAYER 2: BLUR SPATIAL GLOWS MESH */}
