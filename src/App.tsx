@@ -38,18 +38,10 @@ import { migrateLocalStorageToIndexedDB, syncWithBackoff } from './lib/offlineDB
 
 /**
  * Main App Container.
- * Implements useReducer and provides state/dispatch down to children.
+ * Consumes state and dispatch from the global provider.
  */
 export default function App() {
-  const [state, dispatch] = useReducer(appReducer, initialState);
-
-  return (
-    <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
-        <AppContent />
-      </AppDispatchContext.Provider>
-    </AppStateContext.Provider>
-  );
+  return <AppContent />;
 }
 
 /**
