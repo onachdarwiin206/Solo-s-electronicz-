@@ -39,6 +39,12 @@ export function RapidRepairHub() {
 
   return (
     <section className="my-16 font-mono text-left border-2 border-brand-blue bg-black/85 relative overflow-hidden">
+      {/* Draftsman CAD corner markers */}
+      <div className="absolute -top-1.5 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+      <div className="absolute -top-1.5 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+      <div className="absolute -bottom-2 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+      <div className="absolute -bottom-2 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+
       {/* Decorative Blueprint Lines */}
       <div 
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -91,20 +97,31 @@ export function RapidRepairHub() {
               {services.map((svc, i) => (
                 <div 
                   key={i} 
-                  className="border border-brand-blue/30 bg-zinc-950 p-4 flex flex-col justify-between hover:border-brand-green/50 transition-colors"
+                  className="border border-brand-blue/30 bg-zinc-950 p-4 flex flex-col justify-between hover:border-brand-green/50 transition-colors relative group"
                 >
+                  {/* Subtle technical indicator corner */}
+                  <div className="absolute top-1.5 right-1.5 text-[8px] text-zinc-600/40 font-mono select-none pointer-events-none group-hover:text-brand-green/50 transition-colors">┌</div>
+
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1.5 bg-brand-blue/15 border border-brand-blue/30">
-                        {svc.icon}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 bg-brand-blue/15 border border-brand-blue/30">
+                          {svc.icon}
+                        </span>
+                        <span className="text-[9px] text-zinc-500 font-bold">[ {svc.target} ]</span>
+                      </div>
+                      <span className="text-[7.5px] text-brand-green/45 font-mono group-hover:text-brand-green/85 transition-colors uppercase select-none font-bold">
+                        [ RATE_VERIFIED ]
                       </span>
-                      <span className="text-[9px] text-zinc-500 font-bold">[ {svc.target} ]</span>
                     </div>
                     <h4 className="text-xs font-black text-white uppercase tracking-tight">{svc.name}</h4>
                   </div>
 
                   <div className="mt-4 pt-2 border-t border-brand-blue/15 flex justify-between items-baseline">
-                    <div className="text-[9px] font-bold text-brand-green">{svc.estTime}</div>
+                    <div className="text-[9px] font-bold text-brand-green flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-brand-green rounded-full animate-pulse shrink-0" />
+                      {svc.estTime}
+                    </div>
                     <div className="text-xs font-black text-white">{svc.estPrice}</div>
                   </div>
                 </div>

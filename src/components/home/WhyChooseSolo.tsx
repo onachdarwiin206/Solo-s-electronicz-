@@ -45,10 +45,16 @@ export function WhyChooseSolo() {
         {reasons.map((item, idx) => (
           <div 
             key={idx}
-            className="border-2 border-brand-blue bg-zinc-950/80 p-6 relative flex flex-col justify-between hover:bg-brand-blue/10 transition-colors duration-150"
+            className="border-2 border-brand-blue bg-zinc-950/80 p-6 relative flex flex-col justify-between hover:bg-brand-blue/10 transition-colors duration-150 group"
           >
+            {/* Draftsman CAD corner markers */}
+            <div className="absolute -top-1.5 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold opacity-30 group-hover:opacity-100 transition-opacity z-20">+</div>
+            <div className="absolute -top-1.5 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold opacity-30 group-hover:opacity-100 transition-opacity z-20">+</div>
+            <div className="absolute -bottom-2 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold opacity-30 group-hover:opacity-100 transition-opacity z-20">+</div>
+            <div className="absolute -bottom-2 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold opacity-30 group-hover:opacity-100 transition-opacity z-20">+</div>
+
             {/* Background Number Decal */}
-            <div className="absolute top-2 right-4 text-brand-green/10 text-5xl font-black select-none pointer-events-none">
+            <div className="absolute top-2 right-4 text-brand-green/10 text-5xl font-black select-none pointer-events-none group-hover:text-brand-green/20 transition-colors duration-200">
               {item.num}
             </div>
 

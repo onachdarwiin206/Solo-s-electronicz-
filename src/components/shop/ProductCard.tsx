@@ -147,10 +147,21 @@ export function ProductCard({
         ref={cardRef}
         whileHover={{ y: -6, transition: { duration: 0.2, ease: "easeOut" } }}
         onClick={onClick}
-        className="group relative bg-card/35 dark:bg-card/30 backdrop-blur-md border border-white/[0.04] hover:border-blue-500/45 rounded-[2.25rem] overflow-hidden transition-all duration-300 shadow-[0_15px_45px_0_rgba(0,0,0,0.18)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.12)] cursor-pointer flex flex-col justify-between h-full min-h-[490px]"
+        className="group relative bg-card/35 dark:bg-card/30 backdrop-blur-md border border-white/[0.04] hover:border-brand-blue/50 rounded-[2.25rem] overflow-hidden transition-all duration-300 shadow-[0_15px_45px_0_rgba(0,0,0,0.18)] hover:shadow-[0_20px_50px_rgba(0,71,171,0.18)] cursor-pointer flex flex-col justify-between h-full min-h-[490px]"
       >
         {/* Card backdrop element */}
         <span className="absolute inset-0 bg-gradient-to-b from-white/[0.015] to-transparent pointer-events-none" />
+
+        {/* Technical crosshair corner markings for premium layout */}
+        <div className="absolute top-2.5 left-2.5 text-[10px] text-zinc-500/40 group-hover:text-brand-green transition-colors font-mono select-none pointer-events-none z-30 font-bold">┌</div>
+        <div className="absolute top-2.5 right-2.5 text-[10px] text-zinc-500/40 group-hover:text-brand-green transition-colors font-mono select-none pointer-events-none z-30 font-bold">┐</div>
+        <div className="absolute bottom-2.5 left-2.5 text-[10px] text-zinc-500/40 group-hover:text-brand-green transition-colors font-mono select-none pointer-events-none z-30 font-bold">└</div>
+        <div className="absolute bottom-2.5 right-2.5 text-[10px] text-zinc-500/40 group-hover:text-brand-green transition-colors font-mono select-none pointer-events-none z-30 font-bold">┘</div>
+
+        {/* Small technical ID sticker */}
+        <div className="absolute top-[18px] right-4 text-[7px] text-zinc-500 font-mono tracking-widest uppercase opacity-20 group-hover:opacity-75 transition-opacity select-none pointer-events-none z-30">
+          SYS_ID: {product.id.toUpperCase()}_ACTIVE
+        </div>
 
         <div 
           style={{ aspectRatio: imageAspectRatio ? `${imageAspectRatio}` : '3/4' }}

@@ -30,7 +30,13 @@ export function TrustBar() {
   ];
 
   return (
-    <div className="w-full bg-black/90 border-2 border-brand-blue text-foreground font-mono select-none my-8">
+    <div className="w-full bg-black/90 border-2 border-brand-blue text-foreground font-mono select-none my-8 relative">
+      {/* Draftsman CAD corner markers */}
+      <div className="absolute -top-1.5 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+      <div className="absolute -top-1.5 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+      <div className="absolute -bottom-2 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+      <div className="absolute -bottom-2 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+
       {/* Decorative top ribbon */}
       <div className="bg-brand-blue text-black font-black text-[9px] tracking-[0.2em] px-4 py-1.5 flex justify-between items-center border-b-2 border-brand-blue uppercase">
         <span>[ SOLO'S ELECTRONICS // TRUST VERIFICATION PANEL ]</span>
@@ -44,13 +50,14 @@ export function TrustBar() {
             key={idx} 
             className="p-5 flex flex-col justify-start items-start text-left hover:bg-brand-blue/10 transition-colors duration-150 relative group"
           >
-            {/* Index label in top-right */}
-            <span className="absolute top-2 right-3 text-[9px] text-zinc-500 font-bold">
+            {/* Index label in top-right with state node */}
+            <span className="absolute top-2 right-3 text-[9px] text-zinc-500 font-bold flex items-center gap-1">
+              <span className="w-1 h-1 bg-brand-green/30 group-hover:bg-brand-green group-hover:scale-125 rounded-full transition-all duration-300" />
               [0{idx + 1}]
             </span>
 
             {/* Icon */}
-            <div className="mb-3 p-1 bg-brand-blue/10 border border-brand-blue/30 inline-block">
+            <div className="mb-3 p-1 bg-brand-blue/10 border border-brand-blue/30 inline-block group-hover:border-brand-green/50 transition-colors">
               {item.icon}
             </div>
 

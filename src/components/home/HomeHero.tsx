@@ -246,6 +246,12 @@ export function HomeHero({
           
           {/* LEFT COLUMN: Bold Conversion & Trust Copy */}
           <div className="lg:col-span-7 flex flex-col justify-between border-2 border-brand-blue bg-black/85 p-6 sm:p-8 relative">
+            {/* Draftsman CAD corner markers */}
+            <div className="absolute -top-1.5 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+            <div className="absolute -top-1.5 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+            <div className="absolute -bottom-2 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+            <div className="absolute -bottom-2 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+
             {/* Blueprint grid overlay */}
             <div 
               className="absolute inset-0 pointer-events-none opacity-[0.03]"
@@ -334,6 +340,12 @@ export function HomeHero({
 
           {/* RIGHT COLUMN: Live Stock Inventory Rig (Spotlight Carousel) */}
           <div className="lg:col-span-5 border-2 border-brand-blue bg-black/90 p-6 flex flex-col justify-between relative select-none">
+            {/* Draftsman CAD corner markers */}
+            <div className="absolute -top-1.5 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+            <div className="absolute -top-1.5 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+            <div className="absolute -bottom-2 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+            <div className="absolute -bottom-2 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+
             {/* Blueprint background grid */}
             <div 
               className="absolute inset-0 pointer-events-none opacity-[0.02]"
