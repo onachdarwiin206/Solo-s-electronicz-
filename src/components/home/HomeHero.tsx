@@ -223,268 +223,272 @@ export function HomeHero({
       <div className="absolute top-[15%] left-[-10%] w-[500px] h-[500px] bg-orange-500/[0.01] blur-[150px] rounded-full pointer-events-none" />
 
       {/* Jumia-Style Promotional Top Ribbon */}
-      <div className="w-full bg-[#F68B1E] text-white py-2 px-4 text-center text-xs font-semibold tracking-wider flex items-center justify-center gap-2 select-none shadow-sm relative z-20">
-        <Zap size={13} className="animate-pulse text-yellow-300 fill-current" />
-        <span>LIRA ELECTRONICS MEGADAYS: SAMEDAY SECURE COURIER DISPATCH WITHIN LIRA CITY!</span>
-      </div>
+      {!searchQuery && (
+        <div className="w-full bg-[#F68B1E] text-white py-2 px-4 text-center text-xs font-semibold tracking-wider flex items-center justify-center gap-2 select-none shadow-sm relative z-20">
+          <Zap size={13} className="animate-pulse text-yellow-300 fill-current" />
+          <span>LIRA ELECTRONICS MEGADAYS: SAMEDAY SECURE COURIER DISPATCH WITHIN LIRA CITY!</span>
+        </div>
+      )}
 
       {/* 1. THREE-COLUMN PORTAL HUB (JUMIA GRID ARCHETYPE) */}
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 text-left pt-2">
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
-          
-          {/* Left Category Sidebar (Desktop only) */}
-          <div className="hidden xl:flex xl:col-span-3 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4 flex-col gap-1 shadow-sm select-none">
-            <span className="text-[10px] font-mono tracking-widest text-[#F68B1E] uppercase font-extrabold px-3.5 mb-3.5 block">
-              Browse Categories
-            </span>
-            <button
-              onClick={() => onCategorySelect(null)}
-              className={cn(
-                "flex items-center justify-between w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border",
-                category === null
-                  ? "bg-[#F68B1E] border-[#F68B1E] text-white shadow-sm"
-                  : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:text-[#F68B1E] dark:hover:text-[#F68B1E] hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-              )}
-            >
-              <div className="flex items-center gap-2.5">
-                <Compass size={13} />
-                <span>All Products</span>
-              </div>
-              <ChevronRight size={12} className="opacity-60" />
-            </button>
-            {PRODUCT_CATEGORIES.map((cat) => {
-              const isActive = category === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => onCategorySelect(cat)}
-                  className={cn(
-                    "flex items-center justify-between w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border",
-                    isActive
-                      ? "bg-[#F68B1E] border-[#F68B1E] text-white shadow-sm"
-                      : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:text-[#F68B1E] dark:hover:text-[#F68B1E] hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                  )}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {getCategoryIcon(cat)}
-                    <span>{cat}</span>
-                  </div>
-                  <ChevronRight size={12} className="opacity-60" />
-                </button>
-              );
-            })}
-            <div className="mt-4 border-t border-zinc-100 dark:border-zinc-800/80 pt-4 px-3.5 space-y-2.5">
-              <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                <ShieldCheck size={14} className="text-[#F68B1E]" />
-                <span>100% Certified Genuine</span>
-              </div>
-              <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                <Truck size={14} className="text-[#F68B1E]" />
-                <span>Safe Same-Day Delivery</span>
+      {!searchQuery && (
+        <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 text-left pt-2">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
+            
+            {/* Left Category Sidebar (Desktop only) */}
+            <div className="hidden xl:flex xl:col-span-3 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4 flex-col gap-1 shadow-sm select-none">
+              <span className="text-[10px] font-mono tracking-widest text-[#F68B1E] uppercase font-extrabold px-3.5 mb-3.5 block">
+                Browse Categories
+              </span>
+              <button
+                onClick={() => onCategorySelect(null)}
+                className={cn(
+                  "flex items-center justify-between w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border",
+                  category === null
+                    ? "bg-[#F68B1E] border-[#F68B1E] text-white shadow-sm"
+                    : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:text-[#F68B1E] dark:hover:text-[#F68B1E] hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Compass size={13} />
+                  <span>All Products</span>
+                </div>
+                <ChevronRight size={12} className="opacity-60" />
+              </button>
+              {PRODUCT_CATEGORIES.map((cat) => {
+                const isActive = category === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => onCategorySelect(cat)}
+                    className={cn(
+                      "flex items-center justify-between w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border",
+                      isActive
+                        ? "bg-[#F68B1E] border-[#F68B1E] text-white shadow-sm"
+                        : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:text-[#F68B1E] dark:hover:text-[#F68B1E] hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {getCategoryIcon(cat)}
+                      <span>{cat}</span>
+                    </div>
+                    <ChevronRight size={12} className="opacity-60" />
+                  </button>
+                );
+              })}
+              <div className="mt-4 border-t border-zinc-100 dark:border-zinc-800/80 pt-4 px-3.5 space-y-2.5">
+                <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  <ShieldCheck size={14} className="text-[#F68B1E]" />
+                  <span>100% Certified Genuine</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  <Truck size={14} className="text-[#F68B1E]" />
+                  <span>Safe Same-Day Delivery</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Center Sliding Deals Banner (Main Carousel) */}
-          <div className="col-span-1 xl:col-span-6 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm relative p-6 sm:p-8 min-h-[420px]">
-            {/* Background ambient warmth */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#F68B1E]/[0.02] to-transparent pointer-events-none" />
-            
-            {premiumShowcase.length > 0 && activeShowcaseProduct ? (
-              <>
-                {/* Top Tag and Carousel Dot indicators */}
-                <div className="flex items-center justify-between select-none z-10">
-                  <span className="px-2.5 py-1 bg-red-600 text-white text-[9px] font-sans font-black uppercase rounded tracking-wider flex items-center gap-1 animate-pulse">
-                    <Zap size={11} className="fill-current" />
-                    DEAL OF THE DAY
-                  </span>
-                  
-                  {/* Slider Pagination */}
-                  <div className="flex items-center gap-1.5">
-                    {premiumShowcase.map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveShowcaseIdx(idx)}
-                        className={cn(
-                          "w-1.5 h-1.5 rounded-full transition-all cursor-pointer",
-                          idx === activeShowcaseIdx 
-                            ? "bg-[#F68B1E] w-4" 
-                            : "bg-zinc-200 dark:bg-zinc-700 hover:bg-[#F68B1E]/50"
-                        )}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Central Showcase Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center flex-1 my-4 z-10">
-                  {/* Left Content */}
-                  <div className="md:col-span-7 space-y-3.5 text-left">
-                    <span className="text-[10px] font-mono font-bold tracking-widest text-[#F68B1E] uppercase block">
-                      {activeShowcaseProduct.category}
+            {/* Center Sliding Deals Banner (Main Carousel) */}
+            <div className="col-span-1 xl:col-span-6 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm relative p-6 sm:p-8 min-h-[420px]">
+              {/* Background ambient warmth */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#F68B1E]/[0.02] to-transparent pointer-events-none" />
+              
+              {premiumShowcase.length > 0 && activeShowcaseProduct ? (
+                <>
+                  {/* Top Tag and Carousel Dot indicators */}
+                  <div className="flex items-center justify-between select-none z-10">
+                    <span className="px-2.5 py-1 bg-red-600 text-white text-[9px] font-sans font-black uppercase rounded tracking-wider flex items-center gap-1 animate-pulse">
+                      <Zap size={11} className="fill-current" />
+                      DEAL OF THE DAY
                     </span>
-                    <h3 className="text-xl sm:text-2xl lg:text-3xl font-display font-extrabold text-zinc-900 dark:text-white uppercase leading-tight line-clamp-2">
-                      {activeShowcaseProduct.name}
-                    </h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
-                      {activeShowcaseProduct.description}
-                    </p>
                     
-                    {/* Pricing with heavy discounts */}
-                    <div className="pt-1">
-                      <span className="text-[8px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block font-black">Flash Rate</span>
-                      <div className="flex items-baseline gap-2 mt-0.5">
-                        <span className="text-xl sm:text-2xl font-mono font-black text-[#F68B1E]">
-                          UGX {activeShowcaseProduct.price.toLocaleString()}
-                        </span>
-                        <span className="text-xs font-mono text-zinc-400 line-through">
-                          UGX {Math.floor(activeShowcaseProduct.price * 1.25).toLocaleString()}
+                    {/* Slider Pagination */}
+                    <div className="flex items-center gap-1.5">
+                      {premiumShowcase.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setActiveShowcaseIdx(idx)}
+                          className={cn(
+                            "w-1.5 h-1.5 rounded-full transition-all cursor-pointer",
+                            idx === activeShowcaseIdx 
+                              ? "bg-[#F68B1E] w-4" 
+                              : "bg-zinc-200 dark:bg-zinc-700 hover:bg-[#F68B1E]/50"
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Central Showcase Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center flex-1 my-4 z-10">
+                    {/* Left Content */}
+                    <div className="md:col-span-7 space-y-3.5 text-left">
+                      <span className="text-[10px] font-mono font-bold tracking-widest text-[#F68B1E] uppercase block">
+                        {activeShowcaseProduct.category}
+                      </span>
+                      <h3 className="text-xl sm:text-2xl lg:text-3xl font-display font-extrabold text-zinc-900 dark:text-white uppercase leading-tight line-clamp-2">
+                        {activeShowcaseProduct.name}
+                      </h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
+                        {activeShowcaseProduct.description}
+                      </p>
+                      
+                      {/* Pricing with heavy discounts */}
+                      <div className="pt-1">
+                        <span className="text-[8px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block font-black">Flash Rate</span>
+                        <div className="flex items-baseline gap-2 mt-0.5">
+                          <span className="text-xl sm:text-2xl font-mono font-black text-[#F68B1E]">
+                            UGX {activeShowcaseProduct.price.toLocaleString()}
+                          </span>
+                          <span className="text-xs font-mono text-zinc-400 line-through">
+                            UGX {Math.floor(activeShowcaseProduct.price * 1.25).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Image Display */}
+                    <div className="md:col-span-5 flex items-center justify-center relative">
+                      <div 
+                        onClick={() => onQuickView(activeShowcaseProduct)}
+                        className="w-56 h-56 sm:w-72 sm:h-72 lg:w-80 lg:h-80 flex items-center justify-center p-3 sm:p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80 relative cursor-pointer group shadow-sm hover:shadow transition-all"
+                      >
+                        <OptimizedImage
+                          src={activeShowcaseProduct.image}
+                          alt={activeShowcaseProduct.name}
+                          className="max-h-full max-w-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <span className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 backdrop-blur-sm rounded-md text-[9px] font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1 select-none">
+                          <Eye size={11} /> Zoom
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Image Display */}
-                  <div className="md:col-span-5 flex items-center justify-center relative">
-                    <div 
-                      onClick={() => onQuickView(activeShowcaseProduct)}
-                      className="w-56 h-56 sm:w-72 sm:h-72 lg:w-80 lg:h-80 flex items-center justify-center p-3 sm:p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80 relative cursor-pointer group shadow-sm hover:shadow transition-all"
-                    >
-                      <OptimizedImage
-                        src={activeShowcaseProduct.image}
-                        alt={activeShowcaseProduct.name}
-                        className="max-h-full max-w-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <span className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 backdrop-blur-sm rounded-md text-[9px] font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1 select-none">
-                        <Eye size={11} /> Zoom
-                      </span>
+                  {/* Footer Controls / Action row */}
+                  <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/50 pt-4 z-10 gap-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setActiveShowcaseIdx(prev => (prev - 1 + premiumShowcase.length) % premiumShowcase.length);
+                        }}
+                        className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer border border-zinc-200/40 dark:border-zinc-700/40"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveShowcaseIdx(prev => (prev + 1) % premiumShowcase.length);
+                        }}
+                        className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer border border-zinc-200/40 dark:border-zinc-700/40"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-1 justify-end">
+                      <button
+                        onClick={() => onAddToCart(activeShowcaseProduct)}
+                        className="px-5 py-2.5 bg-[#F68B1E] hover:bg-[#e07b12] text-white font-sans font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer flex-1 max-w-[160px]"
+                      >
+                        <ShoppingBag size={13} />
+                        <span>Buy Now</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => onToggleWishlist(activeShowcaseProduct.id)}
+                        className={cn(
+                          "p-2.5 rounded-xl border transition-all flex items-center justify-center cursor-pointer shrink-0",
+                          isItemWishlisted(activeShowcaseProduct.id)
+                            ? 'bg-red-50 border-red-200 text-red-500 dark:bg-red-900/20 dark:border-red-900/30'
+                            : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600'
+                        )}
+                      >
+                        <Heart size={13} className={isItemWishlisted(activeShowcaseProduct.id) ? "fill-current" : ""} />
+                      </button>
                     </div>
                   </div>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs uppercase tracking-widest font-mono">
+                  Empty Showcase
                 </div>
-
-                {/* Footer Controls / Action row */}
-                <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/50 pt-4 z-10 gap-3">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setActiveShowcaseIdx(prev => (prev - 1 + premiumShowcase.length) % premiumShowcase.length);
-                      }}
-                      className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer border border-zinc-200/40 dark:border-zinc-700/40"
-                    >
-                      <ChevronLeft size={14} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveShowcaseIdx(prev => (prev + 1) % premiumShowcase.length);
-                      }}
-                      className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer border border-zinc-200/40 dark:border-zinc-700/40"
-                    >
-                      <ChevronRight size={14} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-1 justify-end">
-                    <button
-                      onClick={() => onAddToCart(activeShowcaseProduct)}
-                      className="px-5 py-2.5 bg-[#F68B1E] hover:bg-[#e07b12] text-white font-sans font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer flex-1 max-w-[160px]"
-                    >
-                      <ShoppingBag size={13} />
-                      <span>Buy Now</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => onToggleWishlist(activeShowcaseProduct.id)}
-                      className={cn(
-                        "p-2.5 rounded-xl border transition-all flex items-center justify-center cursor-pointer shrink-0",
-                        isItemWishlisted(activeShowcaseProduct.id)
-                          ? 'bg-red-50 border-red-200 text-red-500 dark:bg-red-900/20 dark:border-red-900/30'
-                          : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600'
-                      )}
-                    >
-                      <Heart size={13} className={isItemWishlisted(activeShowcaseProduct.id) ? "fill-current" : ""} />
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs uppercase tracking-widest font-mono">
-                Empty Showcase
-              </div>
-            )}
-          </div>
-
-          {/* Right Column (Courier, Secure Escrow & WhatsApp Negotiator) */}
-          <div className="col-span-1 xl:col-span-3 flex flex-col gap-4">
-            
-            {/* Courier Section */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-[#F68B1E] font-extrabold uppercase">
-                  <Truck size={12} />
-                  <span>JUMIA EXPRESS COURIER</span>
-                </div>
-                <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">
-                  Lira Doorstep Delivery
-                </h4>
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  Fast deliveries inside Lira Municipality and neighboring districts of Northern Uganda.
-                </p>
-              </div>
-              <div className="mt-3 flex justify-between items-center text-[10px] font-sans font-bold text-[#F68B1E] select-none">
-                <span>Free delivery over UGX 500k</span>
-                <ChevronRight size={10} />
-              </div>
+              )}
             </div>
 
-            {/* Secure Check Escrow Section */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">
-                  <ShieldCheck size={12} />
-                  <span>SECURE PHYSICAL COLLECTION</span>
+            {/* Right Column (Courier, Secure Escrow & WhatsApp Negotiator) */}
+            <div className="col-span-1 xl:col-span-3 flex flex-col gap-4">
+              
+              {/* Courier Section */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-[#F68B1E] font-extrabold uppercase">
+                    <Truck size={12} />
+                    <span>JUMIA EXPRESS COURIER</span>
+                  </div>
+                  <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">
+                    Lira Doorstep Delivery
+                  </h4>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed">
+                    Fast deliveries inside Lira Municipality and neighboring districts of Northern Uganda.
+                  </p>
                 </div>
-                <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">
-                  Verify Before Payment
-                </h4>
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  Collect your items from our main showroom counter. Pay after inspecting and testing your device.
-                </p>
+                <div className="mt-3 flex justify-between items-center text-[10px] font-sans font-bold text-[#F68B1E] select-none">
+                  <span>Free delivery over UGX 500k</span>
+                  <ChevronRight size={10} />
+                </div>
               </div>
-              <div className="mt-3 text-[9px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1 select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Escrow Covered Outpost</span>
-              </div>
-            </div>
 
-            {/* Direct WhatsApp Negotiator */}
-            <div className="bg-[#EBF7F0] dark:bg-emerald-950/20 border border-emerald-200/30 dark:border-emerald-900/30 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">
-                  <WhatsAppIcon size={12} className="text-emerald-500 fill-current" />
-                  <span>DIRECT ORDER DESK</span>
+              {/* Secure Check Escrow Section */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">
+                    <ShieldCheck size={12} />
+                    <span>SECURE PHYSICAL COLLECTION</span>
+                  </div>
+                  <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">
+                    Verify Before Payment
+                  </h4>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed">
+                    Collect your items from our main showroom counter. Pay after inspecting and testing your device.
+                  </p>
                 </div>
-                <h4 className="text-xs font-sans font-bold text-emerald-900 dark:text-emerald-100 uppercase">
-                  Order via WhatsApp
-                </h4>
-                <p className="text-[10px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
-                  Submit orders directly to Emma's personal sales counter to request customized discounts!
-                </p>
+                <div className="mt-3 text-[9px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1 select-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Escrow Covered Outpost</span>
+                </div>
               </div>
-              <a
-                href="https://wa.me/256782522718?text=Hello%20Emma,%20I%20am%20viewing%20Lira%20Phones%20and%20Electronics%20and%20want%20to%20place%20a%20custom%20order!"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3.5 py-2 px-3 bg-[#25D366] hover:bg-[#20ba59] text-white rounded-xl text-[10px] font-sans font-black uppercase tracking-wider text-center flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm"
-              >
-                <WhatsAppIcon size={12} className="fill-current" />
-                <span>Chat with Emma</span>
-              </a>
+
+              {/* Direct WhatsApp Negotiator */}
+              <div className="bg-[#EBF7F0] dark:bg-emerald-950/20 border border-emerald-200/30 dark:border-emerald-900/30 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">
+                    <WhatsAppIcon size={12} className="text-emerald-500 fill-current" />
+                    <span>DIRECT ORDER DESK</span>
+                  </div>
+                  <h4 className="text-xs font-sans font-bold text-emerald-900 dark:text-emerald-100 uppercase">
+                    Order via WhatsApp
+                  </h4>
+                  <p className="text-[10px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                    Submit orders directly to Emma's personal sales counter to request customized discounts!
+                  </p>
+                </div>
+                <a
+                  href="https://wa.me/256782522718?text=Hello%20Emma,%20I%20am%20viewing%20Lira%20Phones%20and%20Electronics%20and%20want%20to%20place%20a%20custom%20order!"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3.5 py-2 px-3 bg-[#25D366] hover:bg-[#20ba59] text-white rounded-xl text-[10px] font-sans font-black uppercase tracking-wider text-center flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm"
+                >
+                  <WhatsAppIcon size={12} className="fill-current" />
+                  <span>Chat with Emma</span>
+                </a>
+              </div>
+
             </div>
 
           </div>
-
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 2. FLASH SALES DEALS BLOCK (RED BRAND BANNER) */}
       {category === null && searchQuery === '' && products.length > 0 && (
@@ -658,15 +662,17 @@ export function HomeHero({
         {/* Catalog header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-zinc-200/60 dark:border-zinc-800/80 pb-3 mb-6 gap-3">
           <div className="space-y-0.5">
-            <span className="text-[9px] font-mono font-black tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">DIRECT SPEC CATALOG</span>
+            <span className="text-[9px] font-mono font-black tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">
+              {searchQuery ? 'SEARCH RESULTS' : 'DIRECT SPEC CATALOG'}
+            </span>
             <h2 className="text-xl sm:text-2xl font-display font-black text-zinc-900 dark:text-white tracking-tight uppercase">
-              {category ? `${category}` : "Browse the Showroom"}
+              {searchQuery ? `Results for "${searchQuery}"` : category ? `${category}` : "Browse the Showroom"}
             </h2>
           </div>
 
           <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shrink-0 self-start sm:self-auto select-none font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            {category ? `${filteredProducts.length} Items Locked` : `${products.length} Units Online`}
+            {searchQuery || category ? `${filteredProducts.length} Items Found` : `${products.length} Units Online`}
           </span>
         </div>
 
