@@ -43,6 +43,16 @@ export function Footer({ t, onCategorySelect, onAdminPanelClick }: FooterProps) 
               </div>
 
               <a 
+                href="https://wa.me/256793405517?text=Hello%20Emma%20Electronics%20owner,%20I%20have%20an%20inquiry%20about%20your%20products!"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 py-2 px-4 bg-[#25D366] hover:bg-emerald-500 active:scale-95 text-white rounded-lg text-xs font-sans font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm shadow-emerald-500/10"
+              >
+                <MessageSquare size={12} />
+                <span>Contact Owner (+256793405517)</span>
+              </a>
+
+              <a 
                 href="https://www.google.com/maps/dir/?api=1&destination=2.2328081,32.8932380"
                 target="_blank"
                 rel="noopener noreferrer"

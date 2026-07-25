@@ -199,6 +199,20 @@ export function Navbar({
               </button>
             </Tooltip>
 
+            <Tooltip content="Chat with Owner on WhatsApp">
+              <button 
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('trigger-whatsapp-flow', { detail: { message: "Hello Emma Electronics owner, I have an inquiry about your products and services!" } }));
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 active:scale-95 text-[#25D366] border border-[#25D366]/30 rounded-lg text-[10px] font-mono font-black uppercase tracking-wider transition-all cursor-pointer shrink-0"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 shrink-0">
+                  <path d="M17.472 14.382c-.022-.008-.115-.062-.272-.14-.08-.041-.268-.137-.358-.183-.09-.045-.155-.068-.22.031-.064.098-.25.314-.306.377-.056.062-.112.07-.22.031-.088-.044-.361-.133-.687-.424-.253-.226-.425-.506-.475-.591-.05-.084-.005-.13.038-.172.039-.038.08-.098.12-.147.04-.05.053-.085.08-.142.027-.057.013-.109-.007-.15-.02-.04-.155-.375-.213-.513-.057-.138-.114-.12-.156-.12-.04-.002-.087-.003-.135-.003-.048 0-.127.018-.193.088-.066.07-.254.248-.254.604 0 .357.259.702.295.751.036.049.51.777 1.235 1.09.173.074.308.118.414.152.173.055.33.047.454.028.138-.02 2.802-1.146 2.802-1.146.036-.046.072-.102.102-.156s.013-.105.007-.15-.022-.06-.051-.085zm-5.419 6.203h-.004a8.194 8.194 0 01-4.18-1.148l-.3-.178-3.1 1.018a.333.333 0 01-.42-.42l1.018-3.1-.178-.3a8.194 8.194 0 01-1.148-4.18C3.12 6.551 7.11 2.561 12 2.561c4.89 0 8.879 3.99 8.879 8.88 0 4.89-3.99 8.879-8.88 8.879l.063-.057zm0-16.791c-5.46 0-9.897 4.437-9.897 9.897 0 1.761.461 3.473 1.336 4.981l-.06-.102-1.42 4.33a.333.333 0 00.419.42l4.33-1.42.1.06a9.897 9.897 0 004.981 1.335h.001c5.46 0 9.897-4.437 9.897-9.897 0-5.46-4.437-9.897-9.897-9.897z" />
+                </svg>
+                <span className="hidden md:inline-block">CHAT OWNER</span>
+              </button>
+            </Tooltip>
+
             <Tooltip content={`Theme: ${theme === 'glass' ? 'Glass Refraction' : theme === 'light' ? 'Light Mode' : 'Dark Mode'}`}>
               <button 
                 onClick={toggleTheme}

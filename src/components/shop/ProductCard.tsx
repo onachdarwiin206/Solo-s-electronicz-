@@ -149,8 +149,8 @@ export function ProductCard({
         {/* Top visual content area (Framed image) */}
         <div>
           <div 
-            style={{ aspectRatio: '1.1' }}
-            className="relative w-full rounded-2xl overflow-hidden bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-6 transition-all duration-300"
+            style={{ aspectRatio: '1.05' }}
+            className="relative w-full rounded-2xl overflow-hidden bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-2.5 sm:p-3.5 transition-all duration-300"
           >
             {/* Tag over list */}
             <span className="absolute top-3 left-3 z-20 flex flex-col gap-1 items-start">

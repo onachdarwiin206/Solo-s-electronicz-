@@ -348,15 +348,15 @@ export function HomeHero({
                   <div className="md:col-span-5 flex items-center justify-center relative">
                     <div 
                       onClick={() => onQuickView(activeShowcaseProduct)}
-                      className="w-40 h-40 flex items-center justify-center p-2 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80 relative cursor-pointer group shadow-sm hover:shadow"
+                      className="w-56 h-56 sm:w-72 sm:h-72 lg:w-80 lg:h-80 flex items-center justify-center p-3 sm:p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80 relative cursor-pointer group shadow-sm hover:shadow transition-all"
                     >
                       <OptimizedImage
                         src={activeShowcaseProduct.image}
                         alt={activeShowcaseProduct.name}
                         className="max-h-full max-w-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-300"
                       />
-                      <span className="absolute bottom-2 right-2 px-1.5 py-1 bg-black/60 rounded text-[8px] font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1 select-none">
-                        <Eye size={10} /> Zoom
+                      <span className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 backdrop-blur-sm rounded-md text-[9px] font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1 select-none">
+                        <Eye size={11} /> Zoom
                       </span>
                     </div>
                   </div>
@@ -526,7 +526,7 @@ export function HomeHero({
                   <div
                     key={`flash-${item.id}`}
                     onClick={() => onProductClick(item)}
-                    className="w-[180px] sm:w-[220px] bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl p-3 flex flex-col justify-between shrink-0 snap-start shadow-sm hover:shadow-md transition-all cursor-pointer relative group text-zinc-800 dark:text-zinc-100"
+                    className="w-[200px] sm:w-[240px] bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl p-3 flex flex-col justify-between shrink-0 snap-start shadow-sm hover:shadow-md transition-all cursor-pointer relative group text-zinc-800 dark:text-zinc-100"
                   >
                     {/* Discount badge */}
                     <span className="absolute top-2.5 left-2.5 bg-[#E61E26] text-white text-[8px] font-sans font-black px-1.5 py-0.5 rounded uppercase tracking-wider z-10 shadow-sm">
@@ -534,7 +534,7 @@ export function HomeHero({
                     </span>
 
                     {/* Image Area */}
-                    <div className="h-28 w-full bg-zinc-50 dark:bg-zinc-950 rounded-lg flex items-center justify-center p-2 mb-2 border border-zinc-100 dark:border-zinc-800/20 relative overflow-hidden shrink-0">
+                    <div className="h-36 sm:h-40 w-full bg-zinc-50 dark:bg-zinc-950 rounded-lg flex items-center justify-center p-1.5 mb-2 border border-zinc-100 dark:border-zinc-800/20 relative overflow-hidden shrink-0">
                       <OptimizedImage
                         src={item.image}
                         alt={item.name}

@@ -92,9 +92,12 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
   const { user } = useAuth();
   const [step, setStep] = useState<CheckoutStep>('basket');
   
-  // Customer Details State
+  // Customer Details & Payment Method State
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('momo');
+  const [momoTxRef, setMomoTxRef] = useState('');
+  const [momoStatus, setMomoStatus] = useState<'idle' | 'prompt_sent' | 'confirming' | 'completed'>('idle');
   
   // Processing States
   const [isProcessing, setIsProcessing] = useState(false);
@@ -121,17 +124,23 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
     if (isOpen) {
       setStep('basket');
       setValidationError(null);
+      setMomoStatus('idle');
+      setMomoTxRef('');
     }
   }, [isOpen]);
 
   const validateDetails = () => {
     setValidationError(null);
     if (!customerName.trim()) {
-      setValidationError("Full Name is a required placeholder for quote generation.");
+      setValidationError("Full Name is required for order reservation.");
       return false;
     }
     if (!customerPhone.trim()) {
-      setValidationError("A contact telephone number is required to route your WhatsApp inquiry.");
+      setValidationError("A valid phone number is required for MTN MoMo and delivery.");
+      return false;
+    }
+    if (paymentMethod === 'momo' && customerPhone.length < 9) {
+      setValidationError("Please enter a valid Ugandan MTN phone number (e.g., 077..., 078..., 076...).");
       return false;
     }
     return true;
@@ -143,13 +152,17 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
 
     setIsProcessing(true);
 
+    if (paymentMethod === 'momo') {
+      setMomoStatus('prompt_sent');
+    }
+
     try {
       const checkoutRes = await onCheckout(
-        'cod', 
-        'Corporate Showroom', 
+        paymentMethod, 
+        'Lira Hub / Showroom', 
         0, 
         customerPhone, 
-        'Direct Collection', 
+        'Direct Collection / Fast Delivery', 
         customerName
       );
 
@@ -162,16 +175,23 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
       setPaymentDeadline(checkoutRes.paymentDeadline || null);
       setIsOfflineOrder(!!checkoutRes.offline);
       setIsSuccess(true);
+      if (paymentMethod === 'momo') {
+        setMomoStatus('completed');
+      }
     } catch (error: any) {
       console.error("Checkout transaction error:", error);
-      setValidationError(error.message || "Your sourcing request signature failed to lock. Please contact support.");
+      setMomoStatus('idle');
+      setValidationError(error.message || "Your transaction request failed. Please try again or contact the owner on WhatsApp.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleWhatsAppInstantSubmit = async () => {
-    await handleExecuteCheckout();
+  const sendProofToWhatsAppOwner = () => {
+    const cartSummary = items.map(i => `• ${i.name} (x${i.quantity}) - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
+    const msg = `🧾 *MTN MOMO PAYMENT PROOF*\n-----------------------------------\n*Order ID:* ${lastOrderId}\n*Customer:* ${customerName}\n*Phone:* ${customerPhone}\n*Payment Method:* MTN Mobile Money (MoMo)\n*Merchant Code:* 782522 (EMMA ELECTRONICS UG)\n*Amount Paid:* UGX ${grandTotal.toLocaleString()}\n*Verification Code:* ${verificationToken}\n${momoTxRef ? `*MoMo Tx Reference:* ${momoTxRef}\n` : ''}\n*ITEMS:* \n${cartSummary}\n-----------------------------------\nHello Emma Electronics owner, I have submitted my MTN MoMo payment. Please verify my payment and dispatch my order!`;
+    const url = `https://wa.me/256793405517?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
   };
 
   if (isSuccess) {
@@ -184,69 +204,92 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
               initial={{ x: '100%' }} 
               animate={{ x: 0 }} 
               exit={{ x: '100%' }} 
-              className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-[#030307] border-l border-white/[0.04] z-[110] flex flex-col items-center justify-center p-10 text-center shadow-2xl font-sans"
+              className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-[#030307] border-l border-white/[0.04] z-[110] flex flex-col items-center justify-between p-8 text-center shadow-2xl font-sans overflow-y-auto"
             >
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-              
-              <div className={`w-16 h-16 ${isOfflineOrder ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'} rounded-[2rem] flex items-center justify-center mb-4 border shadow-[0_0_30px_rgba(16,185,129,0.15)]`}>
-                <CheckCircle2 className={isOfflineOrder ? 'text-amber-400' : 'text-emerald-400'} size={32} />
-              </div>
-              
-              {isOfflineOrder ? (
-                <>
-                  <span className="text-[9px] font-mono tracking-[0.4em] text-amber-400 font-bold uppercase">ORDER SAVED OFFLINE</span>
-                  <h2 className="text-xl sm:text-2xl font-display font-medium text-white tracking-tight mt-1 mb-4">Will Sync When Online</h2>
-                </>
-              ) : (
-                <>
-                  <span className="text-[9px] font-mono tracking-[0.4em] text-emerald-400 font-bold uppercase">ORDER REGISTERED</span>
-                  <h2 className="text-xl sm:text-2xl font-display font-medium text-white tracking-tight mt-1 mb-4">Pending Payment</h2>
-                </>
-              )}
-
-              <div className="w-full bg-white/[0.02] border border-white/[0.05] rounded-3xl p-5 mb-6 text-left space-y-4">
-                <div className="flex justify-between items-center pb-2.5 border-b border-white/[0.04] font-mono">
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">Order Reference</span>
-                  <span className="text-xs text-white font-bold font-sans">#{lastOrderId}</span>
+              <div className="w-full space-y-6 my-auto">
+                <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500" />
+                
+                <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/30 rounded-[2rem] flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                  <CheckCircle2 className="text-amber-400" size={32} />
+                </div>
+                
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono tracking-[0.4em] text-amber-400 font-extrabold uppercase">
+                    {paymentMethod === 'momo' ? 'MTN MOMO PAYMENT REGISTERED' : 'ORDER REGISTERED'}
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-display font-medium text-white tracking-tight">
+                    {paymentMethod === 'momo' ? 'MoMo Receipt Generated' : 'Pending Confirmation'}
+                  </h2>
                 </div>
 
-                <div className="flex flex-col gap-1.5 pb-2.5 border-b border-white/[0.04]">
-                  <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Verification Token</span>
-                  <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] px-3.5 py-2.5 rounded-2xl">
-                    <span className="text-xs font-mono font-extrabold text-blue-400 tracking-wider">{verificationToken}</span>
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(verificationToken);
-                        alert("Token copied to clipboard!");
-                      }}
-                      className="text-[9px] font-mono uppercase bg-white/[0.05] text-gray-300 hover:text-white px-2 py-1 rounded-lg border border-white/[0.05] cursor-pointer"
-                    >
-                      Copy
-                    </button>
+                {/* MTN MoMo Merchant Banner */}
+                {paymentMethod === 'momo' && (
+                  <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-3xl p-4 text-left space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-amber-400 text-black font-black font-mono text-[10px] flex items-center justify-center">
+                          MTN
+                        </span>
+                        <span className="text-xs font-mono font-bold text-amber-300">MoMo Merchant Pay</span>
+                      </div>
+                      <span className="text-[9px] font-mono text-amber-400/80 uppercase font-extrabold">Verified Code: 782522</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 font-sans">
+                      Merchant: <strong className="text-white">EMMA ELECTRONICS UG</strong>
+                    </p>
                   </div>
+                )}
+
+                <div className="w-full bg-white/[0.02] border border-white/[0.05] rounded-3xl p-5 text-left space-y-3.5">
+                  <div className="flex justify-between items-center pb-2 border-b border-white/[0.04] font-mono">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">Order ID</span>
+                    <span className="text-xs text-white font-bold font-sans">#{lastOrderId}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center pb-2 border-b border-white/[0.04] font-mono">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">Total Paid / Payable</span>
+                    <span className="text-xs text-amber-400 font-bold">UGX {grandTotal.toLocaleString()}</span>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 pb-2 border-b border-white/[0.04]">
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Verification Token</span>
+                    <div className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] px-3.5 py-2 rounded-2xl">
+                      <span className="text-xs font-mono font-extrabold text-amber-400 tracking-wider">{verificationToken}</span>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(verificationToken);
+                          alert("Verification token copied!");
+                        }}
+                        className="text-[9px] font-mono uppercase bg-white/[0.05] text-gray-300 hover:text-white px-2 py-1 rounded-lg border border-white/[0.05] cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+
+                  {!isOfflineOrder && paymentDeadline && (
+                    <CountdownTimer deadline={paymentDeadline} />
+                  )}
                 </div>
 
-                {!isOfflineOrder && paymentDeadline && (
-                  <CountdownTimer deadline={paymentDeadline} />
-                )}
-              </div>
-              
-              {isOfflineOrder ? (
-                <p className="text-amber-300/80 text-xs font-semibold leading-relaxed mb-6 max-w-xs bg-amber-500/5 border border-amber-500/15 rounded-2xl p-4 text-left font-mono">
-                  ⚠️ You are currently offline. Your order has been securely queued in local IndexedDB and will automatically sync with the backend once internet access is restored.
-                </p>
-              ) : (
-                <p className="text-gray-400 text-xs font-medium leading-relaxed mb-6 max-w-xs">
-                  To finalize and confirm your purchase, please submit mobile money payment. The verification details and hardware breakdown have been copied and loaded into WhatsApp.
-                </p>
-              )}
+                {/* Direct Action Buttons */}
+                <div className="space-y-3 w-full pt-2">
+                  <button 
+                    onClick={sendProofToWhatsAppOwner}
+                    className="w-full py-4 bg-[#25D366] hover:bg-emerald-500 text-white font-bold rounded-2xl transition-all uppercase tracking-widest text-xs active:scale-95 duration-100 shadow-xl shadow-emerald-950/20 flex items-center justify-center gap-2.5 cursor-pointer font-sans"
+                  >
+                    <WhatsAppIcon size={16} />
+                    Send MoMo Receipt to Owner on WhatsApp
+                  </button>
 
-              <button 
-                onClick={() => { setIsSuccess(false); onClose(); }}
-                className="w-full py-4 bg-white text-black font-semibold rounded-2xl transition-all uppercase tracking-widest text-xs active:scale-95 duration-100 shadow-xl shadow-white/5 cursor-pointer"
-              >
-                Continue Sourcing
-              </button>
+                  <button 
+                    onClick={() => { setIsSuccess(false); onClose(); }}
+                    className="w-full py-3.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold rounded-2xl transition-all uppercase tracking-widest text-[11px] active:scale-95 duration-100 border border-zinc-800 cursor-pointer"
+                  >
+                    Close & Continue Shopping
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </>
         )}
@@ -360,7 +403,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                     </motion.div>
                   )}
 
-                  {/* Step 2: Contact Details */}
+                  {/* Step 2: Contact & Payment Details */}
                   {step === 'details' && (
                     <motion.div 
                       key="details"
@@ -369,33 +412,114 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                       exit={{ opacity: 0, x: 10 }} 
                       className="space-y-6 text-left"
                     >
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-mono tracking-widest text-[#2563eb] font-black uppercase">CONTACT INFORMATION</span>
-                        <h3 className="text-sm font-display font-medium text-white">Sourcing Details</h3>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-mono tracking-widest text-[#2563eb] font-black uppercase">CHECKOUT & PAYMENT</span>
+                        <h3 className="text-sm font-display font-medium text-white">Contact & Payment Method</h3>
                       </div>
 
-                      <div className="space-y-4">
-                        <div className="space-y-1.5 font-mono">
-                          <label className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
+                      <div className="space-y-3.5">
+                        <div className="space-y-1 font-mono">
+                          <label className="text-[8.5px] font-black text-gray-400 uppercase tracking-widest pl-1">Full Name</label>
                           <input 
                             type="text" 
-                            placeholder="Your full name..." 
+                            placeholder="e.g. Emma Okello..." 
                             value={customerName} 
                             onChange={(e) => { setCustomerName(e.target.value); setValidationError(null); }} 
-                            className="w-full bg-white/[0.01] border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans" 
+                            className="w-full bg-white/[0.02] border border-white/[0.08] hover:border-white/20 rounded-2xl p-3.5 text-white text-xs outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all font-sans" 
                           />
                         </div>
 
-                        <div className="space-y-1.5 font-mono">
-                          <label className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest pl-1">Mobile Telephone Number</label>
+                        <div className="space-y-1 font-mono">
+                          <label className="text-[8.5px] font-black text-gray-400 uppercase tracking-widest pl-1">MTN MoMo Telephone Number</label>
                           <input 
                             type="tel" 
-                            placeholder="e.g. 0770000000..." 
+                            placeholder="e.g. 0770000000, 0780000000..." 
                             value={customerPhone} 
                             onChange={(e) => { setCustomerPhone(e.target.value); setValidationError(null); }} 
-                            className="w-full bg-white/[0.01] border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 text-white text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all font-sans" 
+                            className="w-full bg-white/[0.02] border border-white/[0.08] hover:border-white/20 rounded-2xl p-3.5 text-white text-xs outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all font-sans" 
                           />
                         </div>
+                      </div>
+
+                      {/* Payment Method Selector */}
+                      <div className="space-y-2 pt-2">
+                        <label className="text-[9px] font-mono font-black text-gray-400 uppercase tracking-widest pl-1">
+                          Select Payment Option
+                        </label>
+
+                        <div className="grid grid-cols-1 gap-2.5">
+                          {/* Option 1: MTN MoMo */}
+                          <div 
+                            onClick={() => setPaymentMethod('momo')}
+                            className={cn(
+                              "p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-left",
+                              paymentMethod === 'momo' 
+                                ? "bg-amber-500/10 border-amber-400 text-white shadow-lg shadow-amber-500/10" 
+                                : "bg-white/[0.01] border-white/[0.06] text-gray-400 hover:border-white/20"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-amber-400 text-black font-black font-mono text-xs flex items-center justify-center shrink-0">
+                                MoMo
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">MTN Mobile Money</h4>
+                                  <span className="px-2 py-0.5 bg-amber-400/20 text-amber-300 text-[8px] font-mono font-black uppercase rounded-full">Fastest</span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Merchant Pay Code: <strong className="text-amber-300">782522</strong> (EMMA ELECTRONICS UG)</p>
+                              </div>
+                            </div>
+                            <div className={cn("w-4 h-4 rounded-full border flex items-center justify-center shrink-0", paymentMethod === 'momo' ? "border-amber-400 bg-amber-400" : "border-gray-600")}>
+                              {paymentMethod === 'momo' && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                            </div>
+                          </div>
+
+                          {/* Option 2: Cash on Delivery / Collection */}
+                          <div 
+                            onClick={() => setPaymentMethod('cod')}
+                            className={cn(
+                              "p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-left",
+                              paymentMethod === 'cod' 
+                                ? "bg-blue-500/10 border-blue-400 text-white shadow-lg shadow-blue-500/10" 
+                                : "bg-white/[0.01] border-white/[0.06] text-gray-400 hover:border-white/20"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 font-black font-mono text-xs flex items-center justify-center shrink-0">
+                                COD
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">Pay on Delivery / Pickup</h4>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Pay cash upon inspecting device at Lira Hub</p>
+                              </div>
+                            </div>
+                            <div className={cn("w-4 h-4 rounded-full border flex items-center justify-center shrink-0", paymentMethod === 'cod' ? "border-blue-400 bg-blue-400" : "border-gray-600")}>
+                              {paymentMethod === 'cod' && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Direct Owner Inquiry Box */}
+                      <div className="p-3.5 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-center justify-between gap-3 text-left">
+                        <div className="flex items-center gap-2.5">
+                          <WhatsAppIcon size={16} className="text-emerald-400 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-emerald-300">Have questions for the owner?</p>
+                            <p className="text-[9.5px] text-zinc-400">Chat with Emma Electronics directly on WhatsApp.</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const msg = `Hello Emma Electronics owner, I am interested in purchasing items worth UGX ${grandTotal.toLocaleString()}. Please provide more details!`;
+                            window.open(`https://wa.me/256793405517?text=${encodeURIComponent(msg)}`, '_blank');
+                          }}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-[9px] uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0"
+                        >
+                          Chat Owner
+                        </button>
                       </div>
 
                     </motion.div>
@@ -455,12 +579,31 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                       <button 
                         onClick={handleExecuteCheckout}
                         disabled={isProcessing}
-                        className="w-full py-4.5 bg-[#25D366] hover:bg-emerald-500 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-emerald-500/10 active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs duration-100 cursor-pointer font-sans"
+                        className={cn(
+                          "w-full py-4.5 font-bold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs duration-100 cursor-pointer font-sans",
+                          paymentMethod === 'momo' 
+                            ? "bg-amber-400 hover:bg-amber-300 text-black shadow-amber-500/20" 
+                            : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20"
+                        )}
                       >
-                        {isProcessing ? <Loader2 className="animate-spin text-white" size={14} /> : (
+                        {isProcessing ? (
                           <>
-                            <WhatsAppIcon size={14} />
-                            Submit Inquiry & Open WhatsApp
+                            <Loader2 className="animate-spin" size={16} />
+                            <span>{paymentMethod === 'momo' ? 'Sending MoMo USSD Prompt...' : 'Processing Order...'}</span>
+                          </>
+                        ) : (
+                          <>
+                            {paymentMethod === 'momo' ? (
+                              <>
+                                <span className="w-5 h-5 rounded-md bg-black text-amber-400 font-mono font-black text-[10px] flex items-center justify-center">M</span>
+                                <span>Pay UGX {grandTotal.toLocaleString()} via MTN MoMo</span>
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard size={16} />
+                                <span>Confirm Order (Pay on Delivery)</span>
+                              </>
+                            )}
                           </>
                         )}
                       </button>
@@ -469,7 +612,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove, onChe
                         onClick={() => setStep('basket')}
                         className="w-full py-3.5 bg-transparent text-gray-500 hover:text-white font-semibold rounded-2xl flex items-center justify-center gap-1 transition-all text-[10px] uppercase tracking-widest font-mono cursor-pointer"
                       >
-                        ← Return to Sourced items
+                        ← Return to Selected Items
                       </button>
                     </div>
                   )}
