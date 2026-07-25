@@ -20,7 +20,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         console.warn('[Theme] Safe LocalStorage access warning:', e);
       }
     }
-    return 'light';
+    return 'glass';
   });
 
   useEffect(() => {

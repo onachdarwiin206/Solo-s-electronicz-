@@ -38,27 +38,34 @@ const getCategoryIcon = (category: string) => {
 
 export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarProps) {
   return (
-    <div className="bg-white/95 dark:bg-zinc-950/90 backdrop-blur-2xl border-b border-zinc-200/50 dark:border-zinc-850/60 py-4 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40 select-none">
+    <div className="bg-white/90 dark:bg-zinc-950/85 backdrop-blur-2xl border-b border-zinc-200/50 dark:border-zinc-850/60 py-5 overflow-x-auto no-scrollbar scroll-smooth sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-start md:justify-center gap-2.5 min-w-max">
         
         {/* All Sectors Tab */}
         <button
           onClick={() => onCategorySelect(null)}
           className={cn(
-            "relative flex items-center gap-2 px-4.5 py-2.5 transition-all duration-200 group cursor-pointer outline-none text-[11px] font-mono font-bold tracking-wider border uppercase",
+            "relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide border",
             selectedCategory === null 
-              ? "text-black bg-brand-green border-brand-green shadow-[0_0_15px_rgba(57,255,20,0.25)] font-black" 
-              : "bg-white dark:bg-zinc-900 border-zinc-200/60 dark:border-zinc-800 text-zinc-700 dark:text-zinc-400 hover:text-brand-green dark:hover:text-brand-green hover:bg-brand-blue/10 hover:border-brand-blue/60 active:scale-95"
+              ? "text-white border-transparent font-extrabold shadow-[0_4px_15px_rgba(37,99,235,0.25)]" 
+              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-850 text-zinc-700 dark:text-zinc-300 hover:text-blue-600 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-750 active:scale-95"
           )}
         >
+          {selectedCategory === null && (
+            <motion.div
+              layoutId="active-category-pill"
+              className="absolute inset-0 bg-blue-600 rounded-full z-0 shadow-[0_4px_15px_rgba(37,99,235,0.3)]"
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            />
+          )}
           <div className={cn(
-            "relative z-10 w-4 h-4 flex items-center justify-center transition-transform duration-200 group-hover:scale-110",
-            selectedCategory === null ? "text-black" : "text-gray-400 dark:text-zinc-500 group-hover:text-brand-green"
+            "relative z-10 w-4.5 h-4.5 flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
+            selectedCategory === null ? "text-white" : "text-gray-400 dark:text-zinc-400 group-hover:text-blue-600 dark:group-hover:text-white"
           )}>
-            <LayoutGrid size={13} strokeWidth={2.5} />
+            <LayoutGrid size={15} strokeWidth={2.5} />
           </div>
-          <span className="relative z-10 font-mono">
-            {selectedCategory === null ? "[ ALL SECTORS ]" : "ALL SECTORS"}
+          <span className="relative z-10">
+            All Sectors
           </span>
         </button>
 
@@ -71,20 +78,27 @@ export function CategoryBar({ onCategorySelect, selectedCategory }: CategoryBarP
               key={cat}
               onClick={() => onCategorySelect(cat)}
               className={cn(
-                "relative flex items-center gap-2 px-4.5 py-2.5 transition-all duration-200 group cursor-pointer outline-none text-[11px] font-mono font-bold tracking-wider border uppercase",
+                "relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-300 group cursor-pointer outline-none text-xs font-semibold tracking-wide border",
                 isActive 
-                  ? "text-black bg-brand-green border-brand-green shadow-[0_0_15px_rgba(57,255,20,0.25)] font-black" 
-                  : "bg-white dark:bg-zinc-900 border-zinc-200/60 dark:border-zinc-800 text-zinc-700 dark:text-zinc-400 hover:text-brand-green dark:hover:text-brand-green hover:bg-brand-blue/10 hover:border-brand-blue/60 active:scale-95"
+                  ? "text-white border-transparent font-extrabold shadow-[0_4px_15px_rgba(37,99,235,0.25)]" 
+                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-850 text-zinc-700 dark:text-zinc-300 hover:text-blue-600 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-750 active:scale-95"
               )}
             >
+              {isActive && (
+                <motion.div
+                  layoutId="active-category-pill"
+                  className="absolute inset-0 bg-blue-600 rounded-full z-0 shadow-[0_4px_15px_rgba(37,99,235,0.3)]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
               <div className={cn(
-                "relative z-10 w-4 h-4 flex items-center justify-center transition-transform duration-200 group-hover:scale-110",
-                isActive ? "text-black" : "text-gray-400 dark:text-zinc-500 group-hover:text-brand-green"
+                "relative z-10 w-4.5 h-4.5 flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
+                isActive ? "text-white" : "text-gray-400 dark:text-zinc-400 group-hover:text-blue-600 dark:group-hover:text-white"
               )}>
-                <Icon size={13} strokeWidth={2.5} />
+                <Icon size={15} strokeWidth={2.5} />
               </div>
-              <span className="relative z-10 font-mono">
-                {isActive ? `[ ${cat} ]` : cat}
+              <span className="relative z-10">
+                {cat}
               </span>
             </button>
           );

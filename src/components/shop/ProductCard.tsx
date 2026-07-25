@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye, Star, MessageCircle, Info, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Loader2, Heart, Bookmark, BadgeCheck, Eye, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../../types';
 import { cn } from '../../lib/utils';
 import { Tooltip } from '../ui/Tooltip';
@@ -17,8 +17,6 @@ interface ProductCardProps {
   onClick?: () => void;
   onQuickView?: (product: Product) => void;
 }
-
-const WHATSAPP_NUMBER = "256793405517";
 
 const WhatsAppIcon = ({ size = 12, className = "" }: { size?: number; className?: string }) => (
   <svg 
@@ -87,7 +85,7 @@ export function ProductCard({
     if (images.length <= 1 || product.video_url) return;
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 4000); // comfortable auto-slide pace
+    }, 4000);
     return () => clearInterval(interval);
   }, [images.length, product.video_url]);
 
@@ -103,14 +101,13 @@ export function ProductCard({
 
   const getStockStatus = () => {
     const stock = Number(product.stock) || 0;
-    if (stock <= 0) return { label: 'Sold Out', color: 'text-red-400 bg-red-400/10 border-red-500/20', percent: 0 };
-    if (stock < 6) return { label: `${stock} Units Left • Selling Fast`, color: 'text-orange-400 bg-orange-400/10 border-orange-500/20', percent: (stock / 12) * 100 };
-    return { label: 'In Stock • Ready to Ship', color: 'text-emerald-400 bg-emerald-400/10 border-emerald-500/20', percent: Math.min(100, (stock / 60) * 100) };
+    if (stock <= 0) return { label: 'Sold Out', color: 'text-red-500 bg-red-500/10', percent: 0 };
+    if (stock < 6) return { label: `${stock} Left • Selling Fast`, color: 'text-amber-600 bg-amber-500/10', percent: (stock / 12) * 100 };
+    return { label: 'In Stock • Ready to Ship', color: 'text-emerald-600 bg-emerald-500/10', percent: Math.min(100, (stock / 60) * 100) };
   };
 
   const stockStatus = getStockStatus();
 
-  // Deterministic original price & savings calculations for premium look
   const multiplier = product.id === 'p1' ? 1.18 : product.id === 'p2' ? 1.12 : 1.15;
   const originalPrice = Math.round((product.price * multiplier) / 10000) * 10000;
   const discountPercentage = Math.round((1 - (product.price / originalPrice)) * 100);
@@ -142,231 +139,215 @@ export function ProductCard({
   };
 
   return (
-    <div className="relative isolate">
+    <div className="relative isolate h-full">
       <motion.div
         ref={cardRef}
-        whileHover={{ y: -6, transition: { duration: 0.2, ease: "easeOut" } }}
+        whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }}
         onClick={onClick}
-        className="group relative bg-card/35 dark:bg-card/30 backdrop-blur-md border border-white/[0.04] hover:border-brand-blue/50 rounded-[2.25rem] overflow-hidden transition-all duration-300 shadow-[0_15px_45px_0_rgba(0,0,0,0.18)] hover:shadow-[0_20px_50px_rgba(0,71,171,0.18)] cursor-pointer flex flex-col justify-between h-full min-h-[490px]"
+        className="group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-3xl p-4 flex flex-col justify-between transition-all duration-300 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.06),0_8px_24px_-12px_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12),0_1px_4px_rgba(0,0,0,0.04)] hover:border-zinc-300 dark:hover:border-zinc-700/80 cursor-pointer h-full min-h-[500px]"
       >
-        {/* Card backdrop element */}
-        <span className="absolute inset-0 bg-gradient-to-b from-white/[0.015] to-transparent pointer-events-none" />
-
-        {/* Technical crosshair corner markings for premium layout */}
-        <div className="absolute top-2.5 left-2.5 text-[10px] text-zinc-500/40 group-hover:text-brand-green transition-colors font-mono select-none pointer-events-none z-30 font-bold">┌</div>
-        <div className="absolute top-2.5 right-2.5 text-[10px] text-zinc-500/40 group-hover:text-brand-green transition-colors font-mono select-none pointer-events-none z-30 font-bold">┐</div>
-        <div className="absolute bottom-2.5 left-2.5 text-[10px] text-zinc-500/40 group-hover:text-brand-green transition-colors font-mono select-none pointer-events-none z-30 font-bold">└</div>
-        <div className="absolute bottom-2.5 right-2.5 text-[10px] text-zinc-500/40 group-hover:text-brand-green transition-colors font-mono select-none pointer-events-none z-30 font-bold">┘</div>
-
-        {/* Small technical ID sticker */}
-        <div className="absolute top-[18px] right-4 text-[7px] text-zinc-500 font-mono tracking-widest uppercase opacity-20 group-hover:opacity-75 transition-opacity select-none pointer-events-none z-30">
-          SYS_ID: {product.id.toUpperCase()}_ACTIVE
-        </div>
-
-        <div 
-          style={{ aspectRatio: imageAspectRatio ? `${imageAspectRatio}` : '3/4' }}
-          className="relative w-full overflow-hidden bg-foreground/[0.02] flex items-center justify-center transition-all duration-300"
-        >
-          {/* Discount Percentage Ribbon overlay */}
-          <span className="absolute top-4 left-4 z-20 flex flex-col gap-1 items-start">
-            <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-mono font-bold tracking-tight rounded-full shadow-lg shadow-blue-500/20 uppercase">
-              {discountPercentage}% OFF
+        {/* Top visual content area (Framed image) */}
+        <div>
+          <div 
+            style={{ aspectRatio: '1.1' }}
+            className="relative w-full rounded-2xl overflow-hidden bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-6 transition-all duration-300"
+          >
+            {/* Tag over list */}
+            <span className="absolute top-3 left-3 z-20 flex flex-col gap-1 items-start">
+              <span className="px-2.5 py-1 bg-neutral-900 dark:bg-white text-white dark:text-black text-[9px] font-mono font-bold tracking-wider rounded-lg shadow-sm">
+                {discountPercentage}% OFF
+              </span>
+              {product.is_verified !== false && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-md text-[8px] font-mono font-bold uppercase tracking-wider">
+                  <BadgeCheck size={8} />
+                  Genuine
+                </span>
+              )}
             </span>
-            {product.is_verified !== false && (
-              <span className="flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[8px] font-mono font-bold uppercase tracking-wider">
-                <BadgeCheck size={9} className="text-emerald-400" />
-                Genuine
-              </span>
-            )}
-          </span>
 
-          {product.video_url ? (
-            <video
-              src={product.video_url}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              autoPlay
-              muted
-              loop
-              playsInline
-            />
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentImageIndex}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="w-full h-full flex items-center justify-center p-6"
-              >
-                <OptimizedImage
-                  src={images[currentImageIndex]}
-                  alt={product.name}
-                  onLoad={handleImageLoad}
-                  className="w-full h-full object-contain transform group-hover:scale-[1.08] transition-transform duration-700 select-none"
-                />
-              </motion.div>
-            </AnimatePresence>
-          )}
+            {/* Quick Actions overlay */}
+            <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <Tooltip content={isWishlisted ? "Remove Wishlist" : "Wishlist"} position="left">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleWishlist?.(product.id);
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl backdrop-blur-md border outline-none cursor-pointer shadow-sm transition-all",
+                    isWishlisted 
+                      ? "bg-blue-600 border-blue-500 text-white" 
+                      : "bg-white/80 dark:bg-zinc-900/80 border-zinc-200/60 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-white hover:dark:bg-zinc-900"
+                  )}
+                >
+                  <Bookmark size={14} fill={isWishlisted ? "currentColor" : "none"} />
+                </button>
+              </Tooltip>
 
-          {/* Carousel Controls */}
-          {images.length > 1 && !product.video_url && (
-            <>
-              <button 
-                onClick={handlePrevImage}
-                className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-black/45 hover:bg-black/85 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <button 
-                onClick={handleNextImage}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-black/45 hover:bg-black/85 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-              >
-                <ChevronRight size={14} />
-              </button>
-              
-              {/* Pagination Dots */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-                {images.map((_, idx) => (
-                  <div 
-                    key={idx}
-                    className={cn(
-                      "w-1 h-1 rounded-full transition-all duration-300",
-                      idx === currentImageIndex ? "bg-blue-500 w-3" : "bg-white/30"
-                    )}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-          
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#090a0f] opacity-90 pointer-events-none" />
-          
-          {/* Interaction Slide-In/Quick action overlay */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-            <Tooltip content={isWishlisted ? "Remove from Wishlist" : "Wishlist"} position="left">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleWishlist?.(product.id);
-                }}
-                className={cn(
-                  "p-2.5 rounded-xl backdrop-blur-md transition-all border outline-none cursor-pointer",
-                  isWishlisted 
-                    ? "bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-900/40" 
-                    : "bg-black/30 border-white/10 text-white hover:bg-black/60"
-                )}
-              >
-                <Bookmark size={15} fill={isWishlisted ? "currentColor" : "none"} />
-              </button>
-            </Tooltip>
+              <Tooltip content="Quick View" position="left">
+                <button 
+                  onClick={handleQuickView}
+                  className="p-2 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl backdrop-blur-md hover:bg-white hover:dark:bg-zinc-900 shadow-sm transition-all outline-none cursor-pointer"
+                >
+                  <Eye size={14} />
+                </button>
+              </Tooltip>
 
-            <Tooltip content="Quick Look" position="left">
-              <button 
-                onClick={handleQuickView}
-                className="p-2.5 bg-black/30 border border-white/10 text-white rounded-xl backdrop-blur-md hover:bg-black/60 transition-all outline-none cursor-pointer"
-              >
-                <Eye size={15} />
-              </button>
-            </Tooltip>
-
-            <Tooltip content={isLiked ? "Unlike" : "Like"} position="left">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleLike?.(product.id);
-                }}
-                className={cn(
-                  "p-2.5 rounded-xl backdrop-blur-md transition-all border flex flex-col items-center gap-0.5 outline-none cursor-pointer",
-                  isLiked 
-                    ? "bg-rose-600 border-rose-400 text-white shadow-xl shadow-rose-900/40" 
-                    : "bg-black/30 border-white/10 text-white hover:bg-black/60"
-                )}
-              >
-                <Heart size={15} fill={isLiked ? "currentColor" : "none"} />
-                {product.likes_count !== undefined && (
-                  <span className="text-[7px] font-mono font-bold leading-none">{product.likes_count}</span>
-                )}
-              </button>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* Info/CTA Area */}
-        <div className="p-5 flex-1 flex flex-col justify-between">
-          <div className="space-y-3">
-            {/* Category / Visual Pill */}
-            <div className="flex items-center justify-between text-[9px] font-mono">
-              <span className="text-zinc-500 uppercase tracking-widest font-black">
-                {product.category}
-              </span>
+              <Tooltip content={isLiked ? "Unlike" : "Like"} position="left">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleLike?.(product.id);
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl backdrop-blur-md border flex flex-col items-center gap-0.5 outline-none cursor-pointer shadow-sm transition-all",
+                    isLiked 
+                      ? "bg-rose-600 border-rose-500 text-white" 
+                      : "bg-white/80 dark:bg-zinc-900/80 border-zinc-200/60 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-white hover:dark:bg-zinc-900"
+                  )}
+                >
+                  <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
+                </button>
+              </Tooltip>
             </div>
 
-            {/* Product Name (Space Grotesk style paired) */}
-            <h3 className="text-base sm:text-lg font-display font-medium text-white group-hover:text-blue-400 transition-colors line-clamp-1 leading-tight">
+            {/* Video/Image Render */}
+            {product.video_url ? (
+              <video
+                src={product.video_url}
+                className="w-full h-full object-cover rounded-inherit"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentImageIndex}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full h-full flex items-center justify-center"
+                >
+                  <OptimizedImage
+                    src={images[currentImageIndex]}
+                    alt={product.name}
+                    onLoad={handleImageLoad}
+                    className="max-h-full max-w-full object-contain transform group-hover:scale-105 transition-transform duration-500 select-none"
+                  />
+                </motion.div>
+              </AnimatePresence>
+            )}
+
+            {/* Image carousel buttons */}
+            {images.length > 1 && !product.video_url && (
+              <>
+                <button 
+                  onClick={handlePrevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 dark:bg-zinc-900/90 text-foreground border border-neutral-200 dark:border-zinc-800 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 cursor-pointer shadow-sm"
+                >
+                  <ChevronLeft size={12} />
+                </button>
+                <button 
+                  onClick={handleNextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 dark:bg-zinc-900/90 text-foreground border border-neutral-200 dark:border-zinc-800 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 cursor-pointer shadow-sm"
+                >
+                  <ChevronRight size={12} />
+                </button>
+                
+                {/* Dots indicator */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                  {images.map((_, idx) => (
+                    <div 
+                      key={idx}
+                      className={cn(
+                        "w-1 h-1 rounded-full transition-all duration-300",
+                        idx === currentImageIndex ? "bg-neutral-800 dark:bg-white w-2.5" : "bg-neutral-300 dark:bg-zinc-700"
+                      )}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Core product information */}
+          <div className="mt-4 text-left space-y-1.5">
+            <span className="text-[10px] font-mono tracking-wider text-zinc-500 dark:text-zinc-400 uppercase font-bold block">
+              {product.category}
+            </span>
+            
+            <h3 className="text-base font-sans font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
               {product.name}
             </h3>
 
-            {/* Description (Inter style) */}
-            <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed min-h-[32px]">
+            <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 leading-relaxed min-h-[36px]">
               {product.description}
             </p>
 
-            {/* Dynamic Interactive Stock indicator with progress bar */}
+            {/* Minimal Stock status bar */}
             <div className="space-y-1 pt-1">
-              <div className="flex justify-between items-center text-[8.5px] font-mono font-bold uppercase tracking-wider">
-                <span className={stockStatus.percent < 50 ? "text-orange-400 animate-pulse" : "text-zinc-500"}>
+              <div className="flex justify-between items-center text-[9px] font-mono font-semibold uppercase tracking-wider">
+                <span className="text-zinc-600 dark:text-zinc-400">
                   {stockStatus.label}
                 </span>
-                <span className="text-zinc-500 font-normal">UG STORE</span>
+                <span className="text-zinc-500 dark:text-zinc-500">OUTPOST</span>
               </div>
-              <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/[0.02]">
+              <div className="h-1 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                 <div 
                   style={{ width: `${stockStatus.percent}%` }}
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
                     product.stock === 0 ? "bg-red-500" :
-                    (product.stock || 0) < 6 ? "bg-gradient-to-r from-orange-500 to-red-500" :
-                    "bg-gradient-to-r from-blue-500 to-indigo-500"
+                    (product.stock || 0) < 6 ? "bg-amber-500" :
+                    "bg-blue-600"
                   )}
                 />
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Pricing Section (High-conversion Jumia & modern card hybrid styling) */}
-            <div className="pt-2 bg-[#0d0e14]/50 border border-white/[0.02] p-3 rounded-2xl flex flex-col justify-center text-left">
-              <div className="flex items-baseline gap-2">
-                <span className="text-sm sm:text-base font-mono font-black text-white whitespace-nowrap">
+        {/* Pricing and Action row */}
+        <div className="mt-5">
+          <div className="py-2.5 border-t border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[8px] font-mono text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-bold block">PRICE</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-base font-mono font-bold text-zinc-900 dark:text-white">
                   UGX {product.price.toLocaleString()}
                 </span>
-                <span className="text-[10px] font-mono font-medium text-zinc-500 line-through whitespace-nowrap">
+                <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 line-through">
                   UGX {originalPrice.toLocaleString()}
                 </span>
               </div>
-              <span className="text-[9px] font-mono font-bold text-emerald-400 uppercase tracking-wide mt-0.5">
-                Saved: UGX {savingsAmount.toLocaleString()}
-              </span>
             </div>
+            
+            <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase">
+              Save {discountPercentage}%
+            </span>
           </div>
 
-          {/* Action buttons (reveals on hover nicely, completely clean and touch interactive) */}
-          <div className="grid grid-cols-2 gap-2 mt-4 pt-3.5 border-t border-white/[0.04] z-10">
+          {/* Action buttons (Touch interactive cards) */}
+          <div className="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-zinc-200/80 dark:border-zinc-800/80">
             <button
               onClick={handleAdd}
               disabled={isAdding || (product.stock || 0) <= 0}
-              className="py-3 bg-white hover:bg-neutral-100 text-black font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 shadow-lg shadow-white/5 cursor-pointer"
+              className="py-2.5 bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-semibold text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 cursor-pointer shadow-sm"
             >
               {isAdding ? (
-                <Loader2 className="animate-spin text-black" size={12} />
+                <Loader2 className="animate-spin text-current" size={11} />
               ) : (
-                <ShoppingCart size={11} className="text-black" />
+                <ShoppingCart size={11} />
               )}
               {isAdding ? 'Adding...' : 'Add to Cart'}
             </button>
             
             <button
               onClick={handleWhatsAppBuy}
-              className="py-3 bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-emerald-500/10 cursor-pointer"
+              className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm cursor-pointer"
             >
               <WhatsAppIcon size={11} />
               <span>Buy Now</span>
@@ -375,7 +356,7 @@ export function ProductCard({
         </div>
       </motion.div>
 
-      {/* Fly-to-cart Portal Element */}
+      {/* Fly animation */}
       <AnimatePresence>
         {isFlying && (
           <motion.div
@@ -400,7 +381,7 @@ export function ProductCard({
             }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="pointer-events-none bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.8)]"
+            className="pointer-events-none bg-blue-500 shadow-md"
           >
             <OptimizedImage src={product.image} alt={product.name} className="w-full h-full object-cover rounded-inherit" />
           </motion.div>

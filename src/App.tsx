@@ -1,7 +1,6 @@
 import { useEffect, useMemo, lazy, Suspense, useReducer } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/layout/Navbar';
-import { BackgroundSlideshow } from './components/layout/BackgroundSlideshow';
 import { BottomNav } from './components/layout/BottomNav';
 import { Cart } from './components/shop/Cart';
 import { CategoryBar } from './components/shop/CategoryBar';
@@ -38,10 +37,18 @@ import { migrateLocalStorageToIndexedDB, syncWithBackoff } from './lib/offlineDB
 
 /**
  * Main App Container.
- * Consumes state and dispatch from the global provider.
+ * Implements useReducer and provides state/dispatch down to children.
  */
 export default function App() {
-  return <AppContent />;
+  const [state, dispatch] = useReducer(appReducer, initialState);
+
+  return (
+    <AppStateContext.Provider value={state}>
+      <AppDispatchContext.Provider value={dispatch}>
+        <AppContent />
+      </AppDispatchContext.Provider>
+    </AppStateContext.Provider>
+  );
 }
 
 /**
@@ -216,7 +223,6 @@ function AppContent() {
 
   return (
     <div className="min-h-screen">
-      <BackgroundSlideshow />
       <AndroidInstallPrompt />
       <WhatsAppFloat user={user} />
       
@@ -232,6 +238,7 @@ function AppContent() {
               dispatch({ type: 'SET_CATEGORY', payload: cat }); 
               dispatch({ type: 'SET_VIEW', payload: 'shop' }); 
             }}
+            selectedCategory={category}
             onSearch={(query) => dispatch({ type: 'SET_SEARCH_QUERY', payload: query })}
             cartCount={cartCount}
             wishlistCount={wishlistProducts.length}

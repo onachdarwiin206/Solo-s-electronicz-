@@ -1,13 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Courier New", "Courier Prime", Courier, monospace;
-  --font-display: "Courier New", "Courier Prime", Courier, monospace;
-  --font-mono: "Courier New", "Courier Prime", Courier, monospace;
-
-  --color-brand-blue: #0047AB;
-  --color-brand-green: #39FF14;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -21,10 +18,6 @@
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
   }
-}
-
-* {
-  border-radius: 0px !important;
 }
 
 .animate-marquee {
@@ -60,32 +53,57 @@
   }
 
   .glass {
-    --background: rgba(8, 8, 16, 0.4);
-    --foreground: #ffffff;
+    --background: #03040b;
+    --foreground: #f3f4f6;
     --card: rgba(255, 255, 255, 0.03);
     --card-foreground: #ffffff;
-    --border: rgba(255, 255, 255, 0.1);
-    --ring: #6366f1;
+    --border: rgba(255, 255, 255, 0.08);
+    --ring: #F68B1E;
   }
 
   body {
     @apply font-sans antialiased transition-colors duration-300;
-    background-color: transparent !important;
+    background-color: var(--background) !important;
     color: var(--foreground);
   }
 
   /* Frosted Clear Glass UI overrides */
   .glass body {
-    background-color: transparent !important;
+    background-color: #03040b !important;
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(246, 139, 30, 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(246, 139, 30, 0.08) 0%, transparent 35%);
+    background-attachment: fixed;
   }
-  
+
+  /* Glass components */
+  .glass .bg-white,
+  .glass .bg-zinc-900,
+  .glass .bg-neutral-900,
+  .glass .bg-zinc-950,
+  .glass .bg-zinc-50,
+  .glass .bg-zinc-900\/95,
+  .glass .bg-white\/95,
+  .glass .bg-zinc-900\/50,
+  .glass .bg-zinc-50\/50,
+  .glass .bg-white\/80,
+  .glass .bg-zinc-900\/80 {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    backdrop-filter: blur(20px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f3f4f6 !important;
+  }
+
   .glass .bg-background,
   .glass .bg-background\/80,
   .glass .bg-background\/50,
   .glass .bg-black\/80,
   .glass .bg-black\/50,
   .glass .bg-black\/40 {
-    background-color: rgba(15, 23, 42, 0.3) !important;
+    background-color: rgba(3, 4, 11, 0.5) !important;
     backdrop-filter: blur(24px) saturate(140%) !important;
     -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
   }
@@ -96,7 +114,7 @@
     background-color: rgba(255, 255, 255, 0.04) !important;
     backdrop-filter: blur(16px) saturate(120%) !important;
     -webkit-backdrop-filter: blur(16px) saturate(120%) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
   }
 
   .glass .bg-white\/10,
@@ -104,21 +122,68 @@
     background-color: rgba(255, 255, 255, 0.07) !important;
     backdrop-filter: blur(16px) saturate(120%) !important;
     -webkit-backdrop-filter: blur(16px) saturate(120%) !important;
-    border-color: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
   }
 
+  /* Borders and dividers */
+  .glass .border,
+  .glass .border-zinc-200,
+  .glass .border-zinc-100,
+  .glass .border-zinc-200\/80,
+  .glass .border-zinc-800\/80,
   .glass .border-border,
   .glass .border-white\/10,
   .glass .border-white\/5,
-  .glass .border-white\/20 {
-    border-color: rgba(255, 255, 255, 0.15) !important;
+  .glass .border-white\/20,
+  .glass .border-neutral-200 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
   }
 
   /* Make components shine under frosted clear glass */
   .glass .shadow-2xl,
-  .glass .shadow-xl {
+  .glass .shadow-xl,
+  .glass .shadow-md,
+  .glass .shadow-sm,
+  .glass .shadow {
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5),
-                inset 0 1px 1px 0 rgba(255, 255, 255, 0.18) !important;
+                inset 0 1px 1px 0 rgba(255, 255, 255, 0.12) !important;
+  }
+
+  /* Make sure images sit nicely on top of glass elements */
+  .glass .bg-zinc-50,
+  .glass .bg-zinc-950 {
+    background-color: rgba(0, 0, 0, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* Text colors popping */
+  .glass .text-zinc-900,
+  .glass .text-neutral-900,
+  .glass .text-zinc-800,
+  .glass .text-zinc-700,
+  .glass .text-zinc-600 {
+    color: #e4e4e7 !important;
+  }
+
+  .glass .text-zinc-500,
+  .glass .text-zinc-400,
+  .glass .text-neutral-500 {
+    color: #a1a1aa !important;
+  }
+
+  /* Brand and Accent colors */
+  .glass .text-[#F68B1E] {
+    color: #ff9e3b !important;
+  }
+  .glass .bg-[#F68B1E] {
+    background-color: #f68b1e !important;
+    color: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+  }
+  .glass .bg-[#F68B1E]:hover {
+    background-color: #ff9e3b !important;
   }
 }
 

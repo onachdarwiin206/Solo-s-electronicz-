@@ -13,9 +13,6 @@ import { PRODUCT_CATEGORIES } from '../../constants';
 import { cn } from '../../lib/utils';
 import { ProductCard } from '../shop/ProductCard';
 import { OptimizedImage } from '../ui/OptimizedImage';
-import { TrustBar } from './TrustBar';
-import { WhyChooseSolo } from './WhyChooseSolo';
-import { RapidRepairHub } from './RapidRepairHub';
 
 interface HomeHeroProps {
   products: Product[];
@@ -36,7 +33,6 @@ interface HomeHeroProps {
   t: any;
 }
 
-// WhatsApp icon SVG component helper
 const WhatsAppIcon = ({ size = 12, className = "" }: { size?: number; className?: string }) => (
   <svg 
     viewBox="0 0 24 24" 
@@ -87,7 +83,6 @@ export function HomeHero({
     return () => clearInterval(interval);
   }, [isOrbiting]);
   
-  // Clean continuous ticking countdown timer state
   const [timeLeft, setTimeLeft] = useState({ hrs: '03', mins: '44', secs: '19' });
   
   useEffect(() => {
@@ -111,7 +106,6 @@ export function HomeHero({
     return () => clearInterval(interval);
   }, []);
 
-  // Synchronize dynamic updates to search box state
   useEffect(() => {
     setLocalSearch(searchQuery);
   }, [searchQuery]);
@@ -142,10 +136,8 @@ export function HomeHero({
     return [...list, ...list];
   }, [recentlyViewedProducts]);
 
-  // Premium flagship items representing different sectors for the rotating display slider
   const premiumShowcase = useMemo(() => {
     if (!products.length) return [];
-    // Carefully select a balanced matrix representing Smartphones, Laptops, Smartwatches, Earbuds
     const smartphones = products.filter(p => p.category.toLowerCase().includes('phone') || p.name.toLowerCase().includes('galaxy') || p.name.toLowerCase().includes('iphone'));
     const laptops = products.filter(p => p.category.toLowerCase().includes('laptop') || p.category.toLowerCase().includes('computer'));
     const earbuds = products.filter(p => p.category.toLowerCase().includes('audio') || p.name.toLowerCase().includes('airpods') || p.name.toLowerCase().includes('headphone') || p.name.toLowerCase().includes('sony'));
@@ -157,7 +149,6 @@ export function HomeHero({
     if (earbuds[0]) items.push(earbuds[0]);
     if (otherFeatured[1]) items.push(otherFeatured[1]);
 
-    // Fallback if not populated
     return items.length >= 2 ? items : products.slice(0, 4);
   }, [products]);
 
@@ -171,7 +162,6 @@ export function HomeHero({
     return [...marqueeProducts, ...marqueeProducts];
   }, [marqueeProducts]);
 
-  // Auto-rotate the featured right showcase product slowly
   useEffect(() => {
     if (premiumShowcase.length < 2 || !isPlayingAutoplay) return;
     const interval = setInterval(() => {
@@ -227,418 +217,468 @@ export function HomeHero({
   };
 
   return (
-    <div className="space-y-24 pb-32 bg-transparent text-foreground overflow-hidden relative">
+    <div className="space-y-12 pb-32 bg-transparent text-zinc-800 dark:text-zinc-100 overflow-hidden relative">
       {/* Background aesthetic glow grids */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-blue-500/[0.04] via-transparent to-transparent blur-[160px] pointer-events-none" />
-      <div className="absolute top-[12%] left-[-10%] w-[550px] h-[550px] bg-blue-600/[0.02] blur-[180px] rounded-full pointer-events-none" />
-      <div className="absolute top-[28%] right-[-10%] w-[550px] h-[550px] bg-indigo-500/[0.02] blur-[180px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-orange-500/[0.02] via-transparent to-transparent blur-[160px] pointer-events-none" />
+      <div className="absolute top-[15%] left-[-10%] w-[500px] h-[500px] bg-orange-500/[0.01] blur-[150px] rounded-full pointer-events-none" />
 
-      {/* Urgent Marquee Alert Strip */}
-      <div className="w-full bg-brand-blue text-black font-mono font-black text-[10px] sm:text-xs py-2 border-b-2 border-brand-blue tracking-[0.1em] overflow-hidden select-none relative z-20">
-        <div className="whitespace-nowrap inline-block animate-marquee uppercase">
-          ⚡ ACTIVE SHIPMENT ALERTS // SOLAR POWER BANKS & SMARTPHONES SELLING OUT FAST FOR THE ACADEMIC TERM // 15% REPAIR DISCOUNT FOR STUDENTS & BODA RIDERS // VISIT US OPPOSITE LIRA MAIN MARKET ⚡ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ⚡ ACTIVE SHIPMENT ALERTS // SOLAR POWER BANKS & SMARTPHONES SELLING OUT FAST FOR THE ACADEMIC TERM // 15% REPAIR DISCOUNT FOR STUDENTS & BODA RIDERS // VISIT US OPPOSITE LIRA MAIN MARKET ⚡
-        </div>
+      {/* Jumia-Style Promotional Top Ribbon */}
+      <div className="w-full bg-[#F68B1E] text-white py-2 px-4 text-center text-xs font-semibold tracking-wider flex items-center justify-center gap-2 select-none shadow-sm relative z-20">
+        <Zap size={13} className="animate-pulse text-yellow-300 fill-current" />
+        <span>LIRA ELECTRONICS MEGADAYS: SAMEDAY SECURE COURIER DISPATCH WITHIN LIRA CITY!</span>
       </div>
 
-      {/* 1. HERO SECTION REDESIGN */}
-      <section className="relative pt-12 md:pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 text-left font-mono">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+      {/* 1. THREE-COLUMN PORTAL HUB (JUMIA GRID ARCHETYPE) */}
+      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 text-left pt-2">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
           
-          {/* LEFT COLUMN: Bold Conversion & Trust Copy */}
-          <div className="lg:col-span-7 flex flex-col justify-between border-2 border-brand-blue bg-black/85 p-6 sm:p-8 relative">
-            {/* Draftsman CAD corner markers */}
-            <div className="absolute -top-1.5 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
-            <div className="absolute -top-1.5 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
-            <div className="absolute -bottom-2 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
-            <div className="absolute -bottom-2 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
-
-            {/* Blueprint grid overlay */}
-            <div 
-              className="absolute inset-0 pointer-events-none opacity-[0.03]"
-              style={{
-                backgroundImage: `linear-gradient(#0047AB 1px, transparent 1px), linear-gradient(90deg, #0047AB 1px, transparent 1px)`,
-                backgroundSize: '24px 24px',
-              }}
-            />
-
-            <div className="space-y-6 relative z-10">
-              {/* Top Tech Label */}
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="px-3 py-1 bg-brand-blue text-black text-[10px] font-black uppercase tracking-wider">
-                  PHYSICAL SHOP // LIRA CITY
-                </span>
-                <span className="text-[10px] font-bold text-brand-green uppercase tracking-widest">
-                  [ VERIFIED HARDWARE HUBS ]
-                </span>
+          {/* Left Category Sidebar (Desktop only) */}
+          <div className="hidden xl:flex xl:col-span-3 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4 flex-col gap-1 shadow-sm select-none">
+            <span className="text-[10px] font-mono tracking-widest text-[#F68B1E] uppercase font-extrabold px-3.5 mb-3.5 block">
+              Browse Categories
+            </span>
+            <button
+              onClick={() => onCategorySelect(null)}
+              className={cn(
+                "flex items-center justify-between w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border",
+                category === null
+                  ? "bg-[#F68B1E] border-[#F68B1E] text-white shadow-sm"
+                  : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:text-[#F68B1E] dark:hover:text-[#F68B1E] hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Compass size={13} />
+                <span>All Products</span>
               </div>
-
-              {/* Bold Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-none uppercase tracking-tight">
-                LIRA CITY'S HOME OF <span className="text-brand-green">GENUINE</span> ELECTRONICS & REPAIRS
-              </h1>
-
-              {/* Trust-Focused Subtitle */}
-              <p className="text-xs sm:text-sm text-zinc-300 font-sans leading-relaxed">
-                Why risk your hard-earned cash on street boys or fake copy products? <strong>Solo's Electronics</strong> is a certified physical retail shop in Lira City Center. We offer 100% original smartphones, laptops, TVs, solar power chargers, and accessories — all backed by a <strong>stamped 1-year warranty receipt</strong> and professional on-site engineering repairs.
-              </p>
-
-              {/* Lira Targeted Urgency Notification */}
-              <div className="border border-dashed border-brand-green/40 bg-brand-green/5 p-4 text-[11px] text-brand-green uppercase font-bold tracking-tight">
-                🚨 SPECIAL NOTICE: Lira University students, small business operators, and boda boda riders get 15% OFF repair services on presentation of ID!
-              </div>
-
-              {/* Primary & Secondary Action CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                {/* Primary CTA - WhatsApp direct */}
-                <a 
-                  href="https://wa.me/256793405517?text=Hello%20Solo%27s%20Electronics!%20I%20am%20visiting%20your%20online%20showroom%20and%20want%20to%20order%2Fask%20about%20your%20products%20and%20warranties."
-                  target="_blank"
-                  rel="noreferrer"
-                  className="bg-brand-green text-black hover:bg-white hover:text-black border-2 border-brand-green font-black text-xs uppercase tracking-widest p-4 flex items-center justify-center gap-2 transition-colors cursor-pointer text-center"
-                >
-                  <WhatsAppIcon size={16} className="fill-current" />
-                  Chat / Order via WhatsApp
-                </a>
-
-                {/* Secondary CTA - Physical Shop info */}
+              <ChevronRight size={12} className="opacity-60" />
+            </button>
+            {PRODUCT_CATEGORIES.map((cat) => {
+              const isActive = category === cat;
+              return (
                 <button
-                  onClick={() => {
-                    document.getElementById('physical-location-specs')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="bg-brand-blue hover:bg-white hover:text-black text-white font-black text-xs uppercase tracking-widest p-4 border-2 border-brand-blue flex items-center justify-center gap-2 transition-colors cursor-pointer text-center"
+                  key={cat}
+                  onClick={() => onCategorySelect(cat)}
+                  className={cn(
+                    "flex items-center justify-between w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wide transition-all cursor-pointer border",
+                    isActive
+                      ? "bg-[#F68B1E] border-[#F68B1E] text-white shadow-sm"
+                      : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:text-[#F68B1E] dark:hover:text-[#F68B1E] hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  )}
                 >
-                  <MapPin size={14} />
-                  Visit Lira City Shop
+                  <div className="flex items-center gap-2.5">
+                    {getCategoryIcon(cat)}
+                    <span>{cat}</span>
+                  </div>
+                  <ChevronRight size={12} className="opacity-60" />
                 </button>
+              );
+            })}
+            <div className="mt-4 border-t border-zinc-100 dark:border-zinc-800/80 pt-4 px-3.5 space-y-2.5">
+              <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                <ShieldCheck size={14} className="text-[#F68B1E]" />
+                <span>100% Certified Genuine</span>
               </div>
-            </div>
-
-            {/* Location Specs Table */}
-            <div id="physical-location-specs" className="mt-8 pt-6 border-t-2 border-brand-blue/30 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left relative z-10">
-              <div className="space-y-1">
-                <span className="text-[9px] text-zinc-500 font-bold block uppercase tracking-wider">// EXACT ADDRESS</span>
-                <span className="text-white text-[11px] leading-tight block">
-                  Opposite Lira Main Market, Lira City Center, Uganda
-                </span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] text-zinc-500 font-bold block uppercase tracking-wider">// OPEN HOURS</span>
-                <span className="text-white text-[11px] block">
-                  Mon-Sat: 8AM - 8PM<br />
-                  Sun: 10AM - 4PM
-                </span>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] text-zinc-500 font-bold block uppercase tracking-wider">// CALL SUPPORT</span>
-                <span className="text-brand-green text-[11px] font-bold block">
-                  +256 793 405 517<br />
-                  +256 772 718 161
-                </span>
+              <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                <Truck size={14} className="text-[#F68B1E]" />
+                <span>Safe Same-Day Delivery</span>
               </div>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Live Stock Inventory Rig (Spotlight Carousel) */}
-          <div className="lg:col-span-5 border-2 border-brand-blue bg-black/90 p-6 flex flex-col justify-between relative select-none">
-            {/* Draftsman CAD corner markers */}
-            <div className="absolute -top-1.5 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
-            <div className="absolute -top-1.5 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
-            <div className="absolute -bottom-2 -left-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
-            <div className="absolute -bottom-2 -right-1.5 text-[11px] text-brand-green/45 font-mono select-none pointer-events-none font-bold z-20">+</div>
+          {/* Center Sliding Deals Banner (Main Carousel) */}
+          <div className="col-span-1 xl:col-span-6 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm relative p-6 sm:p-8 min-h-[420px]">
+            {/* Background ambient warmth */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#F68B1E]/[0.02] to-transparent pointer-events-none" />
+            
+            {premiumShowcase.length > 0 && activeShowcaseProduct ? (
+              <>
+                {/* Top Tag and Carousel Dot indicators */}
+                <div className="flex items-center justify-between select-none z-10">
+                  <span className="px-2.5 py-1 bg-red-600 text-white text-[9px] font-sans font-black uppercase rounded tracking-wider flex items-center gap-1 animate-pulse">
+                    <Zap size={11} className="fill-current" />
+                    DEAL OF THE DAY
+                  </span>
+                  
+                  {/* Slider Pagination */}
+                  <div className="flex items-center gap-1.5">
+                    {premiumShowcase.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveShowcaseIdx(idx)}
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full transition-all cursor-pointer",
+                          idx === activeShowcaseIdx 
+                            ? "bg-[#F68B1E] w-4" 
+                            : "bg-zinc-200 dark:bg-zinc-700 hover:bg-[#F68B1E]/50"
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
 
-            {/* Blueprint background grid */}
-            <div 
-              className="absolute inset-0 pointer-events-none opacity-[0.02]"
-              style={{
-                backgroundImage: `radial-gradient(circle, #39FF14 1px, transparent 1px)`,
-                backgroundSize: '16px 16px',
-              }}
-            />
+                {/* Central Showcase Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center flex-1 my-4 z-10">
+                  {/* Left Content */}
+                  <div className="md:col-span-7 space-y-3.5 text-left">
+                    <span className="text-[10px] font-mono font-bold tracking-widest text-[#F68B1E] uppercase block">
+                      {activeShowcaseProduct.category}
+                    </span>
+                    <h3 className="text-xl sm:text-2xl lg:text-3xl font-display font-extrabold text-zinc-900 dark:text-white uppercase leading-tight line-clamp-2">
+                      {activeShowcaseProduct.name}
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
+                      {activeShowcaseProduct.description}
+                    </p>
+                    
+                    {/* Pricing with heavy discounts */}
+                    <div className="pt-1">
+                      <span className="text-[8px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block font-black">Flash Rate</span>
+                      <div className="flex items-baseline gap-2 mt-0.5">
+                        <span className="text-xl sm:text-2xl font-mono font-black text-[#F68B1E]">
+                          UGX {activeShowcaseProduct.price.toLocaleString()}
+                        </span>
+                        <span className="text-xs font-mono text-zinc-400 line-through">
+                          UGX {Math.floor(activeShowcaseProduct.price * 1.25).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Header Timeline Ribbon */}
-            <div className="flex justify-between items-center border-b border-brand-blue/30 pb-3 text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-brand-green animate-pulse" />
-                LIVE_STOCK_FEED // ACTIVE
-              </span>
-              <span>ITEM {activeShowcaseIdx + 1} OF {premiumShowcase.length}</span>
-            </div>
-
-            {premiumShowcase.length > 0 && activeShowcaseProduct && (
-              <div className="flex-1 flex flex-col justify-between my-4">
-                
-                {/* Showcase Image Area */}
-                <div 
-                  onClick={() => onQuickView(activeShowcaseProduct)}
-                  className="h-48 w-full bg-zinc-950 border border-brand-blue/20 flex items-center justify-center p-4 relative cursor-pointer group"
-                >
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={activeShowcaseProduct.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.3 }}
-                      className="w-full h-full flex items-center justify-center"
+                  {/* Right Image Display */}
+                  <div className="md:col-span-5 flex items-center justify-center relative">
+                    <div 
+                      onClick={() => onQuickView(activeShowcaseProduct)}
+                      className="w-40 h-40 flex items-center justify-center p-2 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80 relative cursor-pointer group shadow-sm hover:shadow"
                     >
                       <OptimizedImage
                         src={activeShowcaseProduct.image}
                         alt={activeShowcaseProduct.name}
-                        className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,4,171,0.25)] group-hover:scale-105 transition-transform duration-300"
+                        className="max-h-full max-w-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-300"
                       />
-                    </motion.div>
-                  </AnimatePresence>
-
-                  <span className="absolute bottom-2 right-3 text-[9px] text-brand-green/80 font-mono tracking-widest bg-black border border-brand-green/30 px-2 py-0.5 uppercase">
-                    UGX {activeShowcaseProduct.price.toLocaleString()}
-                  </span>
-                </div>
-
-                {/* Showcase Copy Area */}
-                <div className="mt-4 text-left space-y-2">
-                  <span className="text-[10px] text-brand-green font-bold uppercase block tracking-widest">
-                    [ RECOMMENDED DEAL // {activeShowcaseProduct.category} ]
-                  </span>
-                  <h3 className="text-md font-black text-white uppercase truncate">
-                    {activeShowcaseProduct.name}
-                  </h3>
-                  <p className="text-[11px] text-zinc-400 font-sans leading-relaxed line-clamp-2">
-                    {activeShowcaseProduct.description}
-                  </p>
-
-                  {/* Stock spec block */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 text-[10px]">
-                    <div className="p-2 border border-brand-blue/20 bg-zinc-950 flex flex-col">
-                      <span className="text-zinc-500 text-[8px] uppercase tracking-wider">STOCK LEVEL</span>
-                      <span className="text-white font-bold">{activeShowcaseProduct.stock > 0 ? `${activeShowcaseProduct.stock} UNITS IN LIRA` : "OUT OF STOCK"}</span>
-                    </div>
-                    <div className="p-2 border border-brand-blue/20 bg-zinc-950 flex flex-col">
-                      <span className="text-zinc-500 text-[8px] uppercase tracking-wider">WARRANTY STATUS</span>
-                      <span className="text-brand-green font-bold">1-YEAR RECEIPT</span>
+                      <span className="absolute bottom-2 right-2 px-1.5 py-1 bg-black/60 rounded text-[8px] font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1 select-none">
+                        <Eye size={10} /> Zoom
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Showcase CTAs */}
-                <div className="mt-4 pt-3 border-t border-brand-blue/20 flex gap-2.5">
-                  <button
-                    onClick={() => onAddToCart(activeShowcaseProduct)}
-                    className="flex-1 bg-brand-blue text-white font-bold text-[10px] uppercase tracking-widest py-3 hover:bg-white hover:text-black border-2 border-brand-blue cursor-pointer transition-colors text-center"
-                  >
-                    Add to Basket
-                  </button>
-                  <a
-                    href={`https://wa.me/256793405517?text=${encodeURIComponent(`Hello Solo's Electronics! I am interested in buying: ${activeShowcaseProduct.name} (Price: UGX ${activeShowcaseProduct.price.toLocaleString()}) which I saw on your online showroom. Is it available at Lira City Center?`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 bg-brand-green text-black font-black text-[10px] uppercase tracking-widest py-3 border-2 border-brand-green cursor-pointer hover:bg-white hover:text-black transition-colors text-center flex items-center justify-center gap-1"
-                  >
-                    <WhatsAppIcon size={12} className="fill-current" />
-                    Buy via WhatsApp
-                  </a>
-                </div>
+                {/* Footer Controls / Action row */}
+                <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/50 pt-4 z-10 gap-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setActiveShowcaseIdx(prev => (prev - 1 + premiumShowcase.length) % premiumShowcase.length);
+                      }}
+                      className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer border border-zinc-200/40 dark:border-zinc-700/40"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveShowcaseIdx(prev => (prev + 1) % premiumShowcase.length);
+                      }}
+                      className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-all cursor-pointer border border-zinc-200/40 dark:border-zinc-700/40"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
 
+                  <div className="flex items-center gap-2 flex-1 justify-end">
+                    <button
+                      onClick={() => onAddToCart(activeShowcaseProduct)}
+                      className="px-5 py-2.5 bg-[#F68B1E] hover:bg-[#e07b12] text-white font-sans font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer flex-1 max-w-[160px]"
+                    >
+                      <ShoppingBag size={13} />
+                      <span>Buy Now</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => onToggleWishlist(activeShowcaseProduct.id)}
+                      className={cn(
+                        "p-2.5 rounded-xl border transition-all flex items-center justify-center cursor-pointer shrink-0",
+                        isItemWishlisted(activeShowcaseProduct.id)
+                          ? 'bg-red-50 border-red-200 text-red-500 dark:bg-red-900/20 dark:border-red-900/30'
+                          : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600'
+                      )}
+                    >
+                      <Heart size={13} className={isItemWishlisted(activeShowcaseProduct.id) ? "fill-current" : ""} />
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs uppercase tracking-widest font-mono">
+                Empty Showcase
               </div>
             )}
+          </div>
 
-            {/* Manual Toggles & Autoplay Control */}
-            <div className="border-t border-brand-blue/30 pt-3 flex justify-between items-center text-[10px]">
-              <div className="flex gap-1.5">
-                <button
-                  onClick={() => {
-                    setActiveShowcaseIdx(prev => (prev - 1 + premiumShowcase.length) % premiumShowcase.length);
-                  }}
-                  className="p-1.5 border border-brand-blue/30 hover:border-brand-green text-zinc-400 hover:text-white cursor-pointer bg-zinc-950"
-                >
-                  <ChevronLeft size={12} />
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveShowcaseIdx(prev => (prev + 1) % premiumShowcase.length);
-                  }}
-                  className="p-1.5 border border-brand-blue/30 hover:border-brand-green text-zinc-400 hover:text-white cursor-pointer bg-zinc-950"
-                >
-                  <ChevronRight size={12} />
-                </button>
+          {/* Right Column (Courier, Secure Escrow & WhatsApp Negotiator) */}
+          <div className="col-span-1 xl:col-span-3 flex flex-col gap-4">
+            
+            {/* Courier Section */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-[#F68B1E] font-extrabold uppercase">
+                  <Truck size={12} />
+                  <span>JUMIA EXPRESS COURIER</span>
+                </div>
+                <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">
+                  Lira Doorstep Delivery
+                </h4>
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  Fast deliveries inside Lira Municipality and neighboring districts of Northern Uganda.
+                </p>
               </div>
+              <div className="mt-3 flex justify-between items-center text-[10px] font-sans font-bold text-[#F68B1E] select-none">
+                <span>Free delivery over UGX 500k</span>
+                <ChevronRight size={10} />
+              </div>
+            </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsPlayingAutoplay(p => !p)}
-                  className={`px-2 py-1 border cursor-pointer ${isPlayingAutoplay ? 'border-brand-green/40 text-brand-green bg-brand-green/5' : 'border-brand-blue/30 text-zinc-500 bg-zinc-950'}`}
-                >
-                  {isPlayingAutoplay ? "AUTOPLAY ON" : "AUTOPLAY OFF"}
-                </button>
+            {/* Secure Check Escrow Section */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">
+                  <ShieldCheck size={12} />
+                  <span>SECURE PHYSICAL COLLECTION</span>
+                </div>
+                <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">
+                  Verify Before Payment
+                </h4>
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  Collect your items from our main showroom counter. Pay after inspecting and testing your device.
+                </p>
               </div>
+              <div className="mt-3 text-[9px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1 select-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Escrow Covered Outpost</span>
+              </div>
+            </div>
+
+            {/* Direct WhatsApp Negotiator */}
+            <div className="bg-[#EBF7F0] dark:bg-emerald-950/20 border border-emerald-200/30 dark:border-emerald-900/30 rounded-2xl p-4.5 flex flex-col justify-between flex-1 shadow-sm text-left">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">
+                  <WhatsAppIcon size={12} className="text-emerald-500 fill-current" />
+                  <span>DIRECT ORDER DESK</span>
+                </div>
+                <h4 className="text-xs font-sans font-bold text-emerald-900 dark:text-emerald-100 uppercase">
+                  Order via WhatsApp
+                </h4>
+                <p className="text-[10px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                  Submit orders directly to Emma's personal sales counter to request customized discounts!
+                </p>
+              </div>
+              <a
+                href="https://wa.me/256782522718?text=Hello%20Emma,%20I%20am%20viewing%20Lira%20Phones%20and%20Electronics%20and%20want%20to%20place%20a%20custom%20order!"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3.5 py-2 px-3 bg-[#25D366] hover:bg-[#20ba59] text-white rounded-xl text-[10px] font-sans font-black uppercase tracking-wider text-center flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm"
+              >
+                <WhatsAppIcon size={12} className="fill-current" />
+                <span>Chat with Emma</span>
+              </a>
             </div>
 
           </div>
 
         </div>
-
-        {/* Global Trust verification bar inserted directly under hero column stack */}
-        <TrustBar />
-
       </section>
 
-      {/* RECENTLY UPLOADED SECTION */}
-      {category === null && searchQuery === '' && recentlyUploadedProducts.length > 0 && (
-        <section id="recently-uploaded-section" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24 pb-16">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/[0.06] pb-4 mb-8 gap-4 text-left">
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-blue-400 uppercase flex items-center gap-1.5">
-                <Zap size={11} className="fill-blue-400/20" />
-                FRESH SHOWROOM SYNC
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-display font-medium text-white tracking-tight uppercase">
-                Recently Uploaded Gear
-              </h2>
-            </div>
-            
-            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest bg-white/[0.02] border border-white/[0.04] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 select-none self-start sm:self-auto">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
-              Live Provision Stream
-            </span>
-          </div>
+      {/* 2. FLASH SALES DEALS BLOCK (RED BRAND BANNER) */}
+      {category === null && searchQuery === '' && products.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-2">
+          <div className="bg-[#E61E26] text-white rounded-2xl overflow-hidden shadow-sm">
+            {/* Countdown header */}
+            <div className="px-5 py-3.5 bg-[#B31217] flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-red-500/10">
+              <div className="flex items-center gap-2.5 text-left">
+                <div className="p-1.5 bg-white/10 rounded-lg shrink-0">
+                  <Zap size={18} className="text-yellow-400 fill-current" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-display font-black tracking-tight uppercase">
+                    FLASH SALES
+                  </h3>
+                  <p className="text-[10px] text-red-200/90 font-mono tracking-wide">LIMITED STOCK • LIVE DISCOUNT WINDOW</p>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {recentlyUploadedProducts.map((item) => {
-              const timeLabel = getUploadTimeLabel(item);
-              const isWishlisted = isItemWishlisted(item.id);
-              const itemImage = (item.images && item.images.length > 0) ? item.images[0] : item.image;
-              
-              return (
-                <div 
-                  key={`uploaded-${item.id}`}
-                  className="group relative rounded-[2rem] bg-white/[0.01] hover:bg-white/[0.03] border border-white/[0.04] hover:border-blue-500/30 p-6 flex flex-col justify-between transition-all duration-300 shadow-xl"
-                >
-                  {/* Glowing background bubble */}
-                  <span className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/[0.02] group-hover:bg-blue-500/[0.05] rounded-full blur-2xl transition-all duration-500 pointer-events-none" />
-                  
-                  <div>
-                    {/* Header: Relative upload time and Quick buttons */}
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="px-2.5 py-1 bg-blue-500/10 border border-blue-500/15 text-blue-400 text-[8.5px] font-mono rounded-lg uppercase tracking-wider font-extrabold flex items-center gap-1">
-                        <Clock size={10} />
-                        {timeLabel}
-                      </span>
-                      
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => onToggleWishlist(item.id)}
-                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                            isWishlisted 
-                              ? 'bg-blue-500/15 text-blue-400 border-blue-500/25'
-                              : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:text-white hover:bg-white/[0.05]'
-                          }`}
-                          title="Bookmark hardware"
-                        >
-                          <Heart size={12} className={isWishlisted ? 'fill-blue-500 text-blue-500' : ''} />
-                        </button>
-                      </div>
-                    </div>
+              {/* Ticking Timer */}
+              <div className="flex items-center gap-2 bg-black/20 px-3.5 py-1.5 rounded-xl border border-white/10">
+                <span className="text-[9px] font-mono tracking-widest text-red-200 font-bold uppercase">ENDS IN:</span>
+                <div className="flex items-center gap-1 font-mono text-xs font-extrabold">
+                  <span className="bg-white text-red-600 px-1.5 py-0.5 rounded font-black">{timeLeft.hrs}</span>
+                  <span className="text-red-200 font-bold">:</span>
+                  <span className="bg-white text-red-600 px-1.5 py-0.5 rounded font-black">{timeLeft.mins}</span>
+                  <span className="text-red-200 font-bold">:</span>
+                  <span className="bg-white text-red-600 px-1.5 py-0.5 rounded font-black">{timeLeft.secs}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Horizontal Product Strip */}
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-950 flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+              {products.filter(p => p.stock > 0).slice(0, 6).map((item) => {
+                const originalPrice = Math.floor(item.price * 1.22);
+                const discountPercent = 18;
+                return (
+                  <div
+                    key={`flash-${item.id}`}
+                    onClick={() => onProductClick(item)}
+                    className="w-[180px] sm:w-[220px] bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl p-3 flex flex-col justify-between shrink-0 snap-start shadow-sm hover:shadow-md transition-all cursor-pointer relative group text-zinc-800 dark:text-zinc-100"
+                  >
+                    {/* Discount badge */}
+                    <span className="absolute top-2.5 left-2.5 bg-[#E61E26] text-white text-[8px] font-sans font-black px-1.5 py-0.5 rounded uppercase tracking-wider z-10 shadow-sm">
+                      -{discountPercent}%
+                    </span>
 
                     {/* Image Area */}
-                    <div 
-                      onClick={() => onProductClick(item)}
-                      className="h-44 w-full flex items-center justify-center bg-black/20 rounded-2xl p-4 border border-white/[0.02] relative overflow-hidden cursor-pointer"
-                    >
+                    <div className="h-28 w-full bg-zinc-50 dark:bg-zinc-950 rounded-lg flex items-center justify-center p-2 mb-2 border border-zinc-100 dark:border-zinc-800/20 relative overflow-hidden shrink-0">
                       <OptimizedImage
-                        src={itemImage}
+                        src={item.image}
                         alt={item.name}
-                        className="max-h-full max-w-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.4)] transform transition-transform duration-500 group-hover:scale-105"
+                        className="max-h-full max-w-full object-contain filter drop-shadow-sm group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
 
-                    {/* Meta info */}
-                    <div className="mt-5 text-left space-y-1.5">
-                      <div className="flex justify-between items-center text-[9px] font-mono tracking-wider text-zinc-500 font-extrabold uppercase">
-                        <span>{item.category}</span>
-                        {item.rating && (
-                          <span className="flex items-center gap-0.5 text-amber-500">
-                            <Star size={9} className="fill-current" />
-                            {item.rating}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <h4 
-                        onClick={() => onProductClick(item)}
-                        className="font-bold text-white text-sm uppercase truncate cursor-pointer hover:text-blue-400 transition-colors"
-                      >
+                    {/* Metadata */}
+                    <div className="space-y-1.5 text-left min-w-0">
+                      <h4 className="text-xs font-bold truncate text-zinc-900 dark:text-zinc-50 group-hover:text-[#F68B1E] transition-colors leading-snug">
                         {item.name}
                       </h4>
-                      
-                      <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed font-normal">
-                        {item.description}
-                      </p>
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-mono font-black text-[#F68B1E]">
+                          UGX {item.price.toLocaleString()}
+                        </div>
+                        <div className="text-[9px] font-mono text-zinc-400 line-through">
+                          UGX {originalPrice.toLocaleString()}
+                        </div>
+                      </div>
+
+                      {/* Stock availability */}
+                      <div className="pt-1">
+                        <div className="flex justify-between items-center text-[8px] font-mono font-bold text-zinc-400 mb-1 uppercase">
+                          <span>{item.stock} left</span>
+                          <span>In Stock</span>
+                        </div>
+                        <div className="h-1 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <div
+                            style={{ width: `${Math.min(100, Math.max(20, (item.stock / 15) * 100))}%` }}
+                            className="h-full bg-red-600 rounded-full"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Pricing and Quick Add */}
-                  <div className="mt-6 pt-5 border-t border-white/[0.04] flex items-center justify-between">
-                    <div className="text-left font-mono">
-                      <span className="text-[8px] text-zinc-500 block uppercase tracking-widest font-black">PROVISION RATE</span>
-                      <span className="text-white text-xs font-black">UGX {item.price.toLocaleString()}</span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => onQuickView(item)}
-                        className="p-2.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.04] text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer"
-                        title="Quick Inspect"
-                      >
-                        <Eye size={12} />
-                      </button>
-                      <button
-                        onClick={() => onAddToCart(item)}
-                        className="px-4 py-2 bg-blue-600/10 hover:bg-blue-600 border border-blue-500/10 hover:border-blue-500 text-blue-400 hover:text-white text-[9px] font-mono tracking-widest uppercase font-extrabold rounded-xl transition-all duration-300 cursor-pointer"
-                      >
-                        Acquire
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
 
-      {/* Why Choose Solo's Value Proposition Grid */}
-      {category === null && searchQuery === '' && <WhyChooseSolo />}
+      {/* 3. CORE SERVICE GUARANTEES */}
+      {category === null && searchQuery === '' && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="flex items-start gap-3 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80 rounded-xl p-4 shadow-sm text-left">
+              <div className="w-10 h-10 bg-[#F68B1E]/10 text-[#F68B1E] rounded-xl flex items-center justify-center shrink-0">
+                <Truck size={18} />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">Fast Regional Shipping</h4>
+                <p className="text-[11px] text-zinc-500 leading-normal">Express shipping and physical collection depots available throughout Lira municipality.</p>
+              </div>
+            </div>
 
-      {/* Rapid On-Site Repair station rate card & WhatsApp Booking */}
-      {category === null && searchQuery === '' && <RapidRepairHub />}
+            <div className="flex items-start gap-3 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80 rounded-xl p-4 shadow-sm text-left">
+              <div className="w-10 h-10 bg-[#F68B1E]/10 text-[#F68B1E] rounded-xl flex items-center justify-center shrink-0">
+                <ShieldCheck size={18} />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">100% Secure Transaction</h4>
+                <p className="text-[11px] text-zinc-500 leading-normal">Official manufacturer diagnostic warranties and physical inspections supported on pick up.</p>
+              </div>
+            </div>
 
-      {/* 5. PORTFOLIO & CATEGORIES FEED */}
-      <section id="tech-portfolio" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24">
+            <div className="flex items-start gap-3 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80 rounded-xl p-4 shadow-sm text-left">
+              <div className="w-10 h-10 bg-[#F68B1E]/10 text-[#F68B1E] rounded-xl flex items-center justify-center shrink-0">
+                <PhoneCall size={18} />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <h4 className="text-xs font-sans font-bold text-zinc-900 dark:text-white uppercase">Dedicated Help Desk</h4>
+                <p className="text-[11px] text-zinc-500 leading-normal">Instant phone and WhatsApp assistance to clarify specs or negotiate bespoke corporate bulk rates.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 4. RECENTLY SYNCED SHOWROOM FEED */}
+      {category === null && searchQuery === '' && recentlyUploadedProducts.length > 0 && (
+        <section id="recently-uploaded-section" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24 pt-4 text-left">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-zinc-200/60 dark:border-zinc-800/80 pb-3 mb-6 gap-3">
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-mono font-black tracking-widest text-[#F68B1E] uppercase flex items-center gap-1">
+                <Zap size={11} className="fill-current" />
+                SHOWROOM ACQUISITION
+              </span>
+              <h2 className="text-xl sm:text-2xl font-display font-black text-zinc-900 dark:text-white tracking-tight uppercase">
+                Recently Loaded Inventory
+              </h2>
+            </div>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 self-start sm:self-auto select-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F68B1E] animate-ping shrink-0" />
+              Live Provision Stream
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {recentlyUploadedProducts.map((item) => (
+              <ProductCard
+                key={`uploaded-${item.id}`}
+                product={item}
+                onAddToCart={onAddToCart}
+                onClick={() => onProductClick(item)}
+                onQuickView={onQuickView}
+                isWishlisted={isItemWishlisted(item.id)}
+                onToggleWishlist={onToggleWishlist}
+                isLiked={isItemLiked(item.id)}
+                onToggleLike={onToggleLike}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 5. DIRECT SHOWROOM CATALOG */}
+      <section id="tech-portfolio" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 scroll-mt-24 pt-4 text-left">
         
-        {/* Dynamic header display */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-border pb-4 mb-8 gap-4 text-left">
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-muted-foreground uppercase">DIRECT TECH CATALOG</span>
-            <h2 className="text-2xl sm:text-3xl font-display font-medium text-foreground tracking-tight">
+        {/* Catalog header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-zinc-200/60 dark:border-zinc-800/80 pb-3 mb-6 gap-3">
+          <div className="space-y-0.5">
+            <span className="text-[9px] font-mono font-black tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">DIRECT SPEC CATALOG</span>
+            <h2 className="text-xl sm:text-2xl font-display font-black text-zinc-900 dark:text-white tracking-tight uppercase">
               {category ? `${category}` : "Browse the Showroom"}
             </h2>
           </div>
 
-          <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest bg-card border border-border px-3 py-1 rounded-full flex items-center gap-1.5 shrink-0 self-start sm:self-auto select-none">
+          <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shrink-0 self-start sm:self-auto select-none font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             {category ? `${filteredProducts.length} Items Locked` : `${products.length} Units Online`}
           </span>
         </div>
 
-        {/* Dynamic Category selectors */}
-        <div className="mb-10 flex overflow-x-auto no-scrollbar gap-2.5 pb-2.5 border-b border-border/60 text-left">
+        {/* Categories strip */}
+        <div className="mb-8 flex overflow-x-auto no-scrollbar gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800/40">
           <button
             onClick={() => onCategorySelect(null)}
             className={cn(
-              "relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all text-xs font-mono font-bold uppercase tracking-wider shrink-0 border cursor-pointer",
+              "relative flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-all text-xs font-bold tracking-wide shrink-0 border cursor-pointer uppercase",
               category === null
-                ? "bg-foreground text-background border-transparent shadow"
-                : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
+                ? "bg-[#F68B1E] border-[#F68B1E] text-white shadow-sm"
+                : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
             )}
           >
             <Compass size={13} />
@@ -652,10 +692,10 @@ export function HomeHero({
                 key={cat}
                 onClick={() => onCategorySelect(cat)}
                 className={cn(
-                  "relative flex items-center gap-2.5 px-5 py-3 rounded-full transition-all text-xs font-mono font-bold uppercase tracking-wider shrink-0 border cursor-pointer",
+                  "relative flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-all text-xs font-bold tracking-wide shrink-0 border cursor-pointer uppercase",
                   isActive
-                    ? "bg-foreground text-background border-transparent shadow opacity-90"
-                    : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-foreground/20"
+                    ? "bg-[#F68B1E] border-[#F68B1E] text-white shadow-sm"
+                    : "bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
                 )}
               >
                 {getCategoryIcon(cat)}
@@ -665,40 +705,38 @@ export function HomeHero({
           })}
         </div>
 
-        {/* RECENTLY VIEWED CONTAINER REMOVED FROM HERE TO BE SHIFTED AS A MARQUEE JUST ABOVE THE FOOTER */}
-
         {/* FEED GRID USING REDESIGNED PRODUCT CARD */}
         {loadingProducts ? (
           <div className="py-24 flex flex-col items-center justify-center">
-            <Loader2 className="animate-spin text-zinc-500 mb-4" size={32} />
-            <p className="text-[10px] font-mono tracking-widest uppercase text-zinc-500">Synchronizing certified tech rates...</p>
+            <Loader2 className="animate-spin text-zinc-400 mb-4" size={32} />
+            <p className="text-[10px] font-mono tracking-widest uppercase text-zinc-400">Loading catalog parameters...</p>
           </div>
         ) : (category || searchQuery) && filteredProducts.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="py-20 text-center bg-card border border-border rounded-[2.5rem] relative overflow-hidden shadow-sm"
+            className="py-16 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl shadow-sm"
           >
-             <div className="relative z-10 max-w-sm mx-auto space-y-6 px-4">
-              <div className="w-12 h-12 bg-background border border-border rounded-2xl flex items-center justify-center mx-auto text-muted-foreground">
+             <div className="max-w-sm mx-auto space-y-5 px-4">
+              <div className="w-12 h-12 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center mx-auto text-zinc-400">
                 <AlertCircle size={20} />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-base font-display font-medium text-foreground">No products found</h3>
-                <p className="text-muted-foreground text-xs leading-relaxed max-w-xs mx-auto">
-                  We currently do not have matching units in stock. Refine your query or check back later!
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase">No items found</h3>
+                <p className="text-zinc-500 text-xs leading-relaxed max-w-xs mx-auto">
+                  We currently do not have matching units in stock. Refine your query or inspect other categories.
                 </p>
               </div>
               <button 
                 onClick={() => onCategorySelect(null)}
-                className="py-3 px-6 bg-foreground hover:opacity-90 text-background font-semibold text-xs rounded-full transition-all active:scale-95 cursor-pointer font-mono tracking-wider"
+                className="py-2.5 px-5 bg-zinc-900 hover:opacity-90 dark:bg-white text-white dark:text-black font-extrabold text-[10px] rounded-lg transition-all active:scale-95 cursor-pointer font-mono tracking-wider"
               >
                 RESET FILTERS
               </button>
             </div>
           </motion.div>
         ) : (category || searchQuery) ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredProducts.map((item) => (
               <ProductCard
                 key={item.id}
@@ -716,7 +754,7 @@ export function HomeHero({
         ) : (
           // Segmented categorized visual blocks
           groupedMainProducts && !loadingProducts && (
-            <div className="space-y-16">
+            <div className="space-y-12">
               {Object.entries(groupedMainProducts)
                 .sort(([a], [b]) => {
                   const idxA = PRODUCT_CATEGORIES.indexOf(a as any);
@@ -727,31 +765,37 @@ export function HomeHero({
                   return idxA - idxB;
                 })
                 .map(([cat, catProducts]) => (
-                  <div key={cat} className="space-y-8 text-left">
-                    <div className="flex items-center justify-between border-b border-border pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground">
+                  <div key={cat} className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/60 pb-2">
+                      <div className="flex items-center gap-2.5 text-left">
+                        <div className="w-8 h-8 rounded-xl bg-[#F68B1E]/10 flex items-center justify-center text-[#F68B1E]">
                           {getCategoryIcon(cat)}
                         </div>
-                        <h3 className="text-base sm:text-lg font-display font-medium text-foreground">
+                        <h3 className="text-sm sm:text-base font-sans font-bold text-zinc-900 dark:text-white uppercase tracking-wide">
                           {cat}
                         </h3>
                       </div>
-                      <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest bg-background border border-border px-3 py-1 rounded-full font-bold">
-                        {catProducts.length} UNITS
+                      <span className="text-[8px] font-mono text-zinc-400 uppercase tracking-widest bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/40 dark:border-zinc-800/40 px-2.5 py-1 rounded font-bold">
+                        {catProducts.length} Stocked
                       </span>
                     </div>
 
-                    <CategoryRowWithScroll
-                      catProducts={catProducts}
-                      onAddToCart={onAddToCart}
-                      onProductClick={onProductClick}
-                      onQuickView={onQuickView}
-                      isItemWishlisted={isItemWishlisted}
-                      onToggleWishlist={onToggleWishlist}
-                      isItemLiked={isItemLiked}
-                      onToggleLike={onToggleLike}
-                    />
+                    <div className="flex gap-5 overflow-x-auto no-scrollbar pb-4 pt-1 scroll-smooth w-full select-none snap-x snap-mandatory">
+                      {catProducts.map((item) => (
+                        <div key={item.id} className="w-[260px] sm:w-[290px] shrink-0 snap-start">
+                          <ProductCard
+                            product={item}
+                            onAddToCart={onAddToCart}
+                            onClick={() => onProductClick(item)}
+                            onQuickView={onQuickView}
+                            isWishlisted={isItemWishlisted(item.id)}
+                            onToggleWishlist={onToggleWishlist}
+                            isLiked={isItemLiked(item.id)}
+                            onToggleLike={onToggleLike}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))
               }
@@ -760,29 +804,28 @@ export function HomeHero({
         )}
       </section>
 
-      {/* 6. RECENTLY VIEWED INFINITE MARQUEE */}
+      {/* 6. RECENTLY VIEWED UNITS (FADING SLIDER) */}
       {category === null && searchQuery === '' && recentlyViewedProducts.length > 0 && (
-        <div id="recently-viewed-marquee-container" className="w-full border-t border-border/40 pt-24 pb-14 text-left space-y-8">
+        <div id="recently-viewed-marquee-container" className="w-full border-t border-zinc-200/40 dark:border-zinc-800/60 pt-16 pb-8 text-left space-y-6">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Clock size={18} className="text-blue-500 animate-pulse" />
-              <div className="flex flex-col">
-                <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-muted-foreground uppercase">PERSISTENT SYSTEM RETRIEVAL</span>
-                <h3 className="text-xl md:text-2xl font-display font-medium text-foreground tracking-tight">
-                  Recently Viewed Units
+            <div className="flex items-center gap-2.5 text-left">
+              <Clock size={16} className="text-[#F68B1E] animate-pulse" />
+              <div>
+                <span className="text-[9px] font-mono font-black tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">HISTORY LOGS</span>
+                <h3 className="text-base sm:text-lg font-display font-black text-zinc-900 dark:text-white tracking-tight uppercase">
+                  Recently Viewed Gear
                 </h3>
               </div>
             </div>
-            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest bg-card border border-border px-3.5 py-1.5 rounded-full flex items-center gap-1.5 select-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              {recentlyViewedProducts.length} Items Cached
+            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/40 dark:border-zinc-800/40 px-2.5 py-1 rounded flex items-center gap-1 select-none">
+              <span>{recentlyViewedProducts.length} items logged</span>
             </span>
           </div>
 
-          <div id="recently-viewed-marquee-track" className="relative w-full overflow-hidden py-4 select-none">
+          <div id="recently-viewed-marquee-track" className="relative w-full overflow-hidden py-2 select-none">
             {/* Ambient visual fade masks */}
-            <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background via-background/70 to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background via-background/70 to-transparent z-10 pointer-events-none" />
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background via-background/70 to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background via-background/70 to-transparent z-10 pointer-events-none" />
 
             <motion.div
               animate={{ x: ["0%", "-50%"] }}
@@ -791,33 +834,30 @@ export function HomeHero({
                 duration: 25,
                 repeat: Infinity,
               }}
-              className="flex gap-6 w-max animate-none"
+              className="flex gap-4 w-max animate-none"
             >
               {repeatedViewed.map((item, idx) => (
                 <div
                   key={`rec-marquee-${item.id}-${idx}`}
                   id={`rec-marquee-card-${item.id}-${idx}`}
                   onClick={() => onProductClick(item)}
-                  className="group relative rounded-[2.25rem] bg-card/35 dark:bg-card/30 backdrop-blur-md hover:bg-card/50 border border-white/[0.04] hover:border-blue-500/40 p-5 flex items-center gap-5 w-80 h-32 transition-all duration-300 cursor-pointer shrink-0 shadow-xl hover:shadow-[0_15px_45px_rgba(59,130,246,0.12)]"
+                  className="group relative rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 p-3.5 flex items-center gap-3 w-72 h-24 transition-all duration-300 cursor-pointer shrink-0 shadow-sm hover:shadow"
                 >
-                  {/* Subtle backdrop element */}
-                  <span className="absolute inset-0 bg-gradient-to-b from-white/[0.01] to-transparent pointer-events-none rounded-[2.25rem]" />
-                  
-                  <div className="h-24 w-24 flex items-center justify-center relative overflow-hidden bg-background/40 rounded-2xl shrink-0 p-2 border border-white/[0.02]">
+                  <div className="h-16 w-16 flex items-center justify-center relative bg-zinc-50 dark:bg-zinc-950 rounded-lg shrink-0 p-1.5 border border-zinc-200/40 dark:border-zinc-800/40">
                     <OptimizedImage 
                       src={item.image} 
                       alt={item.name} 
-                      className="max-h-full max-w-full object-contain filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.04)] transform transition-transform duration-500 group-hover:scale-110 select-none"
+                      className="max-h-full max-w-full object-contain filter drop-shadow-sm group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
-                  <div className="space-y-1.5 text-left min-w-0">
-                    <span className="text-[9.5px] font-mono font-bold tracking-wider text-blue-500 uppercase block">
+                  <div className="space-y-0.5 text-left min-w-0">
+                    <span className="text-[8px] font-mono font-bold tracking-wider text-[#F68B1E] uppercase block">
                       {item.category}
                     </span>
-                    <h4 className="text-sm font-medium text-foreground group-hover:text-blue-400 transition-colors truncate max-w-[170px]">
+                    <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-50 group-hover:text-[#F68B1E] transition-colors truncate max-w-[150px]">
                       {item.name}
                     </h4>
-                    <span className="text-xs font-mono text-muted-foreground font-black block">
+                    <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400 font-bold block">
                       UGX {item.price.toLocaleString()}
                     </span>
                   </div>
@@ -831,118 +871,11 @@ export function HomeHero({
   );
 }
 
-function CategoryRowWithScroll({ 
-  catProducts, 
-  onAddToCart, 
-  onProductClick, 
-  onQuickView, 
-  isItemWishlisted, 
-  onToggleWishlist, 
-  isItemLiked, 
-  onToggleLike 
-}: { 
-  catProducts: Product[]; 
-  onAddToCart: any; 
-  onProductClick: any; 
-  onQuickView: any; 
-  isItemWishlisted: any; 
-  onToggleWishlist: any; 
-  isItemLiked: any; 
-  onToggleLike: any; 
-}) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
-
-  const checkScroll = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setShowLeftArrow(scrollLeft > 10);
-      setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 10);
-    }
-  };
-
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (el) {
-      el.addEventListener('scroll', checkScroll);
-      // Run once initially
-      checkScroll();
-      // Handle resize
-      window.addEventListener('resize', checkScroll);
-    }
-    return () => {
-      if (el) {
-        el.removeEventListener('scroll', checkScroll);
-      }
-      window.removeEventListener('resize', checkScroll);
-    };
-  }, [catProducts]);
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const { clientWidth } = scrollContainerRef.current;
-      const scrollAmount = clientWidth * 0.75;
-      scrollContainerRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  return (
-    <div className="relative group/scrollrow w-full">
-      {/* Left Scroll Button */}
-      {showLeftArrow && (
-        <button
-          onClick={() => scroll('left')}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center w-10 h-10 rounded-full bg-white/90 dark:bg-zinc-900/90 hover:bg-white dark:hover:bg-zinc-800 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 text-foreground hover:scale-110 shadow-lg cursor-pointer transition-all active:scale-95 duration-200"
-          aria-label="Scroll left"
-        >
-          <ChevronLeft size={16} strokeWidth={2.5} />
-        </button>
-      )}
-
-      {/* Right Scroll Button */}
-      {showRightArrow && (
-        <button
-          onClick={() => scroll('right')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 flex items-center justify-center w-10 h-10 rounded-full bg-white/90 dark:bg-zinc-900/90 hover:bg-white dark:hover:bg-zinc-800 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 text-foreground hover:scale-110 shadow-lg cursor-pointer transition-all active:scale-95 duration-200"
-          aria-label="Scroll right"
-        >
-          <ChevronRight size={16} strokeWidth={2.5} />
-        </button>
-      )}
-
-      {/* Scrollable container */}
-      <div 
-        ref={scrollContainerRef}
-        className="flex gap-6 overflow-x-auto no-scrollbar pb-6 pt-2 scroll-smooth w-full select-none snap-x snap-mandatory"
-      >
-        {catProducts.map((item) => (
-          <div key={item.id} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
-            <ProductCard
-              product={item}
-              onAddToCart={onAddToCart}
-              onClick={() => onProductClick(item)}
-              onQuickView={onQuickView}
-              isWishlisted={isItemWishlisted(item.id)}
-              onToggleWishlist={onToggleWishlist}
-              isLiked={isItemLiked(item.id)}
-              onToggleLike={onToggleLike}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const getCategoryIcon = (cat: string) => {
   const norm = cat.toLowerCase();
-  if (norm.includes('phone') || norm.includes('tablet')) return <Smartphone size={13} className="text-zinc-400 shrink-0" />;
-  if (norm.includes('computer') || norm.includes('laptop')) return <Laptop size={13} className="text-zinc-400 shrink-0" />;
-  if (norm.includes('gaming') || norm.includes('console')) return <Gamepad2 size={13} className="text-zinc-400 shrink-0" />;
-  if (norm.includes('tv') || norm.includes('audio')) return <Headphones size={13} className="text-zinc-400 shrink-0" />;
-  return <Sparkles size={13} className="text-zinc-400 shrink-0" />;
+  if (norm.includes('phone') || norm.includes('tablet')) return <Smartphone size={13} className="text-neutral-500 shrink-0" />;
+  if (norm.includes('computer') || norm.includes('laptop')) return <Laptop size={13} className="text-neutral-500 shrink-0" />;
+  if (norm.includes('gaming') || norm.includes('console')) return <Gamepad2 size={13} className="text-neutral-500 shrink-0" />;
+  if (norm.includes('tv') || norm.includes('audio')) return <Headphones size={13} className="text-neutral-500 shrink-0" />;
+  return <Sparkles size={13} className="text-neutral-500 shrink-0" />;
 };
